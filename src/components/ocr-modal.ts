@@ -1,4 +1,5 @@
 import { OCRService, ParsedOCRResult } from '../modules/ocr';
+import { llmService } from '../modules/llm';
 
 export class OCRModal {
   private modal: HTMLElement;
@@ -57,7 +58,12 @@ export class OCRModal {
         </div>
         <div class="modal-footer">
           <button id="ocr-cancel" class="btn btn-secondary">Cancel</button>
-          <button id="ocr-recognize" class="btn btn-primary" style="display: none;">Recognize</button>
+          <button id="ocr-recognize" class="btn btn-primary" style="display: none;">Recognize with Tesseract</button>
+          ${
+            llmService.isConfigured()
+              ? '<button id="ocr-llm-vision" class="btn btn-primary" style="display: none;">✨ Recognize with LLM Vision</button>'
+              : ""
+          }
           <button id="ocr-search" class="btn btn-primary" style="display: none;">Search Metadata</button>
           <button id="ocr-confirm" class="btn btn-primary" style="display: none;">Add Book</button>
         </div>
@@ -119,6 +125,12 @@ export class OCRModal {
     ) as HTMLElement;
     recognizeBtn?.addEventListener("click", () => this.startRecognition());
 
+    // LLM Vision button
+    const llmVisionBtn = this.modal.querySelector(
+      "#ocr-llm-vision"
+    ) as HTMLElement;
+    llmVisionBtn?.addEventListener("click", () => this.startLLMVisionRecognition());
+
     // Search metadata button
     const searchBtn = this.modal.querySelector("#ocr-search") as HTMLElement;
     searchBtn?.addEventListener("click", () => this.handleSearchMetadata());
@@ -155,6 +167,9 @@ export class OCRModal {
       this.showElement("#ocr-preview");
       this.hideElement("#ocr-upload");
       this.showElement("#ocr-recognize");
+      if (llmService.isConfigured()) {
+        this.showElement("#ocr-llm-vision");
+      }
     };
     reader.readAsDataURL(file);
 
@@ -222,6 +237,77 @@ export class OCRModal {
       // Reset UI
       this.hideElement("#ocr-progress");
       this.showElement("#ocr-recognize");
+      if (llmService.isConfigured()) {
+        this.showElement("#ocr-llm-vision");
+      }
+    }
+  }
+
+  private async startLLMVisionRecognition(): Promise<void> {
+    const file = (this.modal as any)._selectedFile as File;
+    if (!file) return;
+
+    this.hideElement("#ocr-recognize");
+    this.hideElement("#ocr-llm-vision");
+    this.showElement("#ocr-progress");
+
+    const progressLabel = this.modal.querySelector(
+      ".progress-label"
+    ) as HTMLElement;
+    const progressFill = this.modal.querySelector(
+      "#ocr-progress-fill"
+    ) as HTMLElement;
+    const progressPercent = this.modal.querySelector(
+      ".progress-percent"
+    ) as HTMLElement;
+
+    try {
+      progressLabel.textContent = "Analyzing image with LLM Vision...";
+      progressFill.style.width = "30%";
+      progressPercent.textContent = "30%";
+
+      // Call LLM Vision API
+      const books = await llmService.parseBooksFromImage(file);
+
+      progressFill.style.width = "100%";
+      progressPercent.textContent = "100%";
+
+      if (!books || books.length === 0) {
+        throw new Error("No books found in the image");
+      }
+
+      // If multiple books found, use the first one for single book OCR
+      // (or could show a selection dialog)
+      const book = books[0];
+
+      // Show result
+      this.hideElement("#ocr-progress");
+      this.showElement("#ocr-result");
+      this.showElement("#ocr-search");
+      this.showElement("#ocr-confirm");
+
+      const titleInput = this.modal.querySelector(
+        "#ocr-title"
+      ) as HTMLInputElement;
+      const recommendationInput = this.modal.querySelector(
+        "#ocr-recommendation"
+      ) as HTMLTextAreaElement;
+
+      if (titleInput) titleInput.value = book.title || "";
+      if (recommendationInput) recommendationInput.value = book.notes || "";
+
+      // Store parsed book info for later use
+      (this.modal as any)._llmParsedBook = book;
+    } catch (error) {
+      console.error("LLM Vision error:", error);
+      alert("Failed to recognize with LLM Vision. Please try Tesseract OCR or check your API configuration.");
+
+      // Reset UI
+      this.hideElement("#ocr-progress");
+      this.showElement("#ocr-recognize");
+      if (llmService.isConfigured()) {
+        this.showElement("#ocr-llm-vision");
+      }
     }
   }
 

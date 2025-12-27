@@ -1,12 +1,15 @@
 import { storage } from '../modules/storage';
 import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
 import { importFromJSON } from '../modules/import';
+import { VisionUploadModal } from './vision-upload-modal';
 
 export class Navbar {
   private element: HTMLElement;
+  private onDataChange?: () => void;
 
-  constructor(containerId: string) {
+  constructor(containerId: string, onDataChange?: () => void) {
     this.element = document.getElementById(containerId)!;
+    this.onDataChange = onDataChange;
     this.render();
     this.attachEventListeners();
   }
@@ -46,6 +49,11 @@ export class Navbar {
               <button id="btn-export-md" class="btn-full">Export as Markdown</button>
               <button id="btn-import" class="btn-full">Import JSON</button>
               <input type="file" id="file-import" accept=".json" style="display: none;">
+            </div>
+
+            <div class="menu-section">
+              <h3>Add Books</h3>
+              <button id="btn-vision-upload" class="btn-full">📸 Add from Image (Vision)</button>
             </div>
 
             <div class="menu-section">
@@ -91,9 +99,12 @@ export class Navbar {
             </div>
 
             <div class="api-key-section">
-              <h3>LLM API (Optional)</h3>
+              <h3>LLM Vision API (Optional)</h3>
               <p class="help-text">
-                Enhance Smart Paste with AI to parse any text format. Supports OpenAI, DeepSeek, and other OpenAI-compatible APIs.
+                For Vision-based book extraction from images. Requires vision-capable models.
+                <br>
+                <strong>Recommended:</strong> gpt-4o, gpt-4o-mini (OpenAI) or deepseek-chat (DeepSeek)
+                <br>
                 <a href="https://platform.openai.com/api-keys" target="_blank">Get OpenAI Key</a> |
                 <a href="https://platform.deepseek.com/api_keys" target="_blank">Get DeepSeek Key</a>
               </p>
@@ -109,6 +120,27 @@ export class Navbar {
               <input type="text" id="input-llm-model" class="input-full"
                      placeholder="gpt-4o-mini"
                      value="${storage.getLLMModel() || ""}">
+            </div>
+
+            <div class="api-key-section">
+              <h3>LLM Text API (Optional)</h3>
+              <p class="help-text">
+                For Smart Paste text parsing only. Use a cheaper model to save costs.
+                <br>
+                <strong>Budget-friendly:</strong> gpt-4o-mini, deepseek-chat, or leave empty to use Vision API
+              </p>
+              <label>API Endpoint (optional, fallback to Vision API if empty):</label>
+              <input type="text" id="input-llm-text-endpoint" class="input-full"
+                     placeholder="https://api.openai.com/v1/chat/completions"
+                     value="${storage.getLLMTextApiEndpoint() || ""}">
+              <label>API Key (optional):</label>
+              <input type="text" id="input-llm-text-key" class="input-full"
+                     placeholder="sk-..."
+                     value="${storage.getLLMTextApiKey() || ""}">
+              <label>Model (optional):</label>
+              <input type="text" id="input-llm-text-model" class="input-full"
+                     placeholder="gpt-4o-mini"
+                     value="${storage.getLLMTextModel() || ""}">
             </div>
 
             <div class="help-box">
@@ -175,6 +207,17 @@ export class Navbar {
       }
     });
 
+    // Vision Upload
+    document.getElementById('btn-vision-upload')?.addEventListener('click', () => {
+      this.hideModal('menu-modal');
+      const visionModal = new VisionUploadModal(() => {
+        if (this.onDataChange) {
+          this.onDataChange();
+        }
+      });
+      visionModal.show();
+    });
+
     // API Key
     document.getElementById('btn-api-key')?.addEventListener('click', () => {
       this.hideModal('menu-modal');
@@ -203,12 +246,24 @@ export class Navbar {
         const llmModelInput = document.getElementById(
           "input-llm-model"
         ) as HTMLInputElement;
+        const llmTextEndpointInput = document.getElementById(
+          "input-llm-text-endpoint"
+        ) as HTMLInputElement;
+        const llmTextKeyInput = document.getElementById(
+          "input-llm-text-key"
+        ) as HTMLInputElement;
+        const llmTextModelInput = document.getElementById(
+          "input-llm-text-model"
+        ) as HTMLInputElement;
 
         const googleKey = googleInput.value.trim();
         const isbndbKey = isbndbInput.value.trim();
         const llmEndpoint = llmEndpointInput.value.trim();
         const llmKey = llmKeyInput.value.trim();
         const llmModel = llmModelInput.value.trim();
+        const llmTextEndpoint = llmTextEndpointInput.value.trim();
+        const llmTextKey = llmTextKeyInput.value.trim();
+        const llmTextModel = llmTextModelInput.value.trim();
 
         if (googleKey) {
           storage.setGoogleBooksApiKey(googleKey);
@@ -228,6 +283,18 @@ export class Navbar {
 
         if (llmModel) {
           storage.setLLMModel(llmModel);
+        }
+
+        if (llmTextEndpoint) {
+          storage.setLLMTextApiEndpoint(llmTextEndpoint);
+        }
+
+        if (llmTextKey) {
+          storage.setLLMTextApiKey(llmTextKey);
+        }
+
+        if (llmTextModel) {
+          storage.setLLMTextModel(llmTextModel);
         }
 
         alert("API keys saved successfully!");

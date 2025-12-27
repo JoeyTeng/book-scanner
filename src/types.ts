@@ -28,6 +28,9 @@ export interface StorageData {
     llmApiEndpoint?: string;
     llmApiKey?: string;
     llmModel?: string;
+    llmTextApiEndpoint?: string;
+    llmTextApiKey?: string;
+    llmTextModel?: string;
   };
 }
 

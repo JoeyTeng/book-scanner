@@ -202,6 +202,51 @@ class Storage {
   }
 
   /**
+   * Get LLM Text API endpoint (for text parsing only)
+   */
+  getLLMTextApiEndpoint(): string | undefined {
+    return this.data.settings.llmTextApiEndpoint;
+  }
+
+  /**
+   * Set LLM Text API endpoint
+   */
+  setLLMTextApiEndpoint(endpoint: string): void {
+    this.data.settings.llmTextApiEndpoint = endpoint;
+    this.save();
+  }
+
+  /**
+   * Get LLM Text API key (for text parsing only)
+   */
+  getLLMTextApiKey(): string | undefined {
+    return this.data.settings.llmTextApiKey;
+  }
+
+  /**
+   * Set LLM Text API key
+   */
+  setLLMTextApiKey(apiKey: string): void {
+    this.data.settings.llmTextApiKey = apiKey;
+    this.save();
+  }
+
+  /**
+   * Get LLM Text model (for text parsing only)
+   */
+  getLLMTextModel(): string | undefined {
+    return this.data.settings.llmTextModel;
+  }
+
+  /**
+   * Set LLM Text model
+   */
+  setLLMTextModel(model: string): void {
+    this.data.settings.llmTextModel = model;
+    this.save();
+  }
+
+  /**
    * Clear all data
    */
   clear(): void {

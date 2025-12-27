@@ -90,13 +90,13 @@ export class BookForm {
               <div class="button-group">
                 <button id="btn-smart-paste" class="btn-secondary">Parse & Fill</button>
                 ${
-                  llmService.isConfigured()
+                  llmService.isTextConfigured()
                     ? '<button id="btn-llm-parse" class="btn-secondary">✨ Parse with LLM</button>'
                     : ""
                 }
               </div>
               ${
-                !llmService.isConfigured()
+                !llmService.isTextConfigured()
                   ? '<p class="hint-text">Tip: Configure LLM API in settings for AI-powered parsing</p>'
                   : ""
               }

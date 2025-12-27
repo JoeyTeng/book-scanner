@@ -17,7 +17,9 @@ export class App {
 
   init(): void {
     // Initialize components
-    new Navbar("navbar");
+    new Navbar("navbar", () => {
+      this.bookList.render();
+    });
 
     this.bookForm = new BookForm(() => {
       this.bookList.render();
