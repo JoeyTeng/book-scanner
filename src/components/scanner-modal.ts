@@ -55,8 +55,8 @@ export class ScannerModal {
 
     // OCR button
     if (onOCRClick) {
-      this.modalElement.querySelector('#btn-ocr-scan')?.addEventListener('click', () => {
-        this.hide();
+      this.modalElement.querySelector('#btn-ocr-scan')?.addEventListener('click', async () => {
+        await this.hide();
         onOCRClick();
       });
     }
