@@ -155,10 +155,6 @@
 }
 
 @media (min-width: 768px) {
-  .fab {
-    display: none;
-  }
-
   .search-bar {
     display: flex;
     gap: var(--spacing-md);

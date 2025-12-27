@@ -4,6 +4,24 @@ import { BARCODE_FORMATS } from '../config';
 export class BarcodeScanner {
   private html5QrCode: Html5Qrcode | null = null;
   private isScanning = false;
+  private availableCameras: { id: string; label: string }[] = [];
+
+  /**
+   * Get available cameras
+   */
+  async getCameras(): Promise<{ id: string; label: string }[]> {
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      this.availableCameras = devices.map(device => ({
+        id: device.id,
+        label: device.label || `Camera ${device.id.substring(0, 8)}`
+      }));
+      return this.availableCameras;
+    } catch (error) {
+      console.error('Failed to get cameras:', error);
+      return [];
+    }
+  }
 
   /**
    * Start scanning
@@ -11,7 +29,8 @@ export class BarcodeScanner {
   async start(
     elementId: string,
     onSuccess: (decodedText: string) => void,
-    onError?: (error: string) => void
+    onError?: (error: string) => void,
+    cameraId?: string
   ): Promise<void> {
     if (this.isScanning) {
       console.warn('Scanner is already running');
@@ -30,11 +49,10 @@ export class BarcodeScanner {
         disableFlip: false
       };
 
-      // Start with basic constraints to ensure compatibility
-      // Advanced features will be applied after camera starts
-      const cameraConstraints = {
-        facingMode: 'environment'
-      };
+      // Use specific camera ID if provided, otherwise use environment-facing camera
+      const cameraConstraints = cameraId
+        ? { deviceId: { exact: cameraId } }
+        : { facingMode: "environment" };
 
       await this.html5QrCode.start(
         cameraConstraints as any,

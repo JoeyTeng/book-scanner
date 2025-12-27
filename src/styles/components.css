@@ -634,6 +634,24 @@
 }
 
 /* Scanner */
+.camera-selector {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+}
+
+.camera-selector label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.camera-selector select {
+  width: 100%;
+}
+
 .scanner-tips {
   margin-top: var(--spacing-lg);
   text-align: center;

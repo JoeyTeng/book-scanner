@@ -6,6 +6,8 @@ export class ScannerModal {
   private modalElement: HTMLDivElement | null = null;
   private onScanSuccess: (isbn: string) => void;
   private onTitleSearch?: (title: string) => void;
+  private cameras: { id: string; label: string }[] = [];
+  private selectedCameraId?: string;
 
   constructor(onScanSuccess: (isbn: string) => void) {
     this.scanner = new BarcodeScanner();
@@ -18,6 +20,9 @@ export class ScannerModal {
   ): Promise<void> {
     this.onTitleSearch = onTitleSearch;
 
+    // Get available cameras
+    this.cameras = await this.scanner.getCameras();
+
     // Create modal
     this.modalElement = document.createElement("div");
     this.modalElement.className = "modal";
@@ -28,6 +33,18 @@ export class ScannerModal {
           <button class="btn-close" id="btn-close-scanner" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
+          ${this.cameras.length > 1 ? `
+            <div class="camera-selector">
+              <label for="camera-select">Select Camera:</label>
+              <select id="camera-select" class="input-full">
+                ${this.cameras.map((cam, idx) => `
+                  <option value="${cam.id}" ${idx === 0 ? 'selected' : ''}>
+                    ${cam.label}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+          ` : ''}
           <div id="scanner-reader" style="width: 100%;"></div>
           <div class="scanner-tips">
             <p>Position the barcode in the center of the frame</p>
@@ -87,6 +104,15 @@ export class ScannerModal {
         });
     }
 
+    // Camera selector change handler
+    if (this.cameras.length > 1) {
+      const cameraSelect = this.modalElement.querySelector("#camera-select") as HTMLSelectElement;
+      cameraSelect?.addEventListener("change", async () => {
+        this.selectedCameraId = cameraSelect.value;
+        await this.restartScanner();
+      });
+    }
+
     this.modalElement.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).classList.contains("modal")) {
         this.hide();
@@ -94,6 +120,10 @@ export class ScannerModal {
     });
 
     // Start scanner
+    await this.startScanner();
+  }
+
+  private async startScanner(): Promise<void> {
     try {
       await this.scanner.start(
         "scanner-reader",
@@ -103,12 +133,18 @@ export class ScannerModal {
         (error) => {
           console.error("Scanner error:", error);
           alert(`Camera error: ${error}`);
-        }
+        },
+        this.selectedCameraId
       );
     } catch (error) {
       console.error("Failed to start scanner:", error);
       alert("Failed to access camera. Please check permissions.");
     }
+  }
+
+  private async restartScanner(): Promise<void> {
+    await this.scanner.stop();
+    await this.startScanner();
   }
 
   private handleScanSuccess(isbn: string): void {
