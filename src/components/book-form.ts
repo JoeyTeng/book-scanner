@@ -4,6 +4,7 @@ import { generateUUID } from '../utils/uuid';
 import { aggregateBookData } from '../modules/api/aggregator';
 import { generateExternalLinks } from '../modules/api/external-links';
 import { parseSmartPaste } from '../utils/text-parser';
+import { llmService } from "../modules/llm";
 
 export class BookForm {
   private modalElement: HTMLDivElement | null = null;
@@ -86,7 +87,19 @@ export class BookForm {
               <h3>Smart Paste</h3>
               <textarea id="smart-paste-input" class="textarea-full"
                         placeholder="Paste book information here (Title: xxx, Author: xxx, ISBN: xxx)"></textarea>
-              <button id="btn-smart-paste" class="btn-secondary">Parse & Fill</button>
+              <div class="button-group">
+                <button id="btn-smart-paste" class="btn-secondary">Parse & Fill</button>
+                ${
+                  llmService.isConfigured()
+                    ? '<button id="btn-llm-parse" class="btn-secondary">✨ Parse with LLM</button>'
+                    : ""
+                }
+              </div>
+              ${
+                !llmService.isConfigured()
+                  ? '<p class="hint-text">Tip: Configure LLM API in settings for AI-powered parsing</p>'
+                  : ""
+              }
             </div>
             <div class="divider">OR</div>
           `
@@ -352,41 +365,165 @@ export class BookForm {
       });
     });
 
-    // Smart paste
+    // Smart paste - rule-based parser only
     this.modalElement
       ?.querySelector("#btn-smart-paste")
-      ?.addEventListener("click", () => {
+      ?.addEventListener("click", async () => {
         const textarea = this.modalElement?.querySelector(
           "#smart-paste-input"
         ) as HTMLTextAreaElement;
-        const parsed = parseSmartPaste(textarea.value);
+        const text = textarea.value;
 
-        if (parsed.isbn)
-          (
-            this.modalElement?.querySelector("#input-isbn") as HTMLInputElement
-          ).value = parsed.isbn;
-        if (parsed.title)
-          (
-            this.modalElement?.querySelector("#input-title") as HTMLInputElement
-          ).value = parsed.title;
-        if (parsed.author)
-          (
-            this.modalElement?.querySelector(
-              "#input-author"
-            ) as HTMLInputElement
-          ).value = parsed.author;
-        if (parsed.publisher)
-          (
-            this.modalElement?.querySelector(
-              "#input-publisher"
-            ) as HTMLInputElement
-          ).value = parsed.publisher;
-        if (parsed.publishDate)
-          (
-            this.modalElement?.querySelector(
-              "#input-publish-date"
-            ) as HTMLInputElement
-          ).value = parsed.publishDate;
+        if (!text.trim()) return;
+
+        const button = this.modalElement?.querySelector(
+          "#btn-smart-paste"
+        ) as HTMLButtonElement;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Parsing...";
+
+        try {
+          // Use rule-based parser only
+          const parsed = parseSmartPaste(text);
+
+          // Fill form fields
+          if (parsed.isbn)
+            (
+              this.modalElement?.querySelector(
+                "#input-isbn"
+              ) as HTMLInputElement
+            ).value = parsed.isbn;
+          if (parsed.title)
+            (
+              this.modalElement?.querySelector(
+                "#input-title"
+              ) as HTMLInputElement
+            ).value = parsed.title;
+          if (parsed.author)
+            (
+              this.modalElement?.querySelector(
+                "#input-author"
+              ) as HTMLInputElement
+            ).value = parsed.author;
+          if (parsed.publisher)
+            (
+              this.modalElement?.querySelector(
+                "#input-publisher"
+              ) as HTMLInputElement
+            ).value = parsed.publisher;
+          if (parsed.publishDate)
+            (
+              this.modalElement?.querySelector(
+                "#input-publish-date"
+              ) as HTMLInputElement
+            ).value = parsed.publishDate;
+          if (parsed.cover)
+            (
+              this.modalElement?.querySelector(
+                "#input-cover"
+              ) as HTMLInputElement
+            ).value = parsed.cover;
+          if (parsed.notes)
+            (
+              this.modalElement?.querySelector(
+                "#input-notes"
+              ) as HTMLTextAreaElement
+            ).value = parsed.notes;
+
+          // Keep textarea content so user can try LLM parsing
+        } catch (error) {
+          console.error("Smart paste error:", error);
+          alert("Failed to parse book information. Please check the format.");
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      });
+
+    // LLM parse - separate button
+    this.modalElement
+      ?.querySelector("#btn-llm-parse")
+      ?.addEventListener("click", async () => {
+        const textarea = this.modalElement?.querySelector(
+          "#smart-paste-input"
+        ) as HTMLTextAreaElement;
+        const text = textarea.value;
+
+        if (!text.trim()) return;
+
+        const button = this.modalElement?.querySelector(
+          "#btn-llm-parse"
+        ) as HTMLButtonElement;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Parsing with LLM...";
+
+        try {
+          // Use LLM parser
+          const parsed = await llmService.parseBookInfo(text);
+
+          if (!parsed) {
+            alert(
+              "LLM failed to extract book information. Please check the text or your API configuration."
+            );
+            return;
+          }
+
+          // Fill form fields
+          if (parsed.isbn)
+            (
+              this.modalElement?.querySelector(
+                "#input-isbn"
+              ) as HTMLInputElement
+            ).value = parsed.isbn;
+          if (parsed.title)
+            (
+              this.modalElement?.querySelector(
+                "#input-title"
+              ) as HTMLInputElement
+            ).value = parsed.title;
+          if (parsed.author)
+            (
+              this.modalElement?.querySelector(
+                "#input-author"
+              ) as HTMLInputElement
+            ).value = parsed.author;
+          if (parsed.publisher)
+            (
+              this.modalElement?.querySelector(
+                "#input-publisher"
+              ) as HTMLInputElement
+            ).value = parsed.publisher;
+          if (parsed.publishDate)
+            (
+              this.modalElement?.querySelector(
+                "#input-publish-date"
+              ) as HTMLInputElement
+            ).value = parsed.publishDate;
+          if (parsed.cover)
+            (
+              this.modalElement?.querySelector(
+                "#input-cover"
+              ) as HTMLInputElement
+            ).value = parsed.cover;
+          if (parsed.notes)
+            (
+              this.modalElement?.querySelector(
+                "#input-notes"
+              ) as HTMLTextAreaElement
+            ).value = parsed.notes;
+
+          // Keep textarea content so user can try rule-based parsing
+        } catch (error) {
+          console.error("LLM parse error:", error);
+          alert(
+            "Failed to parse with LLM. Please check your API configuration."
+          );
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
       });
 
     // Search by title button (when ISBN fails)

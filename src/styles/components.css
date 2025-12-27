@@ -608,6 +608,16 @@
   margin-bottom: var(--spacing-md);
 }
 
+.smart-paste-section .button-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.smart-paste-section .button-group button {
+  flex: 1;
+}
+
 .divider {
   text-align: center;
   margin: var(--spacing-lg) 0;

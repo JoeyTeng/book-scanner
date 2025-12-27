@@ -157,6 +157,51 @@ class Storage {
   }
 
   /**
+   * Get LLM API endpoint
+   */
+  getLLMApiEndpoint(): string | undefined {
+    return this.data.settings.llmApiEndpoint;
+  }
+
+  /**
+   * Set LLM API endpoint
+   */
+  setLLMApiEndpoint(endpoint: string): void {
+    this.data.settings.llmApiEndpoint = endpoint;
+    this.save();
+  }
+
+  /**
+   * Get LLM API key
+   */
+  getLLMApiKey(): string | undefined {
+    return this.data.settings.llmApiKey;
+  }
+
+  /**
+   * Set LLM API key
+   */
+  setLLMApiKey(apiKey: string): void {
+    this.data.settings.llmApiKey = apiKey;
+    this.save();
+  }
+
+  /**
+   * Get LLM model
+   */
+  getLLMModel(): string | undefined {
+    return this.data.settings.llmModel;
+  }
+
+  /**
+   * Set LLM model
+   */
+  setLLMModel(model: string): void {
+    this.data.settings.llmModel = model;
+    this.save();
+  }
+
+  /**
    * Clear all data
    */
   clear(): void {

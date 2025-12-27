@@ -25,6 +25,9 @@ export interface StorageData {
     categories: string[];
     googleBooksApiKey?: string;
     isbndbApiKey?: string;
+    llmApiEndpoint?: string;
+    llmApiKey?: string;
+    llmModel?: string;
   };
 }
 

@@ -90,6 +90,27 @@ export class Navbar {
                      value="${storage.getISBNdbApiKey() || ""}">
             </div>
 
+            <div class="api-key-section">
+              <h3>LLM API (Optional)</h3>
+              <p class="help-text">
+                Enhance Smart Paste with AI to parse any text format. Supports OpenAI, DeepSeek, and other OpenAI-compatible APIs.
+                <a href="https://platform.openai.com/api-keys" target="_blank">Get OpenAI Key</a> |
+                <a href="https://platform.deepseek.com/api_keys" target="_blank">Get DeepSeek Key</a>
+              </p>
+              <label>API Endpoint:</label>
+              <input type="text" id="input-llm-endpoint" class="input-full"
+                     placeholder="https://api.openai.com/v1/chat/completions"
+                     value="${storage.getLLMApiEndpoint() || ""}">
+              <label>API Key:</label>
+              <input type="text" id="input-llm-key" class="input-full"
+                     placeholder="sk-..."
+                     value="${storage.getLLMApiKey() || ""}">
+              <label>Model:</label>
+              <input type="text" id="input-llm-model" class="input-full"
+                     placeholder="gpt-4o-mini"
+                     value="${storage.getLLMModel() || ""}">
+            </div>
+
             <div class="help-box">
               <strong>Free APIs (no key required):</strong>
               <ul>
@@ -173,9 +194,21 @@ export class Navbar {
         const isbndbInput = document.getElementById(
           "input-isbndb-api-key"
         ) as HTMLInputElement;
+        const llmEndpointInput = document.getElementById(
+          "input-llm-endpoint"
+        ) as HTMLInputElement;
+        const llmKeyInput = document.getElementById(
+          "input-llm-key"
+        ) as HTMLInputElement;
+        const llmModelInput = document.getElementById(
+          "input-llm-model"
+        ) as HTMLInputElement;
 
         const googleKey = googleInput.value.trim();
         const isbndbKey = isbndbInput.value.trim();
+        const llmEndpoint = llmEndpointInput.value.trim();
+        const llmKey = llmKeyInput.value.trim();
+        const llmModel = llmModelInput.value.trim();
 
         if (googleKey) {
           storage.setGoogleBooksApiKey(googleKey);
@@ -183,6 +216,18 @@ export class Navbar {
 
         if (isbndbKey) {
           storage.setISBNdbApiKey(isbndbKey);
+        }
+
+        if (llmEndpoint) {
+          storage.setLLMApiEndpoint(llmEndpoint);
+        }
+
+        if (llmKey) {
+          storage.setLLMApiKey(llmKey);
+        }
+
+        if (llmModel) {
+          storage.setLLMModel(llmModel);
         }
 
         alert("API keys saved successfully!");
