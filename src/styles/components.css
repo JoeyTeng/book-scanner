@@ -415,6 +415,10 @@
   overflow-y: auto;
 }
 
+.modal.active {
+  display: flex;
+}
+
 .modal-content {
   background: var(--color-bg);
   border-radius: var(--border-radius);
