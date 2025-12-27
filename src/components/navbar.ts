@@ -1,0 +1,191 @@
+import { storage } from '../modules/storage';
+import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
+import { importFromJSON } from '../modules/import';
+
+export class Navbar {
+  private element: HTMLElement;
+
+  constructor(containerId: string) {
+    this.element = document.getElementById(containerId)!;
+    this.render();
+    this.attachEventListeners();
+  }
+
+  private render(): void {
+    this.element.innerHTML = `
+      <div class="navbar">
+        <div class="navbar-brand">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span>Book Scanner</span>
+        </div>
+        <div class="navbar-actions">
+          <button id="btn-menu" class="btn-icon" aria-label="Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="menu-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Menu</h2>
+            <button class="btn-close" id="btn-close-menu" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="menu-section">
+              <h3>Data Management</h3>
+              <button id="btn-export-json" class="btn-full">Export as JSON</button>
+              <button id="btn-export-csv" class="btn-full">Export as CSV</button>
+              <button id="btn-export-md" class="btn-full">Export as Markdown</button>
+              <button id="btn-import" class="btn-full">Import JSON</button>
+              <input type="file" id="file-import" accept=".json" style="display: none;">
+            </div>
+
+            <div class="menu-section">
+              <h3>Settings</h3>
+              <button id="btn-api-key" class="btn-full">Set Google Books API Key</button>
+            </div>
+
+            <div class="menu-section">
+              <h3>Danger Zone</h3>
+              <button id="btn-clear-data" class="btn-full btn-danger">Clear All Data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="api-key-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Google Books API Key</h2>
+            <button class="btn-close" id="btn-close-api-key" aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="help-text">
+              To use Google Books API, you need to obtain a free API key.
+              <a href="https://console.cloud.google.com/apis/library/books.googleapis.com" target="_blank">Get API Key</a>
+            </p>
+            <input type="text" id="input-api-key" class="input-full" placeholder="Enter your API key"
+                   value="${storage.getGoogleBooksApiKey() || ''}">
+            <div class="modal-actions">
+              <button id="btn-save-api-key" class="btn-primary">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private attachEventListeners(): void {
+    // Menu toggle
+    document.getElementById('btn-menu')?.addEventListener('click', () => {
+      this.showModal('menu-modal');
+    });
+
+    document.getElementById('btn-close-menu')?.addEventListener('click', () => {
+      this.hideModal('menu-modal');
+    });
+
+    // Export
+    document.getElementById('btn-export-json')?.addEventListener('click', () => {
+      const json = exportAsJSON();
+      downloadFile(json, `books-${Date.now()}.json`, 'application/json');
+      this.hideModal('menu-modal');
+    });
+
+    document.getElementById('btn-export-csv')?.addEventListener('click', () => {
+      const csv = exportAsCSV();
+      downloadFile(csv, `books-${Date.now()}.csv`, 'text/csv');
+      this.hideModal('menu-modal');
+    });
+
+    document.getElementById('btn-export-md')?.addEventListener('click', () => {
+      const md = exportAsMarkdown();
+      downloadFile(md, `books-${Date.now()}.md`, 'text/markdown');
+      this.hideModal('menu-modal');
+    });
+
+    // Import
+    document.getElementById('btn-import')?.addEventListener('click', () => {
+      document.getElementById('file-import')?.click();
+    });
+
+    document.getElementById('file-import')?.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const result = await importFromJSON(file, 'merge');
+      alert(result.message);
+
+      if (result.success) {
+        window.location.reload();
+      }
+    });
+
+    // API Key
+    document.getElementById('btn-api-key')?.addEventListener('click', () => {
+      this.hideModal('menu-modal');
+      this.showModal('api-key-modal');
+    });
+
+    document.getElementById('btn-close-api-key')?.addEventListener('click', () => {
+      this.hideModal('api-key-modal');
+    });
+
+    document.getElementById('btn-save-api-key')?.addEventListener('click', () => {
+      const input = document.getElementById('input-api-key') as HTMLInputElement;
+      const apiKey = input.value.trim();
+
+      if (apiKey) {
+        storage.setGoogleBooksApiKey(apiKey);
+        alert('API key saved successfully!');
+        this.hideModal('api-key-modal');
+      }
+    });
+
+    // Clear data
+    document.getElementById('btn-clear-data')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to delete all data? This action cannot be undone.')) {
+        storage.clear();
+        this.hideModal('menu-modal');
+        window.location.reload();
+      }
+    });
+
+    // Close modals on background click
+    document.getElementById('menu-modal')?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).classList.contains('modal')) {
+        this.hideModal('menu-modal');
+      }
+    });
+
+    document.getElementById('api-key-modal')?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).classList.contains('modal')) {
+        this.hideModal('api-key-modal');
+      }
+    });
+  }
+
+  private showModal(id: string): void {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  private hideModal(id: string): void {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "book-scanner",
+  "version": "1.0.0",
+  "description": "A static web app for scanning book barcodes and managing book collections",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "html5-qrcode": "^2.3.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  },
+  "keywords": [
+    "book",
+    "scanner",
+    "barcode",
+    "isbn",
+    "library"
+  ],
+  "author": "Xuanwo",
+  "license": "MIT"
+}

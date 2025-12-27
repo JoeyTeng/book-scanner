@@ -1,0 +1,17 @@
+import type { ExternalLinks } from '../../types';
+
+/**
+ * Generate external search links for a book
+ */
+export function generateExternalLinks(isbn?: string, title?: string): ExternalLinks {
+  const query = isbn || (title ? encodeURIComponent(title) : '');
+
+  return {
+    amazonUS: `https://www.amazon.com/s?k=${query}`,
+    amazonUK: `https://www.amazon.co.uk/s?k=${query}`,
+    amazonJP: `https://www.amazon.co.jp/s?k=${query}`,
+    amazonCN: `https://www.amazon.cn/s?k=${query}`,
+    zlibrary: `https://z-lib.gs/s/?q=${query}`,
+    annasArchive: `https://annas-archive.org/search?q=${query}`
+  };
+}
