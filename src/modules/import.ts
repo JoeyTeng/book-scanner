@@ -61,18 +61,3 @@ export async function importFromJSON(
     };
   }
 }
-
-/**
- * Validate imported data
- */
-function validateBook(book: any): boolean {
-  return (
-    typeof book.id === 'string' &&
-    typeof book.isbn === 'string' &&
-    typeof book.title === 'string' &&
-    typeof book.author === 'string' &&
-    Array.isArray(book.categories) &&
-    Array.isArray(book.tags) &&
-    ['want', 'reading', 'read'].includes(book.status)
-  );
-}

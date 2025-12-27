@@ -1,5 +1,4 @@
 import { BarcodeScanner } from '../modules/scanner';
-import { aggregateBookData } from '../modules/api/aggregator';
 import { normalizeISBN } from '../utils/isbn';
 
 export class ScannerModal {

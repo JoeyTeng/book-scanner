@@ -4,7 +4,6 @@ import { generateUUID } from '../utils/uuid';
 import { aggregateBookData } from '../modules/api/aggregator';
 import { generateExternalLinks } from '../modules/api/external-links';
 import { parseSmartPaste } from '../utils/text-parser';
-import { STATUS_LABELS } from '../config';
 
 export class BookForm {
   private modalElement: HTMLDivElement | null = null;
@@ -195,7 +194,7 @@ export class BookForm {
     return `
       <div class="data-sources">
         <small>Available from:</small>
-        ${sources.map((s, i) => `
+        ${sources.map((s) => `
           <button type="button" class="btn-source" data-field="${field}" data-value="${s[field]}">
             ${s.source}: ${s[field]}
           </button>

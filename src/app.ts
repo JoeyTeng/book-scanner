@@ -6,16 +6,14 @@ import { BookForm } from './components/book-form';
 import { storage } from './modules/storage';
 
 export class App {
-  private navbar!: Navbar;
-  private searchBar!: SearchBar;
   private bookList!: BookList;
   private scannerModal!: ScannerModal;
   private bookForm!: BookForm;
 
   init(): void {
     // Initialize components
-    this.navbar = new Navbar('navbar');
-
+    new Navbar('navbar');
+    
     this.bookForm = new BookForm(() => {
       this.bookList.render();
     });
@@ -31,7 +29,7 @@ export class App {
       }
     );
 
-    this.searchBar = new SearchBar('search-bar', (filters, sortField, sortOrder) => {
+    new SearchBar('search-bar', (filters, sortField, sortOrder) => {
       this.bookList.updateFilters(filters, sortField, sortOrder);
     });
 

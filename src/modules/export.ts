@@ -1,4 +1,4 @@
-import type { ExportData, Book } from '../types';
+import type { ExportData } from '../types';
 import { APP_VERSION } from '../config';
 import { storage } from './storage';
 

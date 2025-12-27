@@ -4,7 +4,7 @@ import { storage } from '../modules/storage';
 import { formatISBN } from '../utils/isbn';
 
 export class BookCard {
-  static render(book: Book, onEdit: (book: Book) => void, onDelete: (id: string) => void): string {
+  static render(book: Book, _onEdit: (book: Book) => void, _onDelete: (id: string) => void): string {
     const statusColor = STATUS_COLORS[book.status];
     const statusLabel = STATUS_LABELS[book.status];
 
