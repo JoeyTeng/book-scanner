@@ -68,11 +68,18 @@ export class OCRService {
    */
   parseXiaohongshuContent(text: string): ParsedOCRResult {
     // Split into lines and clean
-    const lines = text
+    let lines = text
       .split("\n")
       .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      // Filter out noise
+      .filter((line) => line.length > 0);
+
+    // Filter out first line if it starts with time (phone UI)
+    if (lines.length > 0 && lines[0].match(/^\d{1,2}:\d{2}/)) {
+      lines = lines.slice(1);
+    }
+
+    // Filter out noise
+    lines = lines
       .filter((line) => !line.includes("小红书"))
       .filter((line) => !line.includes("Xiaohongshu"))
       .filter(
@@ -92,12 +99,20 @@ export class OCRService {
     let bookTitle = "";
     let titleLineIndex = 0;
 
-    // Priority 1: Find text with book title marks 《》
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes("《") && lines[i].includes("》")) {
-        const match = lines[i].match(/《(.+?)》/);
-        if (match) {
-          bookTitle = match[1].trim();
+    // Priority 1: Find text with book title marks 《》 (may span multiple lines)
+    const fullText = lines.join("");
+    const bookMarkMatch = fullText.match(/《([^》]+)》/);
+    if (bookMarkMatch) {
+      bookTitle = bookMarkMatch[1].trim();
+
+      // Find which line contains the closing 》
+      for (let i = 0; i < lines.length; i++) {
+        if (
+          lines
+            .slice(0, i + 1)
+            .join("")
+            .includes("》")
+        ) {
           titleLineIndex = i;
           break;
         }
@@ -113,6 +128,9 @@ export class OCRService {
       bookTitle = bookTitle.replace(/^#/, "").trim();
     }
 
+    // Remove unnecessary spaces in book title
+    bookTitle = this.cleanSpaces(bookTitle);
+
     // Extract recommendation (remaining text after title)
     const recommendation = lines
       .slice(titleLineIndex + 1)
@@ -123,6 +141,14 @@ export class OCRService {
       bookTitle: bookTitle || undefined,
       recommendation: recommendation || undefined
     };
+  }
+
+  /**
+   * Remove spaces between Chinese characters, keep spaces around English words
+   */
+  private cleanSpaces(text: string): string {
+    // Remove spaces between Chinese characters
+    return text.replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, "$1$2");
   }
 
   /**
