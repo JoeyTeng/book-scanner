@@ -9,6 +9,7 @@ export class BookForm {
   private modalElement: HTMLDivElement | null = null;
   private book: Book | null = null;
   private dataSources: BookDataSource[] = [];
+  private scannedIsbn: string = '';
   private onSave: () => void;
 
   constructor(onSave: () => void) {
@@ -17,6 +18,7 @@ export class BookForm {
 
   async showForNew(isbn?: string): Promise<void> {
     this.book = null;
+    this.scannedIsbn = isbn || '';
 
     // Fetch data if ISBN provided
     if (isbn) {
@@ -168,12 +170,18 @@ export class BookForm {
 
   private getInitialFromSources(): Partial<Book> {
     if (this.dataSources.length === 0) {
-      return { categories: [], tags: [], status: 'want', notes: '' };
+      return { 
+        isbn: this.scannedIsbn,
+        categories: [], 
+        tags: [], 
+        status: 'want', 
+        notes: '' 
+      };
     }
 
     const first = this.dataSources[0];
     return {
-      isbn: first.isbn || '',
+      isbn: this.scannedIsbn || first.isbn || '',
       title: first.title || '',
       author: first.author || '',
       publisher: first.publisher,
