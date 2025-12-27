@@ -34,6 +34,14 @@ export class OCRService {
         }
       });
 
+      // Configure OCR parameters for better Chinese recognition
+      await this.worker.setParameters({
+        tessedit_pageseg_mode: 1 as any, // Automatic page segmentation with OSD
+        preserve_interword_spaces: '1', // Better word spacing
+        tessedit_char_whitelist: '', // Allow all characters
+        classify_bln_numeric_mode: '0', // Better punctuation recognition
+      });
+
       this.isInitialized = true;
     } catch (error) {
       console.error('Failed to initialize OCR worker:', error);
@@ -100,22 +108,30 @@ export class OCRService {
     let titleLineIndex = 0;
 
     // Priority 1: Find text with book title marks 《》 (may span multiple lines)
+    // Also try common OCR mistakes: << >>, < >, 〈 〉
     const fullText = lines.join("");
-    const bookMarkMatch = fullText.match(/《([^》]+)》/);
-    if (bookMarkMatch) {
-      bookTitle = bookMarkMatch[1].trim();
+    const bookMarkPatterns = [
+      /《([^》]+)》/,           // Standard book marks
+      /<<([^>>]+)>>/,          // OCR mistake: English brackets
+      /<([^>]+)>/,             // OCR mistake: single angle bracket
+      /〈([^〉]+)〉/,           // OCR mistake: different Unicode brackets
+    ];
 
-      // Find which line contains the closing 》
-      for (let i = 0; i < lines.length; i++) {
-        if (
-          lines
-            .slice(0, i + 1)
-            .join("")
-            .includes("》")
-        ) {
-          titleLineIndex = i;
-          break;
+    for (const pattern of bookMarkPatterns) {
+      const match = fullText.match(pattern);
+      if (match) {
+        bookTitle = match[1].trim();
+
+        // Find which line contains the closing bracket
+        const closingChars = ['》', '>>', '>', '〉'];
+        for (let i = 0; i < lines.length; i++) {
+          const joinedText = lines.slice(0, i + 1).join("");
+          if (closingChars.some(char => joinedText.includes(char))) {
+            titleLineIndex = i;
+            break;
+          }
         }
+        break;
       }
     }
 
