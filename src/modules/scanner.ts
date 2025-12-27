@@ -30,20 +30,10 @@ export class BarcodeScanner {
         disableFlip: false
       };
 
-      // Advanced camera constraints for better focus and resolution
+      // Start with basic constraints to ensure compatibility
+      // Advanced features will be applied after camera starts
       const cameraConstraints = {
-        facingMode: 'environment',
-        advanced: [
-          // Request autofocus with continuous mode
-          { focusMode: 'continuous' },
-          // Enable torch/flash if available
-          { torch: false },
-          // Request higher resolution for better barcode detection
-          { width: { min: 1280, ideal: 1920, max: 3840 } },
-          { height: { min: 720, ideal: 1080, max: 2160 } },
-          // Enable zoom capabilities
-          { zoom: { ideal: 1.0 } }
-        ]
+        facingMode: 'environment'
       };
 
       await this.html5QrCode.start(
