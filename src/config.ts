@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 export const STORAGE_KEY = 'book-scanner-data';
 
 export const DEFAULT_CATEGORIES = [
@@ -7,6 +7,7 @@ export const DEFAULT_CATEGORIES = [
   'History',
   'Science',
   'Art',
+  'Wishlist',
   'Other'
 ];
 

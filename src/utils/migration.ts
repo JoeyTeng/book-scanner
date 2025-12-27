@@ -8,14 +8,14 @@ const migrations: Record<string, MigrationFunction> = {
     // Initial version, no migration needed
     return data;
   },
-  // Future migrations will be added here
-  // '1.1.0': (data: any) => {
-  //   // Example: Add new field with default value
-  //   data.books.forEach((book: any) => {
-  //     if (!book.newField) book.newField = 'default';
-  //   });
-  //   return data;
-  // }
+  '1.1.0': (data: any) => {
+    // Add recommendation field to books (optional, defaults to undefined)
+    // Add Wishlist category if not exists
+    if (!data.settings.categories.includes('Wishlist')) {
+      data.settings.categories.push('Wishlist');
+    }
+    return data;
+  }
 };
 
 /**

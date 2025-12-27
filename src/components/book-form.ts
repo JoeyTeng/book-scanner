@@ -10,15 +10,17 @@ export class BookForm {
   private book: Book | null = null;
   private dataSources: BookDataSource[] = [];
   private scannedIsbn: string = '';
+  private initialRecommendation: string = '';
   private onSave: () => void;
 
   constructor(onSave: () => void) {
     this.onSave = onSave;
   }
 
-  async showForNew(isbn?: string): Promise<void> {
+  async showForNew(isbn?: string, recommendation?: string): Promise<void> {
     this.book = null;
     this.scannedIsbn = isbn || '';
+    this.initialRecommendation = recommendation || '';
 
     // Fetch data if ISBN provided
     if (isbn) {
@@ -67,6 +69,7 @@ export class BookForm {
           ` : ''}
 
           <form id="book-form">
+            <!-- Always visible fields -->
             <div class="form-group">
               <label>ISBN *</label>
               <input type="text" id="input-isbn" class="input-full" required
@@ -89,24 +92,12 @@ export class BookForm {
             </div>
 
             <div class="form-group">
-              <label>Publisher</label>
-              <input type="text" id="input-publisher" class="input-full"
-                     value="${initialData.publisher || ''}">
-              ${this.renderDataSourceOptions('publisher')}
-            </div>
-
-            <div class="form-group">
-              <label>Publish Date</label>
-              <input type="text" id="input-publish-date" class="input-full"
-                     placeholder="YYYY or YYYY-MM-DD" value="${initialData.publishDate || ''}">
-              ${this.renderDataSourceOptions('publishDate')}
-            </div>
-
-            <div class="form-group">
-              <label>Cover URL</label>
-              <input type="url" id="input-cover" class="input-full"
-                     value="${initialData.cover || ''}">
-              ${this.renderDataSourceOptions('cover')}
+              <label>Reading Status</label>
+              <select id="input-status" class="input-full">
+                <option value="want" ${initialData.status === 'want' ? 'selected' : ''}>Want to Read</option>
+                <option value="reading" ${initialData.status === 'reading' ? 'selected' : ''}>Reading</option>
+                <option value="read" ${initialData.status === 'read' ? 'selected' : ''}>Read</option>
+              </select>
             </div>
 
             <div class="form-group">
@@ -124,32 +115,67 @@ export class BookForm {
                      placeholder="Add new category">
             </div>
 
-            <div class="form-group">
-              <label>Tags (comma-separated)</label>
-              <input type="text" id="input-tags" class="input-full"
-                     placeholder="e.g., programming, rust, reference"
-                     value="${initialData.tags?.join(', ') || ''}">
-            </div>
+            <!-- Collapsible: Additional Info -->
+            <details class="form-section">
+              <summary>Additional Info</summary>
+              <div class="form-section-content">
+                <div class="form-group">
+                  <label>Publisher</label>
+                  <input type="text" id="input-publisher" class="input-full"
+                         value="${initialData.publisher || ''}">
+                  ${this.renderDataSourceOptions('publisher')}
+                </div>
 
-            <div class="form-group">
-              <label>Reading Status</label>
-              <select id="input-status" class="input-full">
-                <option value="want" ${initialData.status === 'want' ? 'selected' : ''}>Want to Read</option>
-                <option value="reading" ${initialData.status === 'reading' ? 'selected' : ''}>Reading</option>
-                <option value="read" ${initialData.status === 'read' ? 'selected' : ''}>Read</option>
-              </select>
-            </div>
+                <div class="form-group">
+                  <label>Publish Date</label>
+                  <input type="text" id="input-publish-date" class="input-full"
+                         placeholder="YYYY or YYYY-MM-DD" value="${initialData.publishDate || ''}">
+                  ${this.renderDataSourceOptions('publishDate')}
+                </div>
 
-            <div class="form-group">
-              <label>Notes</label>
-              <textarea id="input-notes" class="textarea-full" rows="4">${initialData.notes || ''}</textarea>
-            </div>
+                <div class="form-group">
+                  <label>Cover URL</label>
+                  <input type="url" id="input-cover" class="input-full"
+                         value="${initialData.cover || ''}">
+                  ${this.renderDataSourceOptions('cover')}
+                </div>
 
-            ${!isEdit && initialData.isbn ? `
-              <div class="external-links">
-                <h3>Search on other platforms:</h3>
-                ${this.renderExternalLinks(initialData.isbn, initialData.title)}
+                <div class="form-group">
+                  <label>Tags (comma-separated)</label>
+                  <input type="text" id="input-tags" class="input-full"
+                         placeholder="e.g., programming, rust, reference"
+                         value="${initialData.tags?.join(', ') || ''}">
+                </div>
               </div>
+            </details>
+
+            <!-- Collapsible: Recommendation & Notes -->
+            <details class="form-section" open>
+              <summary>Recommendation & Notes</summary>
+              <div class="form-section-content">
+                <div class="form-group">
+                  <label>Recommendation <small>(from others)</small></label>
+                  <textarea id="input-recommendation" class="textarea-full" rows="3">${initialData.recommendation || ''}</textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>My Notes</label>
+                  <textarea id="input-notes" class="textarea-full" rows="4">${initialData.notes || ''}</textarea>
+                </div>
+              </div>
+            </details>
+
+            <!-- Collapsible: External Links -->
+            ${!isEdit && initialData.isbn ? `
+              <details class="form-section">
+                <summary>External Links (10)</summary>
+                <div class="form-section-content">
+                  <div class="external-links">
+                    <h3>Search on other platforms:</h3>
+                    ${this.renderExternalLinks(initialData.isbn, initialData.title)}
+                  </div>
+                </div>
+              </details>
             ` : ''}
 
             <div class="modal-actions">
@@ -170,12 +196,13 @@ export class BookForm {
 
   private getInitialFromSources(): Partial<Book> {
     if (this.dataSources.length === 0) {
-      return { 
+      return {
         isbn: this.scannedIsbn,
-        categories: [], 
-        tags: [], 
-        status: 'want', 
-        notes: '' 
+        categories: [],
+        tags: [],
+        status: "want",
+        recommendation: this.initialRecommendation || undefined,
+        notes: "",
       };
     }
 
@@ -190,6 +217,7 @@ export class BookForm {
       categories: [],
       tags: [],
       status: 'want',
+      recommendation: this.initialRecommendation || undefined,
       notes: ''
     };
   }
@@ -290,6 +318,7 @@ export class BookForm {
     const publishDate = (form.querySelector('#input-publish-date') as HTMLInputElement).value.trim();
     const cover = (form.querySelector('#input-cover') as HTMLInputElement).value.trim();
     const status = (form.querySelector('#input-status') as HTMLSelectElement).value as Book['status'];
+    const recommendation = (form.querySelector('#input-recommendation') as HTMLTextAreaElement).value.trim();
     const notes = (form.querySelector('#input-notes') as HTMLTextAreaElement).value.trim();
 
     const categories: string[] = [];
@@ -317,6 +346,7 @@ export class BookForm {
         categories,
         tags,
         status,
+        recommendation: recommendation || undefined,
         notes
       });
     } else {
@@ -332,6 +362,7 @@ export class BookForm {
         categories,
         tags,
         status,
+        recommendation: recommendation || undefined,
         notes,
         addedAt: Date.now(),
         updatedAt: Date.now(),

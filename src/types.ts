@@ -11,6 +11,7 @@ export interface Book {
   categories: string[];
   tags: string[];
   status: ReadingStatus;
+  recommendation?: string;
   notes: string;
   addedAt: number;
   updatedAt: number;

@@ -125,6 +125,137 @@
   color: var(--color-text);
 }
 
+.form-group label small {
+  font-weight: normal;
+  color: var(--color-text-secondary);
+}
+
+/* Collapsible Form Sections */
+.form-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  overflow: hidden;
+}
+
+.form-section summary {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  list-style: none;
+  user-select: none;
+}
+
+.form-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.form-section summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: var(--spacing-sm);
+  transition: transform 0.2s;
+}
+
+.form-section[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.form-section summary:hover {
+  background: var(--color-border);
+}
+
+.form-section-content {
+  padding: var(--spacing-md);
+}
+
+/* Scanner Actions */
+.scanner-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.scanner-actions button {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* OCR Upload Area */
+.ocr-upload-area {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ocr-upload-area:hover, .ocr-upload-area.drag-over {
+  border-color: var(--color-primary);
+  background: var(--color-bg-secondary);
+}
+
+.ocr-upload-area .upload-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-md);
+}
+
+.ocr-upload-area .upload-hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* OCR Preview */
+.ocr-preview {
+  margin: var(--spacing-lg) 0;
+  text-align: center;
+}
+
+.ocr-preview img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+}
+
+/* OCR Progress */
+.ocr-progress {
+  margin: var(--spacing-lg) 0;
+  text-align: center;
+}
+
+.progress-label {
+  margin-bottom: var(--spacing-md);
+  font-weight: 500;
+}
+
+.progress-bar {
+  height: 24px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s;
+  width: 0%;
+}
+
+.progress-percent {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* OCR Result */
+.ocr-result {
+  margin: var(--spacing-lg) 0;
+}
+
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;

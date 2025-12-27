@@ -11,7 +11,7 @@ export class ScannerModal {
     this.onScanSuccess = onScanSuccess;
   }
 
-  async show(): Promise<void> {
+  async show(onOCRClick?: () => void): Promise<void> {
     // Create modal
     this.modalElement = document.createElement('div');
     this.modalElement.className = 'modal';
@@ -27,7 +27,10 @@ export class ScannerModal {
             <p>Position the barcode in the center of the frame</p>
             <p>Or enter ISBN manually:</p>
             <input type="text" id="manual-isbn" class="input-full" placeholder="Enter ISBN">
-            <button id="btn-manual-submit" class="btn-primary">Submit</button>
+            <div class="scanner-actions">
+              <button id="btn-manual-submit" class="btn-primary">Submit</button>
+              <button id="btn-ocr-scan" class="btn btn-secondary">📸 Recognize Screenshot</button>
+            </div>
           </div>
         </div>
       </div>
@@ -49,6 +52,14 @@ export class ScannerModal {
         this.handleScanSuccess(isbn);
       }
     });
+
+    // OCR button
+    if (onOCRClick) {
+      this.modalElement.querySelector('#btn-ocr-scan')?.addEventListener('click', () => {
+        this.hide();
+        onOCRClick();
+      });
+    }
 
     this.modalElement.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).classList.contains('modal')) {

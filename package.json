@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "html5-qrcode": "^2.3.8"
+    "html5-qrcode": "^2.3.8",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
