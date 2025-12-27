@@ -50,7 +50,7 @@ export class Navbar {
 
             <div class="menu-section">
               <h3>Settings</h3>
-              <button id="btn-api-key" class="btn-full">Set Google Books API Key</button>
+              <button id="btn-api-key" class="btn-full">API Keys Settings</button>
             </div>
 
             <div class="menu-section">
@@ -82,7 +82,7 @@ export class Navbar {
             <div class="api-key-section">
               <h3>ISBNdb API (Optional)</h3>
               <p class="help-text">
-                Enhanced book data coverage. Free tier: 500 requests/month.
+                Enhanced book data coverage. Requires paid subscription.
                 <a href="https://isbndb.com/apidocs/v2" target="_blank">Get API Key →</a>
               </p>
               <input type="text" id="input-isbndb-api-key" class="input-full"
