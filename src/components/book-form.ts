@@ -218,8 +218,12 @@ export class BookForm {
       <div class="external-links-list">
         <a href="${links.amazonUS}" target="_blank">Amazon US</a>
         <a href="${links.amazonUK}" target="_blank">Amazon UK</a>
+        <a href="${links.amazonEU}" target="_blank">Amazon EU</a>
         <a href="${links.amazonJP}" target="_blank">Amazon JP</a>
         <a href="${links.amazonCN}" target="_blank">Amazon CN</a>
+        <a href="${links.douban}" target="_blank">豆瓣读书</a>
+        <a href="${links.dangdang}" target="_blank">当当网</a>
+        <a href="${links.jd}" target="_blank">京东</a>
         <a href="${links.zlibrary}" target="_blank">zlibrary</a>
         <a href="${links.annasArchive}" target="_blank">Anna's Archive</a>
       </div>

@@ -55,8 +55,12 @@ export type SortOrder = 'asc' | 'desc';
 export interface ExternalLinks {
   amazonUS: string;
   amazonUK: string;
+  amazonEU: string;
   amazonJP: string;
   amazonCN: string;
+  douban: string;
+  dangdang: string;
+  jd: string;
   zlibrary: string;
   annasArchive: string;
 }
