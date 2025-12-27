@@ -73,7 +73,7 @@ export class BarcodeScanner {
     try {
       // Get the video element created by html5-qrcode
       const videoElement = document.querySelector('#scanner-reader video') as HTMLVideoElement;
-      
+
       if (!videoElement || !videoElement.srcObject) {
         return;
       }

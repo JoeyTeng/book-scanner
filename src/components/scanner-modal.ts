@@ -5,16 +5,22 @@ export class ScannerModal {
   private scanner: BarcodeScanner;
   private modalElement: HTMLDivElement | null = null;
   private onScanSuccess: (isbn: string) => void;
+  private onTitleSearch?: (title: string) => void;
 
   constructor(onScanSuccess: (isbn: string) => void) {
     this.scanner = new BarcodeScanner();
     this.onScanSuccess = onScanSuccess;
   }
 
-  async show(onOCRClick?: () => void): Promise<void> {
+  async show(
+    onOCRClick?: () => void,
+    onTitleSearch?: (title: string) => void
+  ): Promise<void> {
+    this.onTitleSearch = onTitleSearch;
+
     // Create modal
-    this.modalElement = document.createElement('div');
-    this.modalElement.className = 'modal';
+    this.modalElement = document.createElement("div");
+    this.modalElement.className = "modal";
     this.modalElement.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
@@ -25,8 +31,9 @@ export class ScannerModal {
           <div id="scanner-reader" style="width: 100%;"></div>
           <div class="scanner-tips">
             <p>Position the barcode in the center of the frame</p>
-            <p>Or enter ISBN manually:</p>
-            <input type="text" id="manual-isbn" class="input-full" placeholder="Enter ISBN">
+            <p>Or enter manually:</p>
+            <input type="text" id="manual-isbn" class="input-full" placeholder="Enter ISBN or book title">
+            <p class="hint-text">Tip: You can also search by book title</p>
             <div class="scanner-actions">
               <button id="btn-manual-submit" class="btn-primary">Submit</button>
               <button id="btn-ocr-scan" class="btn btn-secondary">📸 Recognize Screenshot</button>
@@ -36,33 +43,52 @@ export class ScannerModal {
       </div>
     `;
 
-    document.getElementById('modal-container')?.appendChild(this.modalElement);
-    this.modalElement.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    document.getElementById("modal-container")?.appendChild(this.modalElement);
+    this.modalElement.style.display = "flex";
+    document.body.style.overflow = "hidden";
 
     // Attach event listeners
-    this.modalElement.querySelector('#btn-close-scanner')?.addEventListener('click', () => {
-      this.hide();
-    });
+    this.modalElement
+      .querySelector("#btn-close-scanner")
+      ?.addEventListener("click", () => {
+        this.hide();
+      });
 
-    this.modalElement.querySelector('#btn-manual-submit')?.addEventListener('click', () => {
-      const input = this.modalElement?.querySelector('#manual-isbn') as HTMLInputElement;
-      const isbn = input.value.trim();
-      if (isbn) {
-        this.handleScanSuccess(isbn);
-      }
-    });
+    this.modalElement
+      .querySelector("#btn-manual-submit")
+      ?.addEventListener("click", () => {
+        const input = this.modalElement?.querySelector(
+          "#manual-isbn"
+        ) as HTMLInputElement;
+        const value = input.value.trim();
+        if (value) {
+          // Detect if input is ISBN (only digits and hyphens) or title
+          if (/^[\d-]+$/.test(value)) {
+            // ISBN
+            this.handleScanSuccess(value);
+          } else if (this.onTitleSearch) {
+            // Book title
+            this.hide();
+            this.onTitleSearch(value);
+          } else {
+            // Fallback: treat as ISBN
+            this.handleScanSuccess(value);
+          }
+        }
+      });
 
     // OCR button
     if (onOCRClick) {
-      this.modalElement.querySelector('#btn-ocr-scan')?.addEventListener('click', async () => {
-        await this.hide();
-        onOCRClick();
-      });
+      this.modalElement
+        .querySelector("#btn-ocr-scan")
+        ?.addEventListener("click", async () => {
+          await this.hide();
+          onOCRClick();
+        });
     }
 
-    this.modalElement.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).classList.contains('modal')) {
+    this.modalElement.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).classList.contains("modal")) {
         this.hide();
       }
     });
@@ -70,18 +96,18 @@ export class ScannerModal {
     // Start scanner
     try {
       await this.scanner.start(
-        'scanner-reader',
+        "scanner-reader",
         (decodedText) => {
           this.handleScanSuccess(decodedText);
         },
         (error) => {
-          console.error('Scanner error:', error);
+          console.error("Scanner error:", error);
           alert(`Camera error: ${error}`);
         }
       );
     } catch (error) {
-      console.error('Failed to start scanner:', error);
-      alert('Failed to access camera. Please check permissions.');
+      console.error("Failed to start scanner:", error);
+      alert("Failed to access camera. Please check permissions.");
     }
   }
 
@@ -101,6 +127,6 @@ export class ScannerModal {
       this.modalElement = null;
     }
 
-    document.body.style.overflow = '';
+    document.body.style.overflow = "";
   }
 }

@@ -1,42 +1,77 @@
 import type { BookDataSource } from '../../types';
-import { searchGoogleBooks } from './google-books';
-import { searchOpenLibrary } from './open-library';
+import { searchGoogleBooks, searchGoogleBooksByTitle } from "./google-books";
+import { searchOpenLibrary, searchOpenLibraryByTitle } from "./open-library";
 import { normalizeISBN } from '../../utils/isbn';
 
 /**
- * Aggregate book data from multiple sources
+ * Aggregate book data from multiple sources by ISBN
  */
-export async function aggregateBookData(query: string): Promise<BookDataSource[]> {
+export async function aggregateBookData(
+  query: string
+): Promise<BookDataSource[]> {
   const normalizedQuery = normalizeISBN(query);
 
   try {
     // Fetch from both APIs in parallel
     const [googleResults, openLibraryResults] = await Promise.all([
       searchGoogleBooks(normalizedQuery),
-      searchOpenLibrary(normalizedQuery)
+      searchOpenLibrary(normalizedQuery),
     ]);
 
     // Combine and deduplicate results
     const allResults = [...googleResults, ...openLibraryResults];
 
-    // Simple deduplication by title similarity
-    const uniqueResults: BookDataSource[] = [];
-    const seenTitles = new Set<string>();
-
-    for (const result of allResults) {
-      const normalizedTitle = result.title?.toLowerCase().trim();
-
-      if (normalizedTitle && !seenTitles.has(normalizedTitle)) {
-        seenTitles.add(normalizedTitle);
-        uniqueResults.push(result);
-      }
-    }
-
-    return uniqueResults;
+    return deduplicateResults(allResults);
   } catch (error) {
-    console.error('Error aggregating book data:', error);
+    console.error("Error aggregating book data:", error);
     return [];
   }
+}
+
+/**
+ * Search books by title from multiple sources
+ */
+export async function searchBookByTitle(
+  title: string
+): Promise<BookDataSource[]> {
+  if (!title.trim()) {
+    return [];
+  }
+
+  try {
+    // Fetch from both APIs in parallel
+    const [googleResults, openLibraryResults] = await Promise.all([
+      searchGoogleBooksByTitle(title),
+      searchOpenLibraryByTitle(title),
+    ]);
+
+    // Combine and deduplicate results
+    const allResults = [...googleResults, ...openLibraryResults];
+
+    return deduplicateResults(allResults);
+  } catch (error) {
+    console.error("Error searching book by title:", error);
+    return [];
+  }
+}
+
+/**
+ * Deduplicate results by title similarity
+ */
+function deduplicateResults(results: BookDataSource[]): BookDataSource[] {
+  const uniqueResults: BookDataSource[] = [];
+  const seenTitles = new Set<string>();
+
+  for (const result of results) {
+    const normalizedTitle = result.title?.toLowerCase().trim();
+
+    if (normalizedTitle && !seenTitles.has(normalizedTitle)) {
+      seenTitles.add(normalizedTitle);
+      uniqueResults.push(result);
+    }
+  }
+
+  return uniqueResults;
 }
 
 /**

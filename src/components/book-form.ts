@@ -9,18 +9,24 @@ export class BookForm {
   private modalElement: HTMLDivElement | null = null;
   private book: Book | null = null;
   private dataSources: BookDataSource[] = [];
-  private scannedIsbn: string = '';
-  private initialRecommendation: string = '';
+  private scannedIsbn: string = "";
+  private initialRecommendation: string = "";
   private onSave: () => void;
+  private onTitleSearchRequest?: () => void;
 
   constructor(onSave: () => void) {
     this.onSave = onSave;
   }
 
-  async showForNew(isbn?: string, recommendation?: string): Promise<void> {
+  async showForNew(
+    isbn?: string,
+    recommendation?: string,
+    onTitleSearchRequest?: () => void
+  ): Promise<void> {
     this.book = null;
-    this.scannedIsbn = isbn || '';
-    this.initialRecommendation = recommendation || '';
+    this.scannedIsbn = isbn || "";
+    this.initialRecommendation = recommendation || "";
+    this.onTitleSearchRequest = onTitleSearchRequest;
 
     // Fetch data if ISBN provided
     if (isbn) {
@@ -43,22 +49,39 @@ export class BookForm {
     // Prepare initial values
     const initialData = this.book || this.getInitialFromSources();
 
-    this.modalElement = document.createElement('div');
-    this.modalElement.className = 'modal';
+    this.modalElement = document.createElement("div");
+    this.modalElement.className = "modal";
     this.modalElement.innerHTML = `
       <div class="modal-content modal-large">
         <div class="modal-header">
-          <h2>${isEdit ? 'Edit Book' : 'Add Book'}</h2>
+          <h2>${isEdit ? "Edit Book" : "Add Book"}</h2>
           <button class="btn-close" id="btn-close-form" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
-          ${this.dataSources.length > 0 ? `
+          ${
+            this.dataSources.length > 0
+              ? `
             <div class="info-box">
               Found ${this.dataSources.length} result(s). You can select values or edit manually.
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${!isEdit && this.dataSources.length === 0 ? `
+          ${
+            !isEdit && this.scannedIsbn && this.dataSources.length === 0
+              ? `
+            <div class="info-box warning-box">
+              <p>⚠️ No metadata found for ISBN: ${this.scannedIsbn}</p>
+              <button id="btn-search-by-title" class="btn btn-small">Try searching by title instead</button>
+            </div>
+          `
+              : ""
+          }
+
+          ${
+            !isEdit && this.dataSources.length === 0 && !this.scannedIsbn
+              ? `
             <div class="smart-paste-section">
               <h3>Smart Paste</h3>
               <textarea id="smart-paste-input" class="textarea-full"
@@ -66,50 +89,68 @@ export class BookForm {
               <button id="btn-smart-paste" class="btn-secondary">Parse & Fill</button>
             </div>
             <div class="divider">OR</div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <form id="book-form">
             <!-- Always visible fields -->
             <div class="form-group">
               <label>ISBN *</label>
               <input type="text" id="input-isbn" class="input-full" required
-                     value="${initialData.isbn || ''}" ${isEdit ? 'readonly' : ''}>
-              ${this.renderDataSourceOptions('isbn')}
+                     value="${initialData.isbn || ""}" ${
+      isEdit ? "readonly" : ""
+    }>
+              ${this.renderDataSourceOptions("isbn")}
             </div>
 
             <div class="form-group">
               <label>Title *</label>
               <input type="text" id="input-title" class="input-full" required
-                     value="${initialData.title || ''}">
-              ${this.renderDataSourceOptions('title')}
+                     value="${initialData.title || ""}">
+              ${this.renderDataSourceOptions("title")}
             </div>
 
             <div class="form-group">
               <label>Author *</label>
               <input type="text" id="input-author" class="input-full" required
-                     value="${initialData.author || ''}">
-              ${this.renderDataSourceOptions('author')}
+                     value="${initialData.author || ""}">
+              ${this.renderDataSourceOptions("author")}
             </div>
 
             <div class="form-group">
               <label>Reading Status</label>
               <select id="input-status" class="input-full">
-                <option value="want" ${initialData.status === 'want' ? 'selected' : ''}>Want to Read</option>
-                <option value="reading" ${initialData.status === 'reading' ? 'selected' : ''}>Reading</option>
-                <option value="read" ${initialData.status === 'read' ? 'selected' : ''}>Read</option>
+                <option value="want" ${
+                  initialData.status === "want" ? "selected" : ""
+                }>Want to Read</option>
+                <option value="reading" ${
+                  initialData.status === "reading" ? "selected" : ""
+                }>Reading</option>
+                <option value="read" ${
+                  initialData.status === "read" ? "selected" : ""
+                }>Read</option>
               </select>
             </div>
 
             <div class="form-group">
               <label>Categories</label>
               <div class="checkbox-group">
-                ${categories.map(cat => `
+                ${categories
+                  .map(
+                    (cat) => `
                   <label class="checkbox-label">
                     <input type="checkbox" name="category" value="${cat}"
-                           ${initialData.categories?.includes(cat) ? 'checked' : ''}>
+                           ${
+                             initialData.categories?.includes(cat)
+                               ? "checked"
+                               : ""
+                           }>
                     ${cat}
                   </label>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </div>
               <input type="text" id="input-new-category" class="input-full"
                      placeholder="Add new category">
@@ -122,29 +163,31 @@ export class BookForm {
                 <div class="form-group">
                   <label>Publisher</label>
                   <input type="text" id="input-publisher" class="input-full"
-                         value="${initialData.publisher || ''}">
-                  ${this.renderDataSourceOptions('publisher')}
+                         value="${initialData.publisher || ""}">
+                  ${this.renderDataSourceOptions("publisher")}
                 </div>
 
                 <div class="form-group">
                   <label>Publish Date</label>
                   <input type="text" id="input-publish-date" class="input-full"
-                         placeholder="YYYY or YYYY-MM-DD" value="${initialData.publishDate || ''}">
-                  ${this.renderDataSourceOptions('publishDate')}
+                         placeholder="YYYY or YYYY-MM-DD" value="${
+                           initialData.publishDate || ""
+                         }">
+                  ${this.renderDataSourceOptions("publishDate")}
                 </div>
 
                 <div class="form-group">
                   <label>Cover URL</label>
                   <input type="url" id="input-cover" class="input-full"
-                         value="${initialData.cover || ''}">
-                  ${this.renderDataSourceOptions('cover')}
+                         value="${initialData.cover || ""}">
+                  ${this.renderDataSourceOptions("cover")}
                 </div>
 
                 <div class="form-group">
                   <label>Tags (comma-separated)</label>
                   <input type="text" id="input-tags" class="input-full"
                          placeholder="e.g., programming, rust, reference"
-                         value="${initialData.tags?.join(', ') || ''}">
+                         value="${initialData.tags?.join(", ") || ""}">
                 </div>
               </div>
             </details>
@@ -155,41 +198,54 @@ export class BookForm {
               <div class="form-section-content">
                 <div class="form-group">
                   <label>Recommendation <small>(from others)</small></label>
-                  <textarea id="input-recommendation" class="textarea-full" rows="3">${initialData.recommendation || ''}</textarea>
+                  <textarea id="input-recommendation" class="textarea-full" rows="3">${
+                    initialData.recommendation || ""
+                  }</textarea>
                 </div>
 
                 <div class="form-group">
                   <label>My Notes</label>
-                  <textarea id="input-notes" class="textarea-full" rows="4">${initialData.notes || ''}</textarea>
+                  <textarea id="input-notes" class="textarea-full" rows="4">${
+                    initialData.notes || ""
+                  }</textarea>
                 </div>
               </div>
             </details>
 
             <!-- Collapsible: External Links -->
-            ${!isEdit && initialData.isbn ? `
+            ${
+              !isEdit && initialData.isbn
+                ? `
               <details class="form-section">
                 <summary>External Links (10)</summary>
                 <div class="form-section-content">
                   <div class="external-links">
                     <h3>Search on other platforms:</h3>
-                    ${this.renderExternalLinks(initialData.isbn, initialData.title)}
+                    ${this.renderExternalLinks(
+                      initialData.isbn,
+                      initialData.title
+                    )}
                   </div>
                 </div>
               </details>
-            ` : ''}
+            `
+                : ""
+            }
 
             <div class="modal-actions">
               <button type="button" class="btn-secondary" id="btn-cancel">Cancel</button>
-              <button type="submit" class="btn-primary">${isEdit ? 'Update' : 'Add'}</button>
+              <button type="submit" class="btn-primary">${
+                isEdit ? "Update" : "Add"
+              }</button>
             </div>
           </form>
         </div>
       </div>
     `;
 
-    document.getElementById('modal-container')?.appendChild(this.modalElement);
-    this.modalElement.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    document.getElementById("modal-container")?.appendChild(this.modalElement);
+    this.modalElement.style.display = "flex";
+    document.body.style.overflow = "hidden";
 
     this.attachEventListeners();
   }
@@ -208,33 +264,37 @@ export class BookForm {
 
     const first = this.dataSources[0];
     return {
-      isbn: this.scannedIsbn || first.isbn || '',
-      title: first.title || '',
-      author: first.author || '',
+      isbn: this.scannedIsbn || first.isbn || "",
+      title: first.title || "",
+      author: first.author || "",
       publisher: first.publisher,
       publishDate: first.publishDate,
       cover: first.cover,
       categories: [],
       tags: [],
-      status: 'want',
+      status: "want",
       recommendation: this.initialRecommendation || undefined,
-      notes: ''
+      notes: "",
     };
   }
 
   private renderDataSourceOptions(field: keyof BookDataSource): string {
-    const sources = this.dataSources.filter(s => s[field]);
+    const sources = this.dataSources.filter((s) => s[field]);
 
-    if (sources.length <= 1) return '';
+    if (sources.length <= 1) return "";
 
     return `
       <div class="data-sources">
         <small>Available from:</small>
-        ${sources.map((s) => `
+        ${sources
+          .map(
+            (s) => `
           <button type="button" class="btn-source" data-field="${field}" data-value="${s[field]}">
             ${s.source}: ${s[field]}
           </button>
-        `).join('')}
+        `
+          )
+          .join("")}
       </div>
     `;
   }
@@ -260,22 +320,31 @@ export class BookForm {
 
   private attachEventListeners(): void {
     // Close button
-    this.modalElement?.querySelector('#btn-close-form')?.addEventListener('click', () => {
-      this.hide();
-    });
+    this.modalElement
+      ?.querySelector("#btn-close-form")
+      ?.addEventListener("click", () => {
+        this.hide();
+      });
 
-    this.modalElement?.querySelector('#btn-cancel')?.addEventListener('click', () => {
-      this.hide();
-    });
+    this.modalElement
+      ?.querySelector("#btn-cancel")
+      ?.addEventListener("click", () => {
+        this.hide();
+      });
 
     // Data source selection
-    this.modalElement?.querySelectorAll('.btn-source').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    this.modalElement?.querySelectorAll(".btn-source").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
         const target = e.target as HTMLButtonElement;
         const field = target.dataset.field!;
         const value = target.dataset.value!;
 
-        const input = this.modalElement?.querySelector(`#input-${field.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase()}`) as HTMLInputElement;
+        const input = this.modalElement?.querySelector(
+          `#input-${field
+            .toLowerCase()
+            .replace(/([A-Z])/g, "-$1")
+            .toLowerCase()}`
+        ) as HTMLInputElement;
         if (input) {
           input.value = value;
         }
@@ -283,57 +352,124 @@ export class BookForm {
     });
 
     // Smart paste
-    this.modalElement?.querySelector('#btn-smart-paste')?.addEventListener('click', () => {
-      const textarea = this.modalElement?.querySelector('#smart-paste-input') as HTMLTextAreaElement;
-      const parsed = parseSmartPaste(textarea.value);
+    this.modalElement
+      ?.querySelector("#btn-smart-paste")
+      ?.addEventListener("click", () => {
+        const textarea = this.modalElement?.querySelector(
+          "#smart-paste-input"
+        ) as HTMLTextAreaElement;
+        const parsed = parseSmartPaste(textarea.value);
 
-      if (parsed.isbn) (this.modalElement?.querySelector('#input-isbn') as HTMLInputElement).value = parsed.isbn;
-      if (parsed.title) (this.modalElement?.querySelector('#input-title') as HTMLInputElement).value = parsed.title;
-      if (parsed.author) (this.modalElement?.querySelector('#input-author') as HTMLInputElement).value = parsed.author;
-      if (parsed.publisher) (this.modalElement?.querySelector('#input-publisher') as HTMLInputElement).value = parsed.publisher;
-      if (parsed.publishDate) (this.modalElement?.querySelector('#input-publish-date') as HTMLInputElement).value = parsed.publishDate;
-    });
+        if (parsed.isbn)
+          (
+            this.modalElement?.querySelector("#input-isbn") as HTMLInputElement
+          ).value = parsed.isbn;
+        if (parsed.title)
+          (
+            this.modalElement?.querySelector("#input-title") as HTMLInputElement
+          ).value = parsed.title;
+        if (parsed.author)
+          (
+            this.modalElement?.querySelector(
+              "#input-author"
+            ) as HTMLInputElement
+          ).value = parsed.author;
+        if (parsed.publisher)
+          (
+            this.modalElement?.querySelector(
+              "#input-publisher"
+            ) as HTMLInputElement
+          ).value = parsed.publisher;
+        if (parsed.publishDate)
+          (
+            this.modalElement?.querySelector(
+              "#input-publish-date"
+            ) as HTMLInputElement
+          ).value = parsed.publishDate;
+      });
+
+    // Search by title button (when ISBN fails)
+    this.modalElement
+      ?.querySelector("#btn-search-by-title")
+      ?.addEventListener("click", () => {
+        if (this.onTitleSearchRequest) {
+          this.hide();
+          this.onTitleSearchRequest();
+        }
+      });
 
     // Form submit
-    this.modalElement?.querySelector('#book-form')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      this.handleSubmit();
-    });
+    this.modalElement
+      ?.querySelector("#book-form")
+      ?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.handleSubmit();
+      });
 
     // Modal background click
-    this.modalElement?.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).classList.contains('modal')) {
+    this.modalElement?.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).classList.contains("modal")) {
         this.hide();
       }
     });
   }
 
   private handleSubmit(): void {
-    const form = this.modalElement?.querySelector('#book-form') as HTMLFormElement;
+    const form = this.modalElement?.querySelector(
+      "#book-form"
+    ) as HTMLFormElement;
 
-    const isbn = (form.querySelector('#input-isbn') as HTMLInputElement).value.trim();
-    const title = (form.querySelector('#input-title') as HTMLInputElement).value.trim();
-    const author = (form.querySelector('#input-author') as HTMLInputElement).value.trim();
-    const publisher = (form.querySelector('#input-publisher') as HTMLInputElement).value.trim();
-    const publishDate = (form.querySelector('#input-publish-date') as HTMLInputElement).value.trim();
-    const cover = (form.querySelector('#input-cover') as HTMLInputElement).value.trim();
-    const status = (form.querySelector('#input-status') as HTMLSelectElement).value as Book['status'];
-    const recommendation = (form.querySelector('#input-recommendation') as HTMLTextAreaElement).value.trim();
-    const notes = (form.querySelector('#input-notes') as HTMLTextAreaElement).value.trim();
+    const isbn = (
+      form.querySelector("#input-isbn") as HTMLInputElement
+    ).value.trim();
+    const title = (
+      form.querySelector("#input-title") as HTMLInputElement
+    ).value.trim();
+    const author = (
+      form.querySelector("#input-author") as HTMLInputElement
+    ).value.trim();
+    const publisher = (
+      form.querySelector("#input-publisher") as HTMLInputElement
+    ).value.trim();
+    const publishDate = (
+      form.querySelector("#input-publish-date") as HTMLInputElement
+    ).value.trim();
+    const cover = (
+      form.querySelector("#input-cover") as HTMLInputElement
+    ).value.trim();
+    const status = (form.querySelector("#input-status") as HTMLSelectElement)
+      .value as Book["status"];
+    const recommendation = (
+      form.querySelector("#input-recommendation") as HTMLTextAreaElement
+    ).value.trim();
+    const notes = (
+      form.querySelector("#input-notes") as HTMLTextAreaElement
+    ).value.trim();
 
     const categories: string[] = [];
-    form.querySelectorAll('input[name="category"]:checked').forEach((checkbox) => {
-      categories.push((checkbox as HTMLInputElement).value);
-    });
+    form
+      .querySelectorAll('input[name="category"]:checked')
+      .forEach((checkbox) => {
+        categories.push((checkbox as HTMLInputElement).value);
+      });
 
-    const newCategory = (form.querySelector('#input-new-category') as HTMLInputElement).value.trim();
+    const newCategory = (
+      form.querySelector("#input-new-category") as HTMLInputElement
+    ).value.trim();
     if (newCategory) {
       categories.push(newCategory);
       storage.addCategory(newCategory);
     }
 
-    const tagsInput = (form.querySelector('#input-tags') as HTMLInputElement).value.trim();
-    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+    const tagsInput = (
+      form.querySelector("#input-tags") as HTMLInputElement
+    ).value.trim();
+    const tags = tagsInput
+      ? tagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t)
+      : [];
 
     if (this.book) {
       // Update existing book
@@ -347,7 +483,7 @@ export class BookForm {
         tags,
         status,
         recommendation: recommendation || undefined,
-        notes
+        notes,
       });
     } else {
       // Add new book
@@ -366,7 +502,7 @@ export class BookForm {
         notes,
         addedAt: Date.now(),
         updatedAt: Date.now(),
-        source: this.dataSources.map(s => s.source)
+        source: this.dataSources.map((s) => s.source),
       };
 
       storage.addBook(newBook);
@@ -381,6 +517,6 @@ export class BookForm {
       this.modalElement.remove();
       this.modalElement = null;
     }
-    document.body.style.overflow = '';
+    document.body.style.overflow = "";
   }
 }

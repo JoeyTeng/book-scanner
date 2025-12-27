@@ -78,28 +78,41 @@ export class OCRService {
       .filter(line => !line.match(/^\d+\s*(赞|收藏|评论|like|favorite|comment)/i))
       .filter(line => !line.match(/^@/))
       .filter(line => !line.match(/^\d+\s*分钟前/))
-      .filter(line => !line.match(/^[\d:]+$/)); // Time stamps
+      .filter(line => !line.match(/^[\d:]+$/)) // Time stamps like 12:34
+      .filter(line => !line.match(/^(上午|下午|今天|昨天)/)) // Chinese time indicators
+      .filter(line => !line.match(/^\d{1,2}:\d{2}$/)); // HH:MM format
 
     if (lines.length === 0) {
       return {};
     }
 
-    // Extract book title (first meaningful line)
-    let bookTitle = lines[0];
+    // Try to extract book title with priority
+    let bookTitle = '';
+    let titleLineIndex = 0;
 
-    // Remove book title marks if exists
-    if (bookTitle.includes('《') && bookTitle.includes('》')) {
-      const match = bookTitle.match(/《(.+?)》/);
-      if (match) {
-        bookTitle = match[1];
+    // Priority 1: Find text with book title marks 《》
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('《') && lines[i].includes('》')) {
+        const match = lines[i].match(/《(.+?)》/);
+        if (match) {
+          bookTitle = match[1].trim();
+          titleLineIndex = i;
+          break;
+        }
       }
     }
 
-    // Remove hashtag if exists
-    bookTitle = bookTitle.replace(/^#/, '').trim();
+    // Priority 2: Use first line if no book marks found
+    if (!bookTitle) {
+      bookTitle = lines[0];
+      titleLineIndex = 0;
+      
+      // Clean up hashtag if exists
+      bookTitle = bookTitle.replace(/^#/, '').trim();
+    }
 
-    // Extract recommendation (remaining text)
-    const recommendation = lines.slice(1).join('\n').trim();
+    // Extract recommendation (remaining text after title)
+    const recommendation = lines.slice(titleLineIndex + 1).join('\n').trim();
 
     return {
       bookTitle: bookTitle || undefined,

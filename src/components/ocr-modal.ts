@@ -4,6 +4,7 @@ export class OCRModal {
   private modal: HTMLElement;
   private ocrService: OCRService;
   private onRecognized?: (result: ParsedOCRResult) => void;
+  private onSearchMetadata?: (title: string, recommendation?: string) => void;
 
   constructor() {
     this.modal = this.createModal();
@@ -57,6 +58,7 @@ export class OCRModal {
         <div class="modal-footer">
           <button id="ocr-cancel" class="btn btn-secondary">Cancel</button>
           <button id="ocr-recognize" class="btn btn-primary" style="display: none;">Recognize</button>
+          <button id="ocr-search" class="btn btn-primary" style="display: none;">Search Metadata</button>
           <button id="ocr-confirm" class="btn btn-primary" style="display: none;">Add Book</button>
         </div>
       </div>
@@ -112,6 +114,10 @@ export class OCRModal {
     // Recognize button
     const recognizeBtn = this.modal.querySelector('#ocr-recognize') as HTMLElement;
     recognizeBtn?.addEventListener('click', () => this.startRecognition());
+
+    // Search metadata button
+    const searchBtn = this.modal.querySelector('#ocr-search') as HTMLElement;
+    searchBtn?.addEventListener('click', () => this.handleSearchMetadata());
 
     // Confirm button
     const confirmBtn = this.modal.querySelector('#ocr-confirm') as HTMLElement;
@@ -184,6 +190,7 @@ export class OCRModal {
       // Show result
       this.hideElement('#ocr-progress');
       this.showElement('#ocr-result');
+      this.showElement('#ocr-search');
       this.showElement('#ocr-confirm');
 
       const titleInput = this.modal.querySelector('#ocr-title') as HTMLInputElement;
@@ -218,6 +225,21 @@ export class OCRModal {
     this.close();
   }
 
+  private handleSearchMetadata(): void {
+    const titleInput = this.modal.querySelector('#ocr-title') as HTMLInputElement;
+    const recommendationInput = this.modal.querySelector('#ocr-recommendation') as HTMLTextAreaElement;
+
+    const title = titleInput.value.trim();
+    const recommendation = recommendationInput.value.trim();
+
+    if (title && this.onSearchMetadata) {
+      this.onSearchMetadata(title, recommendation || undefined);
+      this.close();
+    } else {
+      alert('Please enter a book title to search.');
+    }
+  }
+
   private showElement(selector: string): void {
     const element = this.modal.querySelector(selector) as HTMLElement;
     if (element) {
@@ -232,8 +254,12 @@ export class OCRModal {
     }
   }
 
-  open(onRecognized: (result: ParsedOCRResult) => void): void {
+  open(
+    onRecognized: (result: ParsedOCRResult) => void,
+    onSearchMetadata?: (title: string, recommendation?: string) => void
+  ): void {
     this.onRecognized = onRecognized;
+    this.onSearchMetadata = onSearchMetadata;
     this.modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
@@ -243,6 +269,7 @@ export class OCRModal {
     this.hideElement('#ocr-progress');
     this.hideElement('#ocr-result');
     this.hideElement('#ocr-recognize');
+    this.hideElement('#ocr-search');
     this.hideElement('#ocr-confirm');
 
     // Reset file input
