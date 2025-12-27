@@ -71,6 +71,16 @@
   background: var(--color-bg-secondary);
 }
 
+/* Override btn-full styles for danger button */
+.btn-full.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.btn-full.btn-danger:hover {
+  background: #c82333;
+}
+
 .btn-close {
   font-size: 2rem;
   line-height: 1;
