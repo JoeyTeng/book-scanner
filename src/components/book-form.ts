@@ -80,7 +80,7 @@ export class BookForm {
           }
 
           ${
-            !isEdit && this.dataSources.length === 0 && !this.scannedIsbn
+            isEdit || (this.dataSources.length === 0 && !this.scannedIsbn)
               ? `
             <div class="smart-paste-section">
               <h3>Smart Paste</h3>
@@ -214,7 +214,7 @@ export class BookForm {
 
             <!-- Collapsible: External Links -->
             ${
-              !isEdit && initialData.isbn
+              initialData.isbn || initialData.title
                 ? `
               <details class="form-section">
                 <summary>External Links (10)</summary>
@@ -222,7 +222,7 @@ export class BookForm {
                   <div class="external-links">
                     <h3>Search on other platforms:</h3>
                     ${this.renderExternalLinks(
-                      initialData.isbn,
+                      initialData.isbn || "",
                       initialData.title
                     )}
                   </div>
