@@ -24,7 +24,7 @@ class Storage {
 
       // Migrate if needed
       if (needsMigration(parsed)) {
-        console.log('Migrating data to latest version...');
+        console.log("Migrating data to latest version...");
         const migrated = migrateData(parsed);
         this.save(migrated);
         return migrated;
@@ -32,7 +32,7 @@ class Storage {
 
       return parsed;
     } catch (error) {
-      console.error('Failed to load data from localStorage:', error);
+      console.error("Failed to load data from localStorage:", error);
       return this.getDefaultData();
     }
   }
@@ -45,8 +45,8 @@ class Storage {
       const toSave = data || this.data;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch (error) {
-      console.error('Failed to save data to localStorage:', error);
-      throw new Error('Failed to save data. Storage may be full.');
+      console.error("Failed to save data to localStorage:", error);
+      throw new Error("Failed to save data. Storage may be full.");
     }
   }
 
@@ -59,7 +59,7 @@ class Storage {
       books: [],
       settings: {
         categories: [...DEFAULT_CATEGORIES],
-      }
+      },
     };
   }
 
@@ -74,7 +74,7 @@ class Storage {
    * Get a book by ID
    */
   getBook(id: string): Book | undefined {
-    return this.data.books.find(book => book.id === id);
+    return this.data.books.find((book) => book.id === id);
   }
 
   /**
@@ -89,13 +89,13 @@ class Storage {
    * Update an existing book
    */
   updateBook(id: string, updates: Partial<Book>): void {
-    const index = this.data.books.findIndex(book => book.id === id);
+    const index = this.data.books.findIndex((book) => book.id === id);
 
     if (index !== -1) {
       this.data.books[index] = {
         ...this.data.books[index],
         ...updates,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
       };
       this.save();
     }
@@ -105,7 +105,7 @@ class Storage {
    * Delete a book
    */
   deleteBook(id: string): void {
-    this.data.books = this.data.books.filter(book => book.id !== id);
+    this.data.books = this.data.books.filter((book) => book.id !== id);
     this.save();
   }
 
@@ -142,6 +142,21 @@ class Storage {
   }
 
   /**
+   * Get ISBNdb API key
+   */
+  getISBNdbApiKey(): string | undefined {
+    return this.data.settings.isbndbApiKey;
+  }
+
+  /**
+   * Set ISBNdb API key
+   */
+  setISBNdbApiKey(apiKey: string): void {
+    this.data.settings.isbndbApiKey = apiKey;
+    this.save();
+  }
+
+  /**
    * Clear all data
    */
   clear(): void {
@@ -152,17 +167,17 @@ class Storage {
   /**
    * Import data from JSON
    */
-  importData(imported: StorageData, mode: 'merge' | 'replace' = 'merge'): void {
-    if (mode === 'replace') {
+  importData(imported: StorageData, mode: "merge" | "replace" = "merge"): void {
+    if (mode === "replace") {
       this.data = imported;
     } else {
       // Merge mode: add books that don't exist by ID
-      const existingIds = new Set(this.data.books.map(b => b.id));
-      const newBooks = imported.books.filter(b => !existingIds.has(b.id));
+      const existingIds = new Set(this.data.books.map((b) => b.id));
+      const newBooks = imported.books.filter((b) => !existingIds.has(b.id));
       this.data.books.push(...newBooks);
 
       // Merge categories
-      imported.settings.categories.forEach(cat => {
+      imported.settings.categories.forEach((cat) => {
         if (!this.data.settings.categories.includes(cat)) {
           this.data.settings.categories.push(cat);
         }

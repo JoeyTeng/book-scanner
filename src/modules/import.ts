@@ -33,8 +33,9 @@ export async function importFromJSON(
         books: exportData.books,
         settings: {
           categories: exportData.categories || [],
-          googleBooksApiKey: storage.getGoogleBooksApiKey()
-        }
+          googleBooksApiKey: storage.getGoogleBooksApiKey(),
+          isbndbApiKey: storage.getISBNdbApiKey(),
+        },
       };
     } else {
       // StorageData format

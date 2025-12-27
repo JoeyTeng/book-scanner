@@ -69,30 +69,32 @@ export class OCRService {
   parseXiaohongshuContent(text: string): ParsedOCRResult {
     // Split into lines and clean
     const lines = text
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
       // Filter out noise
-      .filter(line => !line.includes('小红书'))
-      .filter(line => !line.includes('Xiaohongshu'))
-      .filter(line => !line.match(/^\d+\s*(赞|收藏|评论|like|favorite|comment)/i))
-      .filter(line => !line.match(/^@/))
-      .filter(line => !line.match(/^\d+\s*分钟前/))
-      .filter(line => !line.match(/^[\d:]+$/)) // Time stamps like 12:34
-      .filter(line => !line.match(/^(上午|下午|今天|昨天)/)) // Chinese time indicators
-      .filter(line => !line.match(/^\d{1,2}:\d{2}$/)); // HH:MM format
+      .filter((line) => !line.includes("小红书"))
+      .filter((line) => !line.includes("Xiaohongshu"))
+      .filter(
+        (line) => !line.match(/^\d+\s*(赞|收藏|评论|like|favorite|comment)/i)
+      )
+      .filter((line) => !line.match(/^@/))
+      .filter((line) => !line.match(/^\d+\s*分钟前/))
+      .filter((line) => !line.match(/^[\d:]+$/)) // Time stamps like 12:34
+      .filter((line) => !line.match(/^(上午|下午|今天|昨天)/)) // Chinese time indicators
+      .filter((line) => !line.match(/^\d{1,2}:\d{2}$/)); // HH:MM format
 
     if (lines.length === 0) {
       return {};
     }
 
     // Try to extract book title with priority
-    let bookTitle = '';
+    let bookTitle = "";
     let titleLineIndex = 0;
 
     // Priority 1: Find text with book title marks 《》
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('《') && lines[i].includes('》')) {
+      if (lines[i].includes("《") && lines[i].includes("》")) {
         const match = lines[i].match(/《(.+?)》/);
         if (match) {
           bookTitle = match[1].trim();
@@ -106,13 +108,16 @@ export class OCRService {
     if (!bookTitle) {
       bookTitle = lines[0];
       titleLineIndex = 0;
-      
+
       // Clean up hashtag if exists
-      bookTitle = bookTitle.replace(/^#/, '').trim();
+      bookTitle = bookTitle.replace(/^#/, "").trim();
     }
 
     // Extract recommendation (remaining text after title)
-    const recommendation = lines.slice(titleLineIndex + 1).join('\n').trim();
+    const recommendation = lines
+      .slice(titleLineIndex + 1)
+      .join("\n")
+      .trim();
 
     return {
       bookTitle: bookTitle || undefined,

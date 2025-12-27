@@ -64,18 +64,43 @@ export class Navbar {
       <div id="api-key-modal" class="modal" style="display: none;">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>Google Books API Key</h2>
+            <h2>API Keys Settings</h2>
             <button class="btn-close" id="btn-close-api-key" aria-label="Close">&times;</button>
           </div>
           <div class="modal-body">
-            <p class="help-text">
-              To use Google Books API, you need to obtain a free API key.
-              <a href="https://console.cloud.google.com/apis/library/books.googleapis.com" target="_blank">Get API Key</a>
-            </p>
-            <input type="text" id="input-api-key" class="input-full" placeholder="Enter your API key"
-                   value="${storage.getGoogleBooksApiKey() || ''}">
+            <div class="api-key-section">
+              <h3>Google Books API</h3>
+              <p class="help-text">
+                Free API with quota limits. Required for most book lookups.
+                <a href="https://console.cloud.google.com/apis/library/books.googleapis.com" target="_blank">Get API Key →</a>
+              </p>
+              <input type="text" id="input-google-api-key" class="input-full"
+                     placeholder="Enter Google Books API key"
+                     value="${storage.getGoogleBooksApiKey() || ""}">
+            </div>
+
+            <div class="api-key-section">
+              <h3>ISBNdb API (Optional)</h3>
+              <p class="help-text">
+                Enhanced book data coverage. Free tier: 500 requests/month.
+                <a href="https://isbndb.com/apidocs/v2" target="_blank">Get API Key →</a>
+              </p>
+              <input type="text" id="input-isbndb-api-key" class="input-full"
+                     placeholder="Enter ISBNdb API key (optional)"
+                     value="${storage.getISBNdbApiKey() || ""}">
+            </div>
+
+            <div class="help-box">
+              <strong>Free APIs (no key required):</strong>
+              <ul>
+                <li>Open Library - General books database</li>
+                <li>Internet Archive - Large collection including rare books</li>
+                <li>Crossref - Academic publications and textbooks</li>
+              </ul>
+            </div>
+
             <div class="modal-actions">
-              <button id="btn-save-api-key" class="btn-primary">Save</button>
+              <button id="btn-save-api-keys" class="btn-primary">Save All Keys</button>
             </div>
           </div>
         </div>
@@ -139,16 +164,30 @@ export class Navbar {
       this.hideModal('api-key-modal');
     });
 
-    document.getElementById('btn-save-api-key')?.addEventListener('click', () => {
-      const input = document.getElementById('input-api-key') as HTMLInputElement;
-      const apiKey = input.value.trim();
+    document
+      .getElementById("btn-save-api-keys")
+      ?.addEventListener("click", () => {
+        const googleInput = document.getElementById(
+          "input-google-api-key"
+        ) as HTMLInputElement;
+        const isbndbInput = document.getElementById(
+          "input-isbndb-api-key"
+        ) as HTMLInputElement;
 
-      if (apiKey) {
-        storage.setGoogleBooksApiKey(apiKey);
-        alert('API key saved successfully!');
-        this.hideModal('api-key-modal');
-      }
-    });
+        const googleKey = googleInput.value.trim();
+        const isbndbKey = isbndbInput.value.trim();
+
+        if (googleKey) {
+          storage.setGoogleBooksApiKey(googleKey);
+        }
+
+        if (isbndbKey) {
+          storage.setISBNdbApiKey(isbndbKey);
+        }
+
+        alert("API keys saved successfully!");
+        this.hideModal("api-key-modal");
+      });
 
     // Clear data
     document.getElementById('btn-clear-data')?.addEventListener('click', () => {

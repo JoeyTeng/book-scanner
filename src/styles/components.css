@@ -483,6 +483,56 @@
   margin-bottom: var(--spacing-md);
 }
 
+.help-text a, .hint-text a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.help-text a:hover, .hint-text a:hover {
+  text-decoration: underline;
+}
+
+/* API Key Settings */
+.api-key-section {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.api-key-section:last-of-type {
+  border-bottom: none;
+}
+
+.api-key-section h3 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-md);
+}
+
+.help-box {
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.help-box strong {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+.help-box ul {
+  margin: var(--spacing-xs) 0 0 0;
+  padding-left: var(--spacing-lg);
+}
+
+.help-box li {
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 /* Data Sources */
 .data-sources {
   margin-top: var(--spacing-sm);

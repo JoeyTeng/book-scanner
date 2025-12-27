@@ -312,6 +312,7 @@ export class BookForm {
         <a href="${links.douban}" target="_blank">豆瓣读书</a>
         <a href="${links.dangdang}" target="_blank">当当网</a>
         <a href="${links.jd}" target="_blank">京东</a>
+        <a href="${links.wechatRead}" target="_blank">微信读书</a>
         <a href="${links.zlibrary}" target="_blank">zlibrary</a>
         <a href="${links.annasArchive}" target="_blank">Anna's Archive</a>
       </div>

@@ -24,6 +24,7 @@ export interface StorageData {
   settings: {
     categories: string[];
     googleBooksApiKey?: string;
+    isbndbApiKey?: string;
   };
 }
 
@@ -47,11 +48,11 @@ export interface BookDataSource {
 export interface SearchFilters {
   query: string;
   category?: string;
-  status?: ReadingStatus | 'all';
+  status?: ReadingStatus | "all";
 }
 
-export type SortField = 'addedAt' | 'title' | 'author' | 'publishDate';
-export type SortOrder = 'asc' | 'desc';
+export type SortField = "addedAt" | "title" | "author" | "publishDate";
+export type SortOrder = "asc" | "desc";
 
 export interface ExternalLinks {
   amazonUS: string;
@@ -62,6 +63,7 @@ export interface ExternalLinks {
   douban: string;
   dangdang: string;
   jd: string;
+  wechatRead: string;
   zlibrary: string;
   annasArchive: string;
 }

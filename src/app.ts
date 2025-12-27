@@ -3,10 +3,10 @@ import { SearchBar } from './components/search-bar';
 import { BookList } from './components/book-list';
 import { ScannerModal } from './components/scanner-modal';
 import { OCRModal } from './components/ocr-modal';
-import { BookSelectorModal } from './components/book-selector-modal';
+import { BookSelectorModal } from "./components/book-selector-modal";
 import { BookForm } from './components/book-form';
 import { storage } from './modules/storage';
-import { searchBookByTitle } from './modules/api/aggregator';
+import { searchBookByTitle } from "./modules/api/aggregator";
 
 export class App {
   private bookList!: BookList;
@@ -17,7 +17,7 @@ export class App {
 
   init(): void {
     // Initialize components
-    new Navbar('navbar');
+    new Navbar("navbar");
 
     this.bookForm = new BookForm(() => {
       this.bookList.render();
@@ -56,7 +56,10 @@ export class App {
           this.ocrModal.open(
             // Direct add callback
             async (result) => {
-              await this.handleOCRDirectAdd(result.bookTitle, result.recommendation);
+              await this.handleOCRDirectAdd(
+                result.bookTitle,
+                result.recommendation
+              );
             },
             // Search metadata callback
             async (title, recommendation) => {
@@ -89,7 +92,7 @@ export class App {
       undefined,
       // Fallback: search by title when ISBN fails
       async () => {
-        const title = prompt('Enter book title to search:');
+        const title = prompt("Enter book title to search:");
         if (title) {
           await this.handleTitleSearch(title, undefined, isbn);
         }
@@ -113,10 +116,12 @@ export class App {
       // No results - let user fill manually
       await this.bookSelectorModal.close();
       await this.bookForm.showForNew(preserveISBN, recommendation);
-      
+
       // Pre-fill title
       setTimeout(() => {
-        const titleInput = document.querySelector('#input-title') as HTMLInputElement;
+        const titleInput = document.querySelector(
+          "#input-title"
+        ) as HTMLInputElement;
         if (titleInput) titleInput.value = title;
       }, 100);
     } else {
@@ -131,19 +136,27 @@ export class App {
         // Pre-fill all fields from selected source
         setTimeout(() => {
           if (selected.title) {
-            (document.querySelector('#input-title') as HTMLInputElement).value = selected.title;
+            (document.querySelector("#input-title") as HTMLInputElement).value =
+              selected.title;
           }
           if (selected.author) {
-            (document.querySelector('#input-author') as HTMLInputElement).value = selected.author;
+            (
+              document.querySelector("#input-author") as HTMLInputElement
+            ).value = selected.author;
           }
           if (selected.publisher) {
-            (document.querySelector('#input-publisher') as HTMLInputElement).value = selected.publisher;
+            (
+              document.querySelector("#input-publisher") as HTMLInputElement
+            ).value = selected.publisher;
           }
           if (selected.publishDate) {
-            (document.querySelector('#input-publish-date') as HTMLInputElement).value = selected.publishDate;
+            (
+              document.querySelector("#input-publish-date") as HTMLInputElement
+            ).value = selected.publishDate;
           }
           if (selected.cover) {
-            (document.querySelector('#input-cover') as HTMLInputElement).value = selected.cover;
+            (document.querySelector("#input-cover") as HTMLInputElement).value =
+              selected.cover;
           }
 
           // Auto-select Wishlist if recommendation exists
@@ -161,7 +174,10 @@ export class App {
   /**
    * Handle OCR direct add (without metadata search)
    */
-  private async handleOCRDirectAdd(title?: string, recommendation?: string): Promise<void> {
+  private async handleOCRDirectAdd(
+    title?: string,
+    recommendation?: string
+  ): Promise<void> {
     // Ensure Wishlist category exists
     const categories = storage.getCategories();
     if (!categories.includes("Wishlist")) {
@@ -173,7 +189,9 @@ export class App {
     // Pre-fill title if recognized
     if (title) {
       setTimeout(() => {
-        const titleInput = document.querySelector("#input-title") as HTMLInputElement;
+        const titleInput = document.querySelector(
+          "#input-title"
+        ) as HTMLInputElement;
         if (titleInput) titleInput.value = title;
 
         // Auto-select Wishlist category
@@ -188,10 +206,14 @@ export class App {
   private checkApiKey(): void {
     if (!storage.getGoogleBooksApiKey() && storage.getBooks().length === 0) {
       setTimeout(() => {
-        if (confirm('Google Books API key is not set. Would you like to set it now?')) {
-          document.getElementById('btn-menu')?.click();
+        if (
+          confirm(
+            "Google Books API key is not set. Would you like to set it now?"
+          )
+        ) {
+          document.getElementById("btn-menu")?.click();
           setTimeout(() => {
-            document.getElementById('btn-api-key')?.click();
+            document.getElementById("btn-api-key")?.click();
           }, 100);
         }
       }, 1000);
