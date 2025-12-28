@@ -1563,7 +1563,7 @@ Book Scanner 项目通过 6 个阶段的迭代，从一个简单的条形码扫�
 **文档版本：** v2.0
 **最后更新：** 2025-12-28
 **作者：** Built with Claude Sonnet 4.5
-**维护者：** Xuanwo
+**维护者：** JoeyTeng
 
 ### 1. 为什么选择 IndexedDB 而不是 localStorage？
 
@@ -1877,4 +1877,4 @@ npm run deploy
 **文档版本：** v2.0
 **最后更新：** 2025-12-28
 **部署地址：** <https://booka.mahane.me/>
-**维护者：** Xuanwo
+**维护者：** JoeyTeng
