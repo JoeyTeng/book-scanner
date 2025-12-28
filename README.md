@@ -78,8 +78,8 @@ To fetch book data from Google Books, you need a free API key:
    - Click on your newly created API key
    - Under "API restrictions", select "Restrict key"
    - Check only "Books API"
-   - Under "Website restrictions", add your GitHub Pages URL:
-     - `https://yourusername.github.io/*`
+   - Under "Website restrictions", add your domain:
+     - `https://booka.mahane.me/*`
      - Or for local development: `http://localhost:3000/*`
    - Click "Save"
 
@@ -102,7 +102,7 @@ This project includes automatic deployment via GitHub Actions:
    - Source: Deploy from a branch
    - Branch: `gh-pages` / `root`
 
-Your app will be available at: `https://yourusername.github.io/book-scanner/`
+Your app will be available at: `https://booka.mahane.me/`
 
 ## Usage
 

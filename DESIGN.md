@@ -1775,14 +1775,90 @@ interface SyncProvider {
 }
 ```
 
+## 开发与部署
+
+### 本地开发
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式（使用根路径 /）
+npm run dev
+
+# 本地构建测试
+npm run build:local
+npx serve dist
+```
+
+### 生产部署
+
+**部署平台：** GitHub Pages with Custom Domain
+
+**域名：** <https://booka.mahane.me/>
+
+**部署流程：**
+
+```bash
+# 1. 构建生产版本（base path = /）
+npm run build
+
+# 2. 部署到 GitHub Pages
+npm run deploy
+```
+
+**自动部署：**
+
+- Push 到 `main` 分支触发 GitHub Actions
+- 自动构建并部署到 `gh-pages` 分支
+- GitHub Pages 从 `gh-pages` 分支服务
+
+**自定义域名配置：**
+
+1. **在 GitHub 仓库设置：**
+   - Settings → Pages → Custom domain
+   - 输入：`booka.mahane.me`
+   - 启用 "Enforce HTTPS"
+
+2. **DNS 配置（在域名提供商）：**
+
+   ```
+   CNAME: booka.mahane.me → joeyteng.github.io
+   ```
+
+3. **Vite 配置：**
+   - 使用自定义域名时，`base` 设置为 `/`（根路径）
+   - 无需子路径（`/book-scanner/`）
+
+**重要配置文件：**
+
+- `vite.config.ts`: `base: "/"` （自定义域名使用根路径）
+- `public/CNAME`: 包含 `booka.mahane.me`（部署时保留）
+- `.github/workflows/deploy.yml`: 自动部署工作流
+
+### API Key 配置
+
+**Google Books API:**
+
+- 在应用设置中添加 API Key
+- Website restriction: `https://booka.mahane.me/*`
+
+**LLM API (可选):**
+
+- OpenAI API Key
+- Anthropic API Key
+- 或使用 Manual Mode（无需 API Key）
+
 ## 开发规范
 
 ### 代码风格
+
 - TypeScript strict mode
 - ESLint + Prettier
 - 命名：English only, camelCase for variables, PascalCase for classes
 
 ### Commit 规范
+
 - `feat:` 新功能
 - `fix:` Bug 修复
 - `refactor:` 重构
@@ -1791,12 +1867,14 @@ interface SyncProvider {
 - `test:` 测试
 
 ### 分支策略
+
 - `main`: 生产分支
 - `dev`: 开发分支
 - `feat/*`: 功能分支
 
 ---
 
-**文档版本：** v1.0
+**文档版本：** v2.0
 **最后更新：** 2025-12-28
+**部署地址：** <https://booka.mahane.me/>
 **维护者：** Xuanwo

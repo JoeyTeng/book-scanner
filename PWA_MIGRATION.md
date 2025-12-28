@@ -68,12 +68,16 @@ npm run dev
 
 ## 部署
 
-### GitHub Pages
+### GitHub Pages (Custom Domain)
+
+**域名：** `https://booka.mahane.me/`
 
 ```bash
 npm run build
 npm run deploy
 ```
+
+**注意：** 使用自定义域名时，Vite base path 已配置为 `/`（根路径）。
 
 ### 其他平台 (Vercel, Netlify 等)
 
