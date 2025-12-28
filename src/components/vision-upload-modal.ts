@@ -2,6 +2,7 @@ import { llmService, ParsedBookInfo } from '../modules/llm';
 import { storage } from '../modules/storage';
 import { Book } from '../types';
 import { searchBookByTitle } from '../modules/api/aggregator';
+import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from "./manual-llm-helper";
 
 export class VisionUploadModal {
   private modalElement: HTMLDivElement | null = null;
@@ -33,24 +34,24 @@ export class VisionUploadModal {
           <button class="btn-close" id="btn-close-vision">&times;</button>
         </div>
         <div class="modal-body">
+          <div class="info-box">
+            <p>📷 Upload a screenshot containing book recommendations</p>
+            <p>Supports Xiaohongshu, Douban, WeChat Read, Amazon listings, etc.</p>
+          </div>
+
           ${
             !llmService.isConfigured()
               ? `
               <div class="info-box warning-box">
-                <p>⚠️ LLM Vision requires API configuration</p>
-                <p>Please configure your LLM API in Settings first. Make sure to use a vision-capable model like gpt-4o, gpt-4o-mini, or deepseek-chat.</p>
+                <p>⚠️ No LLM Vision API configured</p>
+                <p>You can still use the manual mode below to extract books with your own LLM app (ChatGPT, Claude, etc.)</p>
               </div>
             `
               : `
-              <div class="info-box">
-                <p>📷 Upload a screenshot containing book recommendations</p>
-                <p>Supports Xiaohongshu, Douban, WeChat Read, Amazon listings, etc.</p>
-              </div>
-
               <div class="upload-section">
                 <input type="file" id="vision-file-input" accept="image/*" style="display: none;">
                 <button id="btn-select-image" class="btn-primary btn-large">
-                  📤 Select Image
+                  📤 Select Image (Auto Extract)
                 </button>
                 <div id="image-preview" style="display: none; margin-top: 1rem;">
                   <img id="preview-img" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
@@ -73,6 +74,17 @@ export class VisionUploadModal {
               </div>
             `
           }
+
+          <div class="divider">OR</div>
+
+          <div class="upload-section">
+            <button id="btn-manual-vision" class="btn-secondary btn-large">
+              📱 Use Your Own LLM App
+            </button>
+            <p style="text-align: center; color: var(--color-text-secondary); margin-top: var(--spacing-sm);">
+              Extract books manually with ChatGPT, Claude, or any LLM app
+            </p>
+          </div>
         </div>
       </div>
     `;
@@ -88,6 +100,11 @@ export class VisionUploadModal {
     // Close button
     this.modalElement?.querySelector('#btn-close-vision')?.addEventListener('click', () => {
       this.hide();
+    });
+
+    // Manual vision button (always available)
+    this.modalElement?.querySelector('#btn-manual-vision')?.addEventListener('click', () => {
+      this.showManualVisionHelper();
     });
 
     if (!llmService.isConfigured()) {
@@ -263,5 +280,24 @@ export class VisionUploadModal {
     } else {
       alert('No new books were added (all were duplicates or invalid).');
     }
+  }
+
+  private showManualVisionHelper(): void {
+    const helper = new ManualLLMHelper({
+      title: '📱 Extract Books with Your LLM App',
+      description: 'Use ChatGPT, Claude, or any LLM app with vision capability to extract all books from your image.',
+      systemPrompt: MANUAL_LLM_PROMPTS.visionMultiBook.system,
+      userPromptTemplate: MANUAL_LLM_PROMPTS.visionMultiBook.user,
+      onResult: async (result) => {
+        const books = Array.isArray(result) ? result : [result];
+        if (books.length === 0) {
+          alert('No books found in the result. Please try again.');
+          return;
+        }
+        await this.addBooks(books);
+      }
+    });
+
+    helper.show('Upload your image to your LLM app and paste the JSON response below.');
   }
 }

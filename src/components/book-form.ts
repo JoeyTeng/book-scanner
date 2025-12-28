@@ -5,6 +5,7 @@ import { aggregateBookData } from '../modules/api/aggregator';
 import { generateExternalLinks } from '../modules/api/external-links';
 import { parseSmartPaste } from '../utils/text-parser';
 import { llmService } from "../modules/llm";
+import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
 
 export class BookForm {
   private modalElement: HTMLDivElement | null = null;
@@ -94,10 +95,11 @@ export class BookForm {
                     ? '<button id="btn-llm-parse" class="btn-secondary">✨ Parse with LLM</button>'
                     : ""
                 }
+                <button id="btn-manual-llm" class="btn-secondary">📱 Use Your LLM App</button>
               </div>
               ${
                 !llmService.isTextConfigured()
-                  ? '<p class="hint-text">Tip: Configure LLM API in settings for AI-powered parsing</p>'
+                  ? '<p class="hint-text">Tip: Configure LLM API in settings for AI-powered parsing, or use your own LLM app</p>'
                   : ""
               }
             </div>
@@ -524,6 +526,72 @@ export class BookForm {
           button.disabled = false;
           button.textContent = originalText;
         }
+      });
+
+    // Manual LLM button
+    this.modalElement
+      ?.querySelector("#btn-manual-llm")
+      ?.addEventListener("click", () => {
+        const textarea = this.modalElement?.querySelector(
+          "#smart-paste-input"
+        ) as HTMLTextAreaElement;
+        const text = textarea.value.trim();
+
+        const helper = new ManualLLMHelper({
+          title: '📱 Smart Paste with Your LLM App',
+          description: 'Use ChatGPT, Claude, or any LLM app you already have to parse book information without API keys.',
+          systemPrompt: MANUAL_LLM_PROMPTS.smartPaste.system,
+          userPromptTemplate: MANUAL_LLM_PROMPTS.smartPaste.user,
+          onResult: (result) => {
+            if (Array.isArray(result)) {
+              // Shouldn't happen for single book, but handle it
+              result = result[0];
+            }
+            const parsed = result;
+
+            // Fill form fields
+            if (parsed.isbn)
+              (
+                this.modalElement?.querySelector("#input-isbn") as HTMLInputElement
+              ).value = parsed.isbn;
+            if (parsed.title)
+              (
+                this.modalElement?.querySelector("#input-title") as HTMLInputElement
+              ).value = parsed.title;
+            if (parsed.author)
+              (
+                this.modalElement?.querySelector(
+                  "#input-author"
+                ) as HTMLInputElement
+              ).value = parsed.author;
+            if (parsed.publisher)
+              (
+                this.modalElement?.querySelector(
+                  "#input-publisher"
+                ) as HTMLInputElement
+              ).value = parsed.publisher;
+            if (parsed.publishDate)
+              (
+                this.modalElement?.querySelector(
+                  "#input-publish-date"
+                ) as HTMLInputElement
+              ).value = parsed.publishDate;
+            if (parsed.cover)
+              (
+                this.modalElement?.querySelector(
+                  "#input-cover"
+                ) as HTMLInputElement
+              ).value = parsed.cover;
+            if (parsed.notes)
+              (
+                this.modalElement?.querySelector(
+                  "#input-notes"
+                ) as HTMLTextAreaElement
+              ).value = parsed.notes;
+          }
+        });
+
+        helper.show(text || undefined);
       });
 
     // Search by title button (when ISBN fails)

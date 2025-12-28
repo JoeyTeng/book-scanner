@@ -48,6 +48,26 @@
   background: var(--color-border);
 }
 
+.btn-primary.btn-small {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+}
+
+.btn-primary.btn-small:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary.btn-small {
+  background: var(--color-secondary);
+  color: white;
+  border: none;
+}
+
+.btn-secondary.btn-small:hover {
+  background: #5a6268;
+}
+
 .btn-icon {
   padding: var(--spacing-sm);
   color: var(--color-text);
@@ -611,12 +631,14 @@
 
 .smart-paste-section .button-group {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
 }
 
 .smart-paste-section .button-group button {
   flex: 1;
+  min-width: 150px;
 }
 
 .divider {
@@ -704,6 +726,81 @@
 #parsing-status p {
   color: var(--color-text-secondary);
   margin-top: var(--spacing-sm);
+}
+
+/* Manual LLM Helper */
+.manual-llm-modal {
+  max-width: 700px;
+}
+
+.manual-llm-steps {
+  margin: var(--spacing-lg) 0;
+}
+
+.step-item {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  align-items: flex-start;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-content h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text);
+}
+
+.step-content p {
+  margin: var(--spacing-xs) 0;
+  color: var(--color-text-secondary);
+}
+
+.prompt-box {
+  position: relative;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.prompt-box pre {
+  margin: 0 0 var(--spacing-sm) 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.prompt-box button {
+  margin-top: var(--spacing-sm);
+}
+
+.image-preview-small {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+  display: inline-block;
 }
 
 /* Scanner */
