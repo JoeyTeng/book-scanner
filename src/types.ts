@@ -1,4 +1,5 @@
 export type ReadingStatus = 'want' | 'reading' | 'read';
+export type ViewMode = 'grid' | 'list';
 
 export interface Book {
   id: string;

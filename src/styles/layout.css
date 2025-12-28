@@ -73,6 +73,31 @@
   gap: var(--spacing-sm);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  align-items: center;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.view-toggle .btn-icon {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid var(--color-border);
+}
+
+.view-toggle .btn-icon:last-child {
+  border-right: none;
+}
+
+.view-toggle .btn-icon.active {
+  background: var(--color-primary);
+  color: white;
 }
 
 .filter-select {
@@ -99,6 +124,125 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--spacing-md);
+}
+
+/* Book List View (Table) */
+.book-list-view {
+  overflow-x: auto;
+}
+
+.book-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.book-table thead {
+  background: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.book-table th {
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.book-table td {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.book-table .col-checkbox {
+  width: 40px;
+  text-align: center;
+}
+
+.book-table .col-cover {
+  width: 60px;
+}
+
+.book-table .col-cover img {
+  width: 50px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: var(--border-radius-sm);
+}
+
+.book-table .col-cover .no-cover {
+  width: 50px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-sm);
+  font-size: 24px;
+}
+
+.book-table .col-title {
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.book-table .title-cell strong {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text);
+}
+
+.book-table .notes-preview {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.book-table .col-author {
+  min-width: 150px;
+}
+
+.book-table .col-isbn {
+  min-width: 120px;
+}
+
+.book-table .col-isbn code {
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.book-table .col-status {
+  min-width: 120px;
+}
+
+.book-table .col-categories {
+  min-width: 150px;
+}
+
+.book-table .col-categories .badge {
+  margin-right: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  display: inline-block;
+}
+
+.book-table .col-actions {
+  min-width: 150px;
+  white-space: nowrap;
+}
+
+.book-table .col-actions .btn-small {
+  margin-right: var(--spacing-xs);
+}
+
+.book-row:hover {
+  background: var(--color-bg-secondary);
 }
 
 /* Tablet */

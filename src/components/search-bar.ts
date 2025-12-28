@@ -1,10 +1,11 @@
-import type { SearchFilters, SortField, SortOrder } from '../types';
+import type { SearchFilters, SortField, SortOrder, ViewMode } from '../types';
 import { storage } from '../modules/storage';
 
 export class SearchBar {
   private element: HTMLElement;
   private onFilterChange: (filters: SearchFilters, sortField: SortField, sortOrder: SortOrder) => void;
   private onBulkEditClick?: () => void;
+  private onViewModeChange?: (mode: ViewMode) => void;
 
   constructor(
     containerId: string,
@@ -18,6 +19,10 @@ export class SearchBar {
 
   setBulkEditClickHandler(handler: () => void): void {
     this.onBulkEditClick = handler;
+  }
+
+  setViewModeChangeHandler(handler: (mode: ViewMode) => void): void {
+    this.onViewModeChange = handler;
   }
 
   updateBulkEditButton(mode: boolean, selectedCount: number = 0): void {
@@ -75,6 +80,27 @@ export class SearchBar {
             </svg>
           </button>
 
+          <div class="view-toggle">
+            <button id="view-grid" class="btn-icon active" aria-label="Grid view">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+              </svg>
+            </button>
+            <button id="view-list" class="btn-icon" aria-label="List view">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
           <button id="btn-bulk-edit" class="btn btn-secondary">Bulk Edit</button>
         </div>
       </div>
@@ -88,6 +114,8 @@ export class SearchBar {
     const sortFieldSelect = document.getElementById('sort-field') as HTMLSelectElement;
     const sortOrderBtn = document.getElementById('sort-order') as HTMLButtonElement;
     const bulkEditBtn = document.getElementById('btn-bulk-edit') as HTMLButtonElement;
+    const viewGridBtn = document.getElementById('view-grid') as HTMLButtonElement;
+    const viewListBtn = document.getElementById('view-list') as HTMLButtonElement;
 
     let currentOrder: SortOrder = 'desc';
 
@@ -122,6 +150,23 @@ export class SearchBar {
     bulkEditBtn.addEventListener('click', () => {
       if (this.onBulkEditClick) {
         this.onBulkEditClick();
+      }
+    });
+
+    // View mode toggle
+    viewGridBtn.addEventListener('click', () => {
+      viewGridBtn.classList.add('active');
+      viewListBtn.classList.remove('active');
+      if (this.onViewModeChange) {
+        this.onViewModeChange('grid');
+      }
+    });
+
+    viewListBtn.addEventListener('click', () => {
+      viewListBtn.classList.add('active');
+      viewGridBtn.classList.remove('active');
+      if (this.onViewModeChange) {
+        this.onViewModeChange('list');
       }
     });
   }

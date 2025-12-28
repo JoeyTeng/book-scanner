@@ -57,6 +57,11 @@ export class App {
       this.handleBulkEditClick();
     });
 
+    // Set up view mode change handler
+    this.searchBar.setViewModeChangeHandler((mode) => {
+      this.bookList.setViewMode(mode);
+    });
+
     this.ocrModal = new OCRModal();
 
     this.scannerModal = new ScannerModal(async (isbn) => {
