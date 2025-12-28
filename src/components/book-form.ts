@@ -111,8 +111,8 @@ export class BookForm {
           <form id="book-form">
             <!-- Always visible fields -->
             <div class="form-group">
-              <label>ISBN *</label>
-              <input type="text" id="input-isbn" class="input-full" required
+              <label>ISBN</label>
+              <input type="text" id="input-isbn" class="input-full"
                      value="${initialData.isbn || ""}" ${
       isEdit ? "readonly" : ""
     }>
