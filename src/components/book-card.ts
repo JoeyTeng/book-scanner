@@ -4,12 +4,17 @@ import { storage } from '../modules/storage';
 import { formatISBN } from '../utils/isbn';
 
 export class BookCard {
-  static render(book: Book, _onEdit: (book: Book) => void, _onDelete: (id: string) => void): string {
+  static render(book: Book, _onEdit: (book: Book) => void, _onDelete: (id: string) => void, bulkSelectMode: boolean = false): string {
     const statusColor = STATUS_COLORS[book.status];
     const statusLabel = STATUS_LABELS[book.status];
 
     return `
       <div class="book-card" data-id="${book.id}">
+        ${bulkSelectMode ? `
+          <div class="book-checkbox">
+            <input type="checkbox" class="bulk-select-checkbox" data-id="${book.id}">
+          </div>
+        ` : ''}
         ${book.cover ? `
           <div class="book-cover">
             <img src="${book.cover}" alt="${book.title}" loading="lazy">
@@ -53,7 +58,8 @@ export class BookCard {
   static attachEventListeners(
     container: HTMLElement,
     onEdit: (book: Book) => void,
-    onDelete: (id: string) => void
+    onDelete: (id: string) => void,
+    onBulkSelectChange?: (selectedIds: string[]) => void
   ): void {
     container.querySelectorAll('.btn-edit').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -72,6 +78,17 @@ export class BookCard {
         }
       });
     });
+
+    // Bulk selection checkboxes
+    if (onBulkSelectChange) {
+      container.querySelectorAll('.bulk-select-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          const selectedCheckboxes = container.querySelectorAll('.bulk-select-checkbox:checked');
+          const selectedIds = Array.from(selectedCheckboxes).map(cb => (cb as HTMLInputElement).dataset.id!);
+          onBulkSelectChange(selectedIds);
+        });
+      });
+    }
   }
 
   private static escapeHtml(text: string): string {

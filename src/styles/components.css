@@ -304,10 +304,28 @@
   border-radius: var(--border-radius);
   overflow: hidden;
   transition: box-shadow 0.2s;
+  position: relative;
 }
 
 .book-card:hover {
   box-shadow: var(--shadow-md);
+}
+
+.book-checkbox {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  z-index: 10;
+  background: var(--color-bg);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.book-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
 .book-cover {

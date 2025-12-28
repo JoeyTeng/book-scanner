@@ -7,10 +7,12 @@ export class BookList {
   private element: HTMLElement;
   private onEdit: (book: Book) => void;
   private onDelete: (id: string) => void;
+  private onBulkSelectChange?: (selectedIds: string[]) => void;
 
   private currentFilters: SearchFilters = { query: '', status: 'all' };
   private currentSortField: SortField = 'addedAt';
   private currentSortOrder: SortOrder = 'desc';
+  private bulkSelectMode: boolean = false;
 
   constructor(
     containerId: string,
@@ -20,6 +22,12 @@ export class BookList {
     this.element = document.getElementById(containerId)!;
     this.onEdit = onEdit;
     this.onDelete = onDelete;
+  }
+
+  setBulkSelectMode(enabled: boolean, onBulkSelectChange?: (selectedIds: string[]) => void): void {
+    this.bulkSelectMode = enabled;
+    this.onBulkSelectChange = onBulkSelectChange;
+    this.render();
   }
 
   render(): void {
@@ -43,7 +51,7 @@ export class BookList {
       return;
     }
 
-    const cardsHtml = books.map(book => BookCard.render(book, this.onEdit, this.onDelete)).join('');
+    const cardsHtml = books.map(book => BookCard.render(book, this.onEdit, this.onDelete, this.bulkSelectMode)).join('');
 
     this.element.innerHTML = `
       <div class="book-grid">
@@ -52,7 +60,7 @@ export class BookList {
     `;
 
     // Attach event listeners to all cards
-    BookCard.attachEventListeners(this.element, this.onEdit, this.onDelete);
+    BookCard.attachEventListeners(this.element, this.onEdit, this.onDelete, this.onBulkSelectChange);
   }
 
   updateFilters(filters: SearchFilters, sortField: SortField, sortOrder: SortOrder): void {

@@ -4,6 +4,7 @@ import { storage } from '../modules/storage';
 export class SearchBar {
   private element: HTMLElement;
   private onFilterChange: (filters: SearchFilters, sortField: SortField, sortOrder: SortOrder) => void;
+  private onBulkEditClick?: () => void;
 
   constructor(
     containerId: string,
@@ -13,6 +14,26 @@ export class SearchBar {
     this.onFilterChange = onFilterChange;
     this.render();
     this.attachEventListeners();
+  }
+
+  setBulkEditClickHandler(handler: () => void): void {
+    this.onBulkEditClick = handler;
+  }
+
+  updateBulkEditButton(mode: boolean, selectedCount: number = 0): void {
+    const button = this.element.querySelector('#btn-bulk-edit') as HTMLButtonElement;
+    if (button) {
+      if (mode) {
+        button.textContent =
+          selectedCount > 0
+            ? `Edit Selected (${selectedCount})`
+            : "Cancel Selection";
+        button.className = selectedCount > 0 ? 'btn btn-primary' : 'btn btn-secondary';
+      } else {
+        button.textContent = 'Bulk Edit';
+        button.className = 'btn btn-secondary';
+      }
+    }
   }
 
   private render(): void {
@@ -53,6 +74,8 @@ export class SearchBar {
               <path d="M12 5v14M5 12l7 7 7-7"/>
             </svg>
           </button>
+
+          <button id="btn-bulk-edit" class="btn btn-secondary">Bulk Edit</button>
         </div>
       </div>
     `;
@@ -64,6 +87,7 @@ export class SearchBar {
     const statusSelect = document.getElementById('filter-status') as HTMLSelectElement;
     const sortFieldSelect = document.getElementById('sort-field') as HTMLSelectElement;
     const sortOrderBtn = document.getElementById('sort-order') as HTMLButtonElement;
+    const bulkEditBtn = document.getElementById('btn-bulk-edit') as HTMLButtonElement;
 
     let currentOrder: SortOrder = 'desc';
 
@@ -93,6 +117,12 @@ export class SearchBar {
         : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
 
       emitChange();
+    });
+
+    bulkEditBtn.addEventListener('click', () => {
+      if (this.onBulkEditClick) {
+        this.onBulkEditClick();
+      }
     });
   }
 }

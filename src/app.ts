@@ -5,15 +5,20 @@ import { ScannerModal } from './components/scanner-modal';
 import { OCRModal } from './components/ocr-modal';
 import { BookSelectorModal } from "./components/book-selector-modal";
 import { BookForm } from './components/book-form';
+import { BulkEditModal } from './components/bulk-edit-modal';
 import { storage } from './modules/storage';
 import { searchBookByTitle } from "./modules/api/aggregator";
 
 export class App {
   private bookList!: BookList;
+  private searchBar!: SearchBar;
   private scannerModal!: ScannerModal;
   private ocrModal!: OCRModal;
   private bookSelectorModal!: BookSelectorModal;
   private bookForm!: BookForm;
+  private bulkEditModal!: BulkEditModal;
+  private bulkEditMode: boolean = false;
+  private selectedBookIds: string[] = [];
 
   init(): void {
     // Initialize components
@@ -23,6 +28,11 @@ export class App {
 
     this.bookForm = new BookForm(() => {
       this.bookList.render();
+    });
+
+    this.bulkEditModal = new BulkEditModal(() => {
+      this.bookList.render();
+      this.exitBulkEditMode();
     });
 
     this.bookSelectorModal = new BookSelectorModal();
@@ -38,8 +48,13 @@ export class App {
       }
     );
 
-    new SearchBar("search-bar", (filters, sortField, sortOrder) => {
+    this.searchBar = new SearchBar("search-bar", (filters, sortField, sortOrder) => {
       this.bookList.updateFilters(filters, sortField, sortOrder);
+    });
+
+    // Set up bulk edit handler
+    this.searchBar.setBulkEditClickHandler(() => {
+      this.handleBulkEditClick();
     });
 
     this.ocrModal = new OCRModal();
@@ -224,5 +239,36 @@ export class App {
         }
       }, 1000);
     }
+  }
+
+  private handleBulkEditClick(): void {
+    if (!this.bulkEditMode) {
+      // Enter bulk edit mode
+      this.enterBulkEditMode();
+    } else {
+      // If in bulk edit mode, either exit or open modal
+      if (this.selectedBookIds.length > 0) {
+        this.bulkEditModal.show(this.selectedBookIds);
+      } else {
+        this.exitBulkEditMode();
+      }
+    }
+  }
+
+  private enterBulkEditMode(): void {
+    this.bulkEditMode = true;
+    this.selectedBookIds = [];
+    this.bookList.setBulkSelectMode(true, (selectedIds) => {
+      this.selectedBookIds = selectedIds;
+      this.searchBar.updateBulkEditButton(true, selectedIds.length);
+    });
+    this.searchBar.updateBulkEditButton(true, 0);
+  }
+
+  private exitBulkEditMode(): void {
+    this.bulkEditMode = false;
+    this.selectedBookIds = [];
+    this.bookList.setBulkSelectMode(false);
+    this.searchBar.updateBulkEditButton(false, 0);
   }
 }
