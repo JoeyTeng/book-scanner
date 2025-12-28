@@ -62,17 +62,17 @@ export class BookCard {
     onBulkSelectChange?: (selectedIds: string[]) => void
   ): void {
     container.querySelectorAll('.btn-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.id!;
-        const book = storage.getBook(id);
+        const book = await storage.getBook(id);
         if (book) onEdit(book);
       });
     });
 
     container.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.id!;
-        const book = storage.getBook(id);
+        const book = await storage.getBook(id);
         if (book && confirm(`Delete "${book.title}"?`)) {
           onDelete(id);
         }

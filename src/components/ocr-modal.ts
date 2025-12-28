@@ -17,6 +17,8 @@ export class OCRModal {
     this.ocrService = new OCRService();
     document.body.appendChild(this.modal);
     this.attachEventListeners();
+    // Update LLM button visibility after modal is created
+    this.updateLLMButtonVisibility();
   }
 
   private createModal(): HTMLElement {
@@ -65,17 +67,20 @@ export class OCRModal {
           <button id="ocr-cancel" class="btn btn-secondary">Cancel</button>
           <button id="ocr-manual-llm" class="btn btn-secondary">📱 Use Your Own LLM</button>
           <button id="ocr-recognize" class="btn btn-primary" style="display: none;">Recognize with Tesseract</button>
-          ${
-            llmService.isConfigured()
-              ? '<button id="ocr-llm-vision" class="btn btn-primary" style="display: none;">✨ Recognize with LLM Vision</button>'
-              : ""
-          }
+          <button id="ocr-llm-vision" class="btn btn-primary" style="display: none;">✨ Recognize with LLM Vision</button>
           <button id="ocr-search" class="btn btn-primary" style="display: none;">Search Metadata</button>
           <button id="ocr-confirm" class="btn btn-primary" style="display: none;">Add Book</button>
         </div>
       </div>
     `;
     return modal;
+  }
+
+  private async updateLLMButtonVisibility(): Promise<void> {
+    const llmVisionBtn = this.modal.querySelector("#ocr-llm-vision");
+    if (llmVisionBtn && !(await llmService.isConfigured())) {
+      (llmVisionBtn as HTMLElement).style.display = "none";
+    }
   }
 
   private attachEventListeners(): void {
@@ -167,7 +172,7 @@ export class OCRModal {
 
     // Show preview
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const imgElement = this.modal.querySelector(
         "#ocr-image"
       ) as HTMLImageElement;
@@ -179,7 +184,7 @@ export class OCRModal {
       this.showElement("#ocr-preview");
       this.hideElement("#ocr-upload");
       this.showElement("#ocr-recognize");
-      if (llmService.isConfigured()) {
+      if (await llmService.isConfigured()) {
         this.showElement("#ocr-llm-vision");
       }
     };
@@ -249,7 +254,7 @@ export class OCRModal {
       // Reset UI
       this.hideElement("#ocr-progress");
       this.showElement("#ocr-recognize");
-      if (llmService.isConfigured()) {
+      if (await llmService.isConfigured()) {
         this.showElement("#ocr-llm-vision");
       }
     }
@@ -317,7 +322,7 @@ export class OCRModal {
       // Reset UI
       this.hideElement("#ocr-progress");
       this.showElement("#ocr-recognize");
-      if (llmService.isConfigured()) {
+      if (await llmService.isConfigured()) {
         this.showElement("#ocr-llm-vision");
       }
     }
@@ -391,7 +396,7 @@ export class OCRModal {
 
   private async addBooks(parsedBooks: ParsedBookInfo[]): Promise<void> {
     const addedBooks: Book[] = [];
-    const existingBooks = storage.getBooks();
+    const existingBooks = await storage.getBooks();
 
     for (const parsedBook of parsedBooks) {
       // Check if book already exists (by ISBN or title)
@@ -448,7 +453,7 @@ export class OCRModal {
         source: ['manual-llm']
       };
 
-      storage.addBook(book);
+      await storage.addBook(book);
       addedBooks.push(book);
     }
 

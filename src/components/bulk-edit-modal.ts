@@ -10,18 +10,18 @@ export class BulkEditModal {
     this.onSave = onSave;
   }
 
-  show(bookIds: string[]): void {
+  async show(bookIds: string[]): Promise<void> {
     if (bookIds.length === 0) {
       alert('Please select at least one book to edit.');
       return;
     }
 
     this.selectedBookIds = bookIds;
-    this.render();
+    await this.render();
   }
 
-  private render(): void {
-    const categories = storage.getCategories();
+  private async render(): Promise<void> {
+    const categories = await storage.getCategories();
     const count = this.selectedBookIds.length;
 
     this.modalElement = document.createElement('div');
@@ -127,7 +127,7 @@ export class BulkEditModal {
     });
   }
 
-  private handleSubmit(): void {
+  private async handleSubmit(): Promise<void> {
     const changeStatus = (this.modalElement?.querySelector('#change-status') as HTMLInputElement).checked;
     const modifyCategories = (this.modalElement?.querySelector('#modify-categories') as HTMLInputElement).checked;
 
@@ -166,7 +166,7 @@ export class BulkEditModal {
       const newCategory = newCategoryInput.value.trim();
       if (newCategory) {
         selectedCategories.push(newCategory);
-        storage.addCategory(newCategory);
+        await storage.addCategory(newCategory);
       }
 
       if (selectedCategories.length === 0) {
@@ -176,8 +176,8 @@ export class BulkEditModal {
     }
 
     // Apply changes to all selected books
-    this.selectedBookIds.forEach(bookId => {
-      const book = storage.getBook(bookId);
+    for (const bookId of this.selectedBookIds) {
+      const book = await storage.getBook(bookId);
       if (!book) return;
 
       // Update status
@@ -208,8 +208,8 @@ export class BulkEditModal {
       }
 
       book.updatedAt = Date.now();
-      storage.updateBook(book.id, book);
-    });
+      await storage.updateBook(book.id, book);
+    }
 
     this.hide();
     this.onSave();

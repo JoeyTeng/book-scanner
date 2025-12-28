@@ -12,8 +12,13 @@ export default defineConfig(({ mode }) => ({
           "html5-qrcode": ["html5-qrcode"],
         },
       },
+      input: {
+        main: 'index.html',
+        sw: 'public/sw.js',
+      },
     },
   },
+  publicDir: 'public',
   server: {
     port: 3000,
     open: true,

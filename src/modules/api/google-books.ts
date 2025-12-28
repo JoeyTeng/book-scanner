@@ -5,7 +5,7 @@ import { storage } from '../storage';
 export async function searchGoogleBooks(
   query: string
 ): Promise<BookDataSource[]> {
-  const apiKey = storage.getGoogleBooksApiKey();
+  const apiKey = await storage.getGoogleBooksApiKey();
 
   if (!apiKey) {
     console.warn("Google Books API key not set");
@@ -38,7 +38,7 @@ export async function searchGoogleBooks(
 export async function searchGoogleBooksByTitle(
   title: string
 ): Promise<BookDataSource[]> {
-  const apiKey = storage.getGoogleBooksApiKey();
+  const apiKey = await storage.getGoogleBooksApiKey();
 
   if (!apiKey) {
     console.warn("Google Books API key not set");

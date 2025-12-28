@@ -12,8 +12,8 @@ export class VisionUploadModal {
     this.onBooksAdded = onBooksAdded;
   }
 
-  show(): void {
-    this.render();
+  async show(): Promise<void> {
+    await this.render();
   }
 
   hide(): void {
@@ -24,7 +24,7 @@ export class VisionUploadModal {
     }
   }
 
-  private render(): void {
+  private async render(): Promise<void> {
     this.modalElement = document.createElement('div');
     this.modalElement.className = 'modal';
     this.modalElement.innerHTML = `
@@ -209,7 +209,7 @@ export class VisionUploadModal {
 
   private async addBooks(parsedBooks: ParsedBookInfo[]): Promise<void> {
     const addedBooks: Book[] = [];
-    const existingBooks = storage.getBooks();
+    const existingBooks = await storage.getBooks();
 
     for (const parsedBook of parsedBooks) {
       // Check if book already exists (by ISBN or title)
@@ -266,7 +266,7 @@ export class VisionUploadModal {
         source: ['llm-vision']
       };
 
-      storage.addBook(newBook);
+      await storage.addBook(newBook);
       addedBooks.push(newBook);
     }
 

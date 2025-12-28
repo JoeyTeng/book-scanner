@@ -20,18 +20,18 @@ export class App {
   private bulkEditMode: boolean = false;
   private selectedBookIds: string[] = [];
 
-  init(): void {
+  async init(): Promise<void> {
     // Initialize components
-    new Navbar("navbar", () => {
-      this.bookList.render();
+    const navbar = new Navbar("navbar", () => {
+      void this.bookList.render();
     });
 
     this.bookForm = new BookForm(() => {
-      this.bookList.render();
+      void this.bookList.render();
     });
 
     this.bulkEditModal = new BulkEditModal(() => {
-      this.bookList.render();
+      void this.bookList.render();
       this.exitBulkEditMode();
     });
 
@@ -43,14 +43,20 @@ export class App {
         this.bookForm.showForEdit(book);
       },
       (id) => {
-        storage.deleteBook(id);
-        this.bookList.render();
+        void storage.deleteBook(id);
+        void this.bookList.render();
       }
     );
 
-    this.searchBar = new SearchBar("search-bar", (filters, sortField, sortOrder) => {
-      this.bookList.updateFilters(filters, sortField, sortOrder);
-    });
+    this.searchBar = new SearchBar(
+      "search-bar",
+      (filters, sortField, sortOrder) => {
+        this.bookList.updateFilters(filters, sortField, sortOrder);
+      }
+    );
+
+    // Wait for navbar and search bar to initialize
+    await Promise.all([navbar.waitForInit(), this.searchBar.waitForInit()]);
 
     // Set up bulk edit handler
     this.searchBar.setBulkEditClickHandler(() => {
@@ -89,7 +95,7 @@ export class App {
             },
             // Books added callback (for manual LLM mode)
             () => {
-              this.bookList.render();
+              void this.bookList.render();
             }
           );
         },
@@ -102,10 +108,10 @@ export class App {
     });
 
     // Initial render
-    this.bookList.render();
+    await this.bookList.render();
 
     // Check for API key on first load
-    this.checkApiKey();
+    void this.checkApiKey();
   }
 
   /**
@@ -205,9 +211,9 @@ export class App {
     recommendation?: string
   ): Promise<void> {
     // Ensure Wishlist category exists
-    const categories = storage.getCategories();
+    const categories = await storage.getCategories();
     if (!categories.includes("Wishlist")) {
-      storage.addCategory("Wishlist");
+      await storage.addCategory("Wishlist");
     }
 
     await this.bookForm.showForNew(undefined, recommendation);
@@ -229,8 +235,10 @@ export class App {
     }
   }
 
-  private checkApiKey(): void {
-    if (!storage.getGoogleBooksApiKey() && storage.getBooks().length === 0) {
+  private async checkApiKey(): Promise<void> {
+    const apiKey = await storage.getGoogleBooksApiKey();
+    const books = await storage.getBooks();
+    if (!apiKey && books.length === 0) {
       setTimeout(() => {
         if (
           confirm(

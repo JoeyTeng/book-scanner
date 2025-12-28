@@ -5,8 +5,8 @@ import { storage } from './storage';
 /**
  * Export data as JSON
  */
-export function exportAsJSON(): string {
-  const data = storage.exportData();
+export async function exportAsJSON(): Promise<string> {
+  const data = await storage.exportData();
 
   const exportData: ExportData = {
     version: APP_VERSION,
@@ -21,8 +21,8 @@ export function exportAsJSON(): string {
 /**
  * Export data as CSV
  */
-export function exportAsCSV(): string {
-  const books = storage.getBooks();
+export async function exportAsCSV(): Promise<string> {
+  const books = await storage.getBooks();
 
   // CSV Header
   const headers = [
@@ -66,8 +66,8 @@ export function exportAsCSV(): string {
 /**
  * Export data as Markdown
  */
-export function exportAsMarkdown(): string {
-  const books = storage.getBooks();
+export async function exportAsMarkdown(): Promise<string> {
+  const books = await storage.getBooks();
 
   let markdown = '# My Book Collection\n\n';
   markdown += `Exported on: ${new Date().toLocaleString()}\n\n`;

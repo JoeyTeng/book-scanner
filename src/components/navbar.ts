@@ -6,15 +6,24 @@ import { VisionUploadModal } from './vision-upload-modal';
 export class Navbar {
   private element: HTMLElement;
   private onDataChange?: () => void;
+  private initPromise: Promise<void>;
 
   constructor(containerId: string, onDataChange?: () => void) {
     this.element = document.getElementById(containerId)!;
     this.onDataChange = onDataChange;
-    this.render();
+    this.initPromise = this.init();
+  }
+
+  private async init(): Promise<void> {
+    await this.render();
     this.attachEventListeners();
   }
 
-  private render(): void {
+  async waitForInit(): Promise<void> {
+    await this.initPromise;
+  }
+
+  private async render(): Promise<void> {
     this.element.innerHTML = `
       <div class="navbar">
         <div class="navbar-brand">
@@ -84,7 +93,7 @@ export class Navbar {
               </p>
               <input type="text" id="input-google-api-key" class="input-full"
                      placeholder="Enter Google Books API key"
-                     value="${storage.getGoogleBooksApiKey() || ""}">
+                     value="${await storage.getGoogleBooksApiKey() || ""}">">
             </div>
 
             <div class="api-key-section">
@@ -95,7 +104,7 @@ export class Navbar {
               </p>
               <input type="text" id="input-isbndb-api-key" class="input-full"
                      placeholder="Enter ISBNdb API key (optional)"
-                     value="${storage.getISBNdbApiKey() || ""}">
+                     value="${await storage.getISBNdbApiKey() || ""}">">
             </div>
 
             <div class="api-key-section">
@@ -111,15 +120,15 @@ export class Navbar {
               <label>API Endpoint:</label>
               <input type="text" id="input-llm-endpoint" class="input-full"
                      placeholder="https://api.openai.com/v1/chat/completions"
-                     value="${storage.getLLMApiEndpoint() || ""}">
+                     value="${await storage.getLLMApiEndpoint() || ""}">">
               <label>API Key:</label>
               <input type="text" id="input-llm-key" class="input-full"
                      placeholder="sk-..."
-                     value="${storage.getLLMApiKey() || ""}">
+                     value="${await storage.getLLMApiKey() || ""}">">
               <label>Model:</label>
               <input type="text" id="input-llm-model" class="input-full"
                      placeholder="gpt-4o-mini"
-                     value="${storage.getLLMModel() || ""}">
+                     value="${await storage.getLLMModel() || ""}">">
             </div>
 
             <div class="api-key-section">
@@ -132,15 +141,15 @@ export class Navbar {
               <label>API Endpoint (optional, fallback to Vision API if empty):</label>
               <input type="text" id="input-llm-text-endpoint" class="input-full"
                      placeholder="https://api.openai.com/v1/chat/completions"
-                     value="${storage.getLLMTextApiEndpoint() || ""}">
+                     value="${await storage.getLLMTextApiEndpoint() || ""}">">
               <label>API Key (optional):</label>
               <input type="text" id="input-llm-text-key" class="input-full"
                      placeholder="sk-..."
-                     value="${storage.getLLMTextApiKey() || ""}">
+                     value="${await storage.getLLMTextApiKey() || ""}">">
               <label>Model (optional):</label>
               <input type="text" id="input-llm-text-model" class="input-full"
                      placeholder="gpt-4o-mini"
-                     value="${storage.getLLMTextModel() || ""}">
+                     value="${await storage.getLLMTextModel() || ""}">">
             </div>
 
             <div class="help-box">
@@ -172,20 +181,20 @@ export class Navbar {
     });
 
     // Export
-    document.getElementById('btn-export-json')?.addEventListener('click', () => {
-      const json = exportAsJSON();
+    document.getElementById('btn-export-json')?.addEventListener('click', async () => {
+      const json = await exportAsJSON();
       downloadFile(json, `books-${Date.now()}.json`, 'application/json');
       this.hideModal('menu-modal');
     });
 
-    document.getElementById('btn-export-csv')?.addEventListener('click', () => {
-      const csv = exportAsCSV();
+    document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
+      const csv = await exportAsCSV();
       downloadFile(csv, `books-${Date.now()}.csv`, 'text/csv');
       this.hideModal('menu-modal');
     });
 
-    document.getElementById('btn-export-md')?.addEventListener('click', () => {
-      const md = exportAsMarkdown();
+    document.getElementById('btn-export-md')?.addEventListener('click', async () => {
+      const md = await exportAsMarkdown();
       downloadFile(md, `books-${Date.now()}.md`, 'text/markdown');
       this.hideModal('menu-modal');
     });
@@ -230,7 +239,7 @@ export class Navbar {
 
     document
       .getElementById("btn-save-api-keys")
-      ?.addEventListener("click", () => {
+      ?.addEventListener("click", async () => {
         const googleInput = document.getElementById(
           "input-google-api-key"
         ) as HTMLInputElement;
@@ -266,35 +275,35 @@ export class Navbar {
         const llmTextModel = llmTextModelInput.value.trim();
 
         if (googleKey) {
-          storage.setGoogleBooksApiKey(googleKey);
+          await storage.setGoogleBooksApiKey(googleKey);
         }
 
         if (isbndbKey) {
-          storage.setISBNdbApiKey(isbndbKey);
+          await storage.setISBNdbApiKey(isbndbKey);
         }
 
         if (llmEndpoint) {
-          storage.setLLMApiEndpoint(llmEndpoint);
+          await storage.setLLMApiEndpoint(llmEndpoint);
         }
 
         if (llmKey) {
-          storage.setLLMApiKey(llmKey);
+          await storage.setLLMApiKey(llmKey);
         }
 
         if (llmModel) {
-          storage.setLLMModel(llmModel);
+          await storage.setLLMModel(llmModel);
         }
 
         if (llmTextEndpoint) {
-          storage.setLLMTextApiEndpoint(llmTextEndpoint);
+          await storage.setLLMTextApiEndpoint(llmTextEndpoint);
         }
 
         if (llmTextKey) {
-          storage.setLLMTextApiKey(llmTextKey);
+          await storage.setLLMTextApiKey(llmTextKey);
         }
 
         if (llmTextModel) {
-          storage.setLLMTextModel(llmTextModel);
+          await storage.setLLMTextModel(llmTextModel);
         }
 
         alert("API keys saved successfully!");

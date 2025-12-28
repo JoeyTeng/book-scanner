@@ -38,17 +38,17 @@ export class BookForm {
       this.dataSources = await aggregateBookData(isbn);
     }
 
-    this.render();
+    await this.render();
   }
 
-  showForEdit(book: Book): void {
+  async showForEdit(book: Book): Promise<void> {
     this.book = book;
     this.dataSources = [];
-    this.render();
+    await this.render();
   }
 
-  private render(): void {
-    const categories = storage.getCategories();
+  private async render(): Promise<void> {
+    const categories = await storage.getCategories();
     const isEdit = this.book !== null;
 
     // Prepare initial values
@@ -94,14 +94,14 @@ export class BookForm {
               <div class="button-group">
                 <button id="btn-smart-paste" class="btn-secondary">Parse & Fill</button>
                 ${
-                  llmService.isTextConfigured()
+                  (await llmService.isTextConfigured())
                     ? '<button id="btn-llm-parse" class="btn-secondary">✨ Parse with LLM</button>'
                     : ""
                 }
                 <button id="btn-manual-llm" class="btn-secondary">📱 Use Your LLM App</button>
               </div>
               ${
-                !llmService.isTextConfigured()
+                !(await llmService.isTextConfigured())
                   ? '<p class="hint-text">Tip: Configure LLM API in settings for AI-powered parsing, or use your own LLM app</p>'
                   : ""
               }
@@ -687,7 +687,7 @@ export class BookForm {
     });
   }
 
-  private handleSubmit(): void {
+  private async handleSubmit(): Promise<void> {
     const form = this.modalElement?.querySelector(
       "#book-form"
     ) as HTMLFormElement;
@@ -731,7 +731,7 @@ export class BookForm {
     ).value.trim();
     if (newCategory) {
       categories.push(newCategory);
-      storage.addCategory(newCategory);
+      await storage.addCategory(newCategory);
     }
 
     const tagsInput = (
@@ -746,7 +746,7 @@ export class BookForm {
 
     if (this.book) {
       // Update existing book
-      storage.updateBook(this.book.id, {
+      await storage.updateBook(this.book.id, {
         title,
         author,
         publisher: publisher || undefined,
@@ -778,7 +778,7 @@ export class BookForm {
         source: this.dataSources.map((s) => s.source),
       };
 
-      storage.addBook(newBook);
+      await storage.addBook(newBook);
     }
 
     this.hide();

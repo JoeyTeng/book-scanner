@@ -6,6 +6,7 @@ export class SearchBar {
   private onFilterChange: (filters: SearchFilters, sortField: SortField, sortOrder: SortOrder) => void;
   private onBulkEditClick?: () => void;
   private onViewModeChange?: (mode: ViewMode) => void;
+  private initPromise: Promise<void>;
 
   constructor(
     containerId: string,
@@ -13,8 +14,16 @@ export class SearchBar {
   ) {
     this.element = document.getElementById(containerId)!;
     this.onFilterChange = onFilterChange;
-    this.render();
+    this.initPromise = this.init();
+  }
+
+  private async init(): Promise<void> {
+    await this.render();
     this.attachEventListeners();
+  }
+
+  async waitForInit(): Promise<void> {
+    await this.initPromise;
   }
 
   setBulkEditClickHandler(handler: () => void): void {
@@ -41,8 +50,8 @@ export class SearchBar {
     }
   }
 
-  private render(): void {
-    const categories = storage.getCategories();
+  private async render(): Promise<void> {
+    const categories = await storage.getCategories();
 
     this.element.innerHTML = `
       <div class="search-bar">

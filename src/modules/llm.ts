@@ -15,19 +15,19 @@ export class LLMService {
   /**
    * Check if LLM Vision is configured
    */
-  isConfigured(): boolean {
-    const endpoint = storage.getLLMApiEndpoint();
-    const apiKey = storage.getLLMApiKey();
+  async isConfigured(): Promise<boolean> {
+    const endpoint = await storage.getLLMApiEndpoint();
+    const apiKey = await storage.getLLMApiKey();
     return !!(endpoint && apiKey);
   }
 
   /**
    * Check if LLM Text parsing is configured
    */
-  isTextConfigured(): boolean {
+  async isTextConfigured(): Promise<boolean> {
     // Check if dedicated text API is configured
-    const textEndpoint = storage.getLLMTextApiEndpoint();
-    const textApiKey = storage.getLLMTextApiKey();
+    const textEndpoint = await storage.getLLMTextApiEndpoint();
+    const textApiKey = await storage.getLLMTextApiKey();
     if (textEndpoint && textApiKey) {
       return true;
     }
@@ -39,14 +39,18 @@ export class LLMService {
    * Parse book information from arbitrary text using LLM
    */
   async parseBookInfo(text: string): Promise<ParsedBookInfo | null> {
-    if (!this.isTextConfigured()) {
+    if (!await this.isTextConfigured()) {
       return null;
     }
 
     // Use dedicated text API if configured, otherwise fallback to main API
-    const endpoint = storage.getLLMTextApiEndpoint() || storage.getLLMApiEndpoint()!;
-    const apiKey = storage.getLLMTextApiKey() || storage.getLLMApiKey()!;
-    const model = storage.getLLMTextModel() || storage.getLLMModel() || 'gpt-4o-mini';
+    const endpoint = await storage.getLLMTextApiEndpoint() || await storage.getLLMApiEndpoint();
+    const apiKey = await storage.getLLMTextApiKey() || await storage.getLLMApiKey();
+    const model = await storage.getLLMTextModel() || await storage.getLLMModel() || 'gpt-4o-mini';
+
+    if (!endpoint || !apiKey) {
+      return null;
+    }
 
     try {
       const response = await fetch(endpoint, {
@@ -117,13 +121,17 @@ If a field is not found, use empty string. Always include all fields.`
    * Extract multiple books from an image using Vision API
    */
   async parseBooksFromImage(imageFile: File): Promise<ParsedBookInfo[] | null> {
-    if (!this.isConfigured()) {
+    if (!await this.isConfigured()) {
       return null;
     }
 
-    const endpoint = storage.getLLMApiEndpoint()!;
-    const apiKey = storage.getLLMApiKey()!;
-    const model = storage.getLLMModel() || 'gpt-4o-mini';
+    const endpoint = await storage.getLLMApiEndpoint();
+    const apiKey = await storage.getLLMApiKey();
+    const model = await storage.getLLMModel() || 'gpt-4o-mini';
+
+    if (!endpoint || !apiKey) {
+      return null;
+    }
 
     try {
       // Convert image to base64
@@ -231,12 +239,12 @@ Extract EVERY book mentioned or shown in the image. If a field is not visible, u
   /**
    * Get LLM status for UI display
    */
-  getStatus(): { configured: boolean; endpoint?: string; model?: string } {
-    const configured = this.isConfigured();
+  async getStatus(): Promise<{ configured: boolean; endpoint?: string; model?: string }> {
+    const configured = await this.isConfigured();
     return {
       configured,
-      endpoint: configured ? storage.getLLMApiEndpoint() : undefined,
-      model: configured ? storage.getLLMModel() || 'gpt-4o-mini' : undefined
+      endpoint: configured ? await storage.getLLMApiEndpoint() : undefined,
+      model: configured ? await storage.getLLMModel() || 'gpt-4o-mini' : undefined
     };
   }
 }

@@ -28,16 +28,16 @@ export class BookList {
   setBulkSelectMode(enabled: boolean, onBulkSelectChange?: (selectedIds: string[]) => void): void {
     this.bulkSelectMode = enabled;
     this.onBulkSelectChange = onBulkSelectChange;
-    this.render();
+    void this.render();
   }
 
   setViewMode(mode: ViewMode): void {
     this.viewMode = mode;
-    this.render();
+    void this.render();
   }
 
-  render(): void {
-    let books = storage.getBooks();
+  async render(): Promise<void> {
+    let books = await storage.getBooks();
 
     // Apply filters and sorting
     books = searchBooks(books, this.currentFilters);
@@ -146,18 +146,18 @@ export class BookList {
   private attachListEventListeners(): void {
     // Edit buttons
     this.element.querySelectorAll('.btn-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.id!;
-        const book = storage.getBook(id);
+        const book = await storage.getBook(id);
         if (book) this.onEdit(book);
       });
     });
 
     // Delete buttons
     this.element.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.id!;
-        const book = storage.getBook(id);
+        const book = await storage.getBook(id);
         if (book && confirm(`Delete "${book.title}"?`)) {
           this.onDelete(id);
         }
@@ -204,6 +204,6 @@ export class BookList {
     this.currentFilters = filters;
     this.currentSortField = sortField;
     this.currentSortOrder = sortOrder;
-    this.render();
+    void this.render();
   }
 }

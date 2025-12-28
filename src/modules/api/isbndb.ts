@@ -6,7 +6,7 @@ import { storage } from '../storage';
  * Requires API key from https://isbndb.com
  */
 export async function getISBNdbBookByISBN(isbn: string): Promise<BookDataSource | null> {
-  const apiKey = storage.getISBNdbApiKey();
+  const apiKey = await storage.getISBNdbApiKey();
   if (!apiKey) return null;
 
   try {
@@ -35,7 +35,7 @@ export async function getISBNdbBookByISBN(isbn: string): Promise<BookDataSource 
  * Search ISBNdb by title
  */
 export async function searchISBNdbByTitle(title: string): Promise<BookDataSource[]> {
-  const apiKey = storage.getISBNdbApiKey();
+  const apiKey = await storage.getISBNdbApiKey();
   if (!apiKey) return [];
 
   try {
