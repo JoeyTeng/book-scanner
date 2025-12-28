@@ -1,11 +1,16 @@
 import { OCRService, ParsedOCRResult } from '../modules/ocr';
-import { llmService } from '../modules/llm';
+import { llmService, ParsedBookInfo } from '../modules/llm';
+import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
+import { storage } from '../modules/storage';
+import { Book } from '../types';
+import { searchBookByTitle } from '../modules/api/aggregator';
 
 export class OCRModal {
   private modal: HTMLElement;
   private ocrService: OCRService;
   private onRecognized?: (result: ParsedOCRResult) => void;
   private onSearchMetadata?: (title: string, recommendation?: string) => void;
+  private onBooksAdded?: () => void;
 
   constructor() {
     this.modal = this.createModal();
@@ -58,6 +63,7 @@ export class OCRModal {
         </div>
         <div class="modal-footer">
           <button id="ocr-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="ocr-manual-llm" class="btn btn-secondary">📱 Use Your Own LLM</button>
           <button id="ocr-recognize" class="btn btn-primary" style="display: none;">Recognize with Tesseract</button>
           ${
             llmService.isConfigured()
@@ -124,6 +130,12 @@ export class OCRModal {
       "#ocr-recognize"
     ) as HTMLElement;
     recognizeBtn?.addEventListener("click", () => this.startRecognition());
+
+    // Manual LLM button
+    const manualLLMBtn = this.modal.querySelector(
+      "#ocr-manual-llm"
+    ) as HTMLElement;
+    manualLLMBtn?.addEventListener("click", () => this.showManualLLMHelper());
 
     // LLM Vision button
     const llmVisionBtn = this.modal.querySelector(
@@ -350,6 +362,109 @@ export class OCRModal {
     }
   }
 
+  private showManualLLMHelper(): void {
+    // Temporarily hide this modal to avoid z-index conflicts
+    this.modal.classList.remove('active');
+
+    const helper = new ManualLLMHelper({
+      title: '📱 Extract Book Info with Your LLM App',
+      description: 'Use ChatGPT, Claude, or any LLM app with vision to extract book information from your screenshot.',
+      systemPrompt: MANUAL_LLM_PROMPTS.smartPaste.system,
+      userPromptTemplate: MANUAL_LLM_PROMPTS.smartPaste.user,
+      onResult: async (result) => {
+        const books = Array.isArray(result) ? result : [result];
+        if (books.length === 0) {
+          alert('No book information found in the result. Please try again.');
+          // Restore OCR modal
+          this.modal.classList.add('active');
+          return;
+        }
+
+        // Close OCR modal and add all books (same behavior as VisionUploadModal)
+        this.close();
+        await this.addBooks(books);
+      }
+    });
+
+    helper.show('Upload your screenshot to your LLM app and paste the JSON response below.');
+  }
+
+  private async addBooks(parsedBooks: ParsedBookInfo[]): Promise<void> {
+    const addedBooks: Book[] = [];
+    const existingBooks = storage.getBooks();
+
+    for (const parsedBook of parsedBooks) {
+      // Check if book already exists (by ISBN or title)
+      const isDuplicate = existingBooks.some(
+        (b: Book) =>
+          (parsedBook.isbn && b.isbn === parsedBook.isbn) ||
+          (parsedBook.title &&
+            b.title === parsedBook.title &&
+            b.author === parsedBook.author)
+      );
+
+      if (isDuplicate) {
+        console.log('Skipping duplicate book:', parsedBook.title);
+        continue;
+      }
+
+      // Try to fetch more info from APIs if we have title
+      let finalBook = parsedBook;
+      if (parsedBook.title && !parsedBook.isbn) {
+        try {
+          const apiResults = await searchBookByTitle(parsedBook.title);
+          if (apiResults.length > 0) {
+            // Use first result to supplement missing fields
+            const apiBook = apiResults[0];
+            finalBook = {
+              ...parsedBook,
+              isbn: parsedBook.isbn || apiBook.isbn,
+              cover: parsedBook.cover || apiBook.cover,
+              publisher: parsedBook.publisher || apiBook.publisher,
+              publishDate: parsedBook.publishDate || apiBook.publishDate
+            };
+          }
+        } catch (error) {
+          console.error('Failed to fetch additional info for:', parsedBook.title, error);
+        }
+      }
+
+      // Create book object
+      const book: Book = {
+        id: String(Date.now() + Math.random()),
+        isbn: finalBook.isbn || '',
+        title: finalBook.title || 'Unknown Title',
+        author: finalBook.author || 'Unknown Author',
+        status: 'want',
+        categories: [],
+        addedAt: Date.now(),
+        updatedAt: Date.now(),
+        publisher: finalBook.publisher,
+        publishDate: finalBook.publishDate,
+        cover: finalBook.cover,
+        tags: [],
+        recommendation: finalBook.notes, // Store LLM notes as recommendation
+        notes: '',
+        source: ['manual-llm']
+      };
+
+      storage.addBook(book);
+      addedBooks.push(book);
+    }
+
+    // Show success message
+    if (addedBooks.length > 0) {
+      alert(`Successfully added ${addedBooks.length} book(s)!`);
+
+      // Trigger refresh
+      if (this.onBooksAdded) {
+        this.onBooksAdded();
+      }
+    } else {
+      alert('No new books to add (all were duplicates).');
+    }
+  }
+
   private showElement(selector: string): void {
     const element = this.modal.querySelector(selector) as HTMLElement;
     if (element) {
@@ -366,10 +481,12 @@ export class OCRModal {
 
   open(
     onRecognized: (result: ParsedOCRResult) => void,
-    onSearchMetadata?: (title: string, recommendation?: string) => void
+    onSearchMetadata?: (title: string, recommendation?: string) => void,
+    onBooksAdded?: () => void
   ): void {
     this.onRecognized = onRecognized;
     this.onSearchMetadata = onSearchMetadata;
+    this.onBooksAdded = onBooksAdded;
     this.modal.classList.add("active");
     document.body.style.overflow = "hidden";
 

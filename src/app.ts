@@ -66,7 +66,11 @@ export class App {
             // Search metadata callback
             async (title, recommendation) => {
               await this.handleTitleSearch(title, recommendation);
-            }
+            },
+              // Books added callback (for manual LLM mode)
+              () => {
+                this.bookList.render();
+              };
           );
         },
         // Title search callback
