@@ -4,6 +4,7 @@ import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
 import { storage } from '../modules/storage';
 import { Book } from '../types';
 import { searchBookByTitle } from '../modules/api/aggregator';
+import { i18n } from '../modules/i18n';
 
 export class OCRModal {
   private modal: HTMLElement;
@@ -28,14 +29,14 @@ export class OCRModal {
     modal.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Recognize Book Screenshot</h2>
+          <h2>${i18n.t('ocr.title')}</h2>
           <button class="btn-close" id="ocr-close">&times;</button>
         </div>
         <div class="modal-body">
           <div id="ocr-upload" class="ocr-upload-area">
             <div class="upload-icon">📸</div>
-            <p>Click to upload or drag & drop</p>
-            <p class="upload-hint">Xiaohongshu screenshot or book photo</p>
+            <p>${i18n.t('ocr.upload')}</p>
+            <p class="upload-hint">${i18n.t('ocr.hint')}</p>
             <input type="file" id="ocr-file-input" accept="image/*" style="display: none;">
           </div>
 
@@ -44,7 +45,7 @@ export class OCRModal {
           </div>
 
           <div id="ocr-progress" class="ocr-progress" style="display: none;">
-            <div class="progress-label">Initializing OCR...</div>
+            <div class="progress-label">${i18n.t('ocr.recognizing')}</div>
             <div class="progress-bar">
               <div id="ocr-progress-fill" class="progress-fill"></div>
             </div>
@@ -52,24 +53,24 @@ export class OCRModal {
           </div>
 
           <div id="ocr-result" class="ocr-result" style="display: none;">
-            <h3>Recognized Content</h3>
+            <h3>${i18n.t('ocr.result.title')}</h3>
             <div class="form-group">
-              <label>Book Title</label>
+              <label>${i18n.t('ocr.result.bookTitle')}</label>
               <input type="text" id="ocr-title" class="input-full">
             </div>
             <div class="form-group">
-              <label>Recommendation</label>
+              <label>${i18n.t('ocr.result.recommendation')}</label>
               <textarea id="ocr-recommendation" rows="6" class="input-full"></textarea>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button id="ocr-cancel" class="btn btn-secondary">Cancel</button>
-          <button id="ocr-manual-llm" class="btn btn-secondary">📱 Use Your Own LLM</button>
-          <button id="ocr-recognize" class="btn btn-primary" style="display: none;">Recognize with Tesseract</button>
-          <button id="ocr-llm-vision" class="btn btn-primary" style="display: none;">✨ Recognize with LLM Vision</button>
-          <button id="ocr-search" class="btn btn-primary" style="display: none;">Search Metadata</button>
-          <button id="ocr-confirm" class="btn btn-primary" style="display: none;">Add Book</button>
+          <button id="ocr-cancel" class="btn btn-secondary">${i18n.t('ocr.button.cancel')}</button>
+          <button id="ocr-manual-llm" class="btn btn-secondary">${i18n.t('ocr.button.useYourLLM')}</button>
+          <button id="ocr-recognize" class="btn btn-primary" style="display: none;">${i18n.t('ocr.button.recognize')}</button>
+          <button id="ocr-llm-vision" class="btn btn-primary" style="display: none;">${i18n.t('ocr.button.llmVision')}</button>
+          <button id="ocr-search" class="btn btn-primary" style="display: none;">${i18n.t('ocr.button.search')}</button>
+          <button id="ocr-confirm" class="btn btn-primary" style="display: none;">${i18n.t('ocr.button.confirm')}</button>
         </div>
       </div>
     `;

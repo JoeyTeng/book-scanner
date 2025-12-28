@@ -2,6 +2,7 @@ import './styles/main.css';
 import { App } from './app';
 import { PWAInstallPrompt } from './components/pwa-install-prompt';
 import { storage } from './modules/storage';
+import { i18n } from './modules/i18n';
 
 // Register Service Worker for PWA support
 if ('serviceWorker' in navigator) {
@@ -25,9 +26,12 @@ if ('serviceWorker' in navigator) {
 // Initialize PWA install prompt
 new PWAInstallPrompt();
 
-// Initialize app after storage is ready
+// Initialize app after i18n and storage are ready
 async function initApp() {
   try {
+    // Initialize i18n first
+    await i18n.init();
+
     // Wait for storage to initialize
     await storage.waitForInit();
 

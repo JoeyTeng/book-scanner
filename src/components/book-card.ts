@@ -2,6 +2,7 @@ import type { Book } from '../types';
 import { STATUS_LABELS, STATUS_COLORS } from '../config';
 import { storage } from '../modules/storage';
 import { formatISBN } from '../utils/isbn';
+import { i18n } from '../modules/i18n';
 
 export class BookCard {
   static render(book: Book, _onEdit: (book: Book) => void, _onDelete: (id: string) => void, bulkSelectMode: boolean = false): string {
@@ -47,8 +48,8 @@ export class BookCard {
           ` : ''}
 
           <div class="book-actions">
-            <button class="btn-small btn-edit" data-id="${book.id}">Edit</button>
-            <button class="btn-small btn-delete" data-id="${book.id}">Delete</button>
+            <button class="btn-small btn-edit" data-id="${book.id}">${i18n.t('common.edit')}</button>
+            <button class="btn-small btn-delete" data-id="${book.id}">${i18n.t('common.delete')}</button>
           </div>
         </div>
       </div>
@@ -73,7 +74,7 @@ export class BookCard {
       btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.id!;
         const book = await storage.getBook(id);
-        if (book && confirm(`Delete "${book.title}"?`)) {
+        if (book && confirm(i18n.t('confirm.deleteBook'))) {
           onDelete(id);
         }
       });

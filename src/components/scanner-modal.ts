@@ -1,5 +1,6 @@
 import { BarcodeScanner } from '../modules/scanner';
 import { normalizeISBN } from '../utils/isbn';
+import { i18n } from '../modules/i18n';
 
 export class ScannerModal {
   private scanner: BarcodeScanner;
@@ -29,13 +30,13 @@ export class ScannerModal {
     this.modalElement.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Scan Barcode</h2>
-          <button class="btn-close" id="btn-close-scanner" aria-label="Close">&times;</button>
+          <h2>${i18n.t('scanner.title')}</h2>
+          <button class="btn-close" id="btn-close-scanner" aria-label="${i18n.t('common.close')}">&times;</button>
         </div>
         <div class="modal-body">
           ${this.cameras.length > 1 ? `
             <div class="camera-selector">
-              <label for="camera-select">Select Camera:</label>
+              <label for="camera-select">${i18n.t('scanner.selectCamera')}</label>
               <select id="camera-select" class="input-full">
                 ${this.cameras.map((cam, idx) => `
                   <option value="${cam.id}" ${idx === 0 ? 'selected' : ''}>
@@ -47,13 +48,13 @@ export class ScannerModal {
           ` : ''}
           <div id="scanner-reader" style="width: 100%;"></div>
           <div class="scanner-tips">
-            <p>Position the barcode in the center of the frame</p>
-            <p>Or enter manually:</p>
-            <input type="text" id="manual-isbn" class="input-full" placeholder="Enter ISBN or book title">
-            <p class="hint-text">Tip: You can also search by book title</p>
+            <p>${i18n.t('scanner.tips')}</p>
+            <p>${i18n.t('scanner.orEnter')}</p>
+            <input type="text" id="manual-isbn" class="input-full" placeholder="${i18n.t('scanner.placeholder')}">
+            <p class="hint-text">${i18n.t('scanner.hint')}</p>
             <div class="scanner-actions">
-              <button id="btn-manual-submit" class="btn-primary">Submit</button>
-              <button id="btn-ocr-scan" class="btn btn-secondary">📸 Recognize Screenshot</button>
+              <button id="btn-manual-submit" class="btn-primary">${i18n.t('scanner.submit')}</button>
+              <button id="btn-ocr-scan" class="btn btn-secondary">${i18n.t('scanner.recognizeScreenshot')}</button>
             </div>
           </div>
         </div>

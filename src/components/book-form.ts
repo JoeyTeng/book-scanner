@@ -9,6 +9,7 @@ import { generateExternalLinks } from "../modules/api/external-links";
 import { parseSmartPaste } from "../utils/text-parser";
 import { llmService } from "../modules/llm";
 import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from "./manual-llm-helper";
+import { i18n } from '../modules/i18n';
 
 export class BookForm {
   private modalElement: HTMLDivElement | null = null;
@@ -59,15 +60,15 @@ export class BookForm {
     this.modalElement.innerHTML = `
       <div class="modal-content modal-large">
         <div class="modal-header">
-          <h2>${isEdit ? "Edit Book" : "Add Book"}</h2>
-          <button class="btn-close" id="btn-close-form" aria-label="Close">&times;</button>
+          <h2>${isEdit ? i18n.t('bookForm.title.edit') : i18n.t('bookForm.title.add')}</h2>
+          <button class="btn-close" id="btn-close-form" aria-label="${i18n.t('common.close')}">&times;</button>
         </div>
         <div class="modal-body">
           ${
             this.dataSources.length > 0
               ? `
             <div class="info-box">
-              Found ${this.dataSources.length} result(s). You can select values or edit manually.
+              ${i18n.t('bookForm.found', { count: this.dataSources.length })}
             </div>
           `
               : ""
@@ -77,8 +78,8 @@ export class BookForm {
             !isEdit && this.scannedIsbn && this.dataSources.length === 0
               ? `
             <div class="info-box warning-box">
-              <p>⚠️ No metadata found for ISBN: ${this.scannedIsbn}</p>
-              <button id="btn-search-by-title" class="btn btn-small">Try searching by title instead</button>
+              <p>⚠️ ${i18n.t('bookForm.isbnFailed', { isbn: this.scannedIsbn })}</p>
+              <button id="btn-search-by-title" class="btn btn-small">${i18n.t('bookForm.searchByTitle')}</button>
             </div>
           `
               : ""
@@ -88,25 +89,26 @@ export class BookForm {
             isEdit || (this.dataSources.length === 0 && !this.scannedIsbn)
               ? `
             <div class="smart-paste-section">
-              <h3>Smart Paste</h3>
+              <h3>${i18n.t('bookForm.smartPaste')}</h3>
+              <p class="hint-text">${i18n.t('bookForm.smartPaste.help')}</p>
               <textarea id="smart-paste-input" class="textarea-full"
-                        placeholder="Paste book information here (Title: xxx, Author: xxx, ISBN: xxx)"></textarea>
+                        placeholder="${i18n.t('bookForm.smartPaste.placeholder')}"></textarea>
               <div class="button-group">
-                <button id="btn-smart-paste" class="btn-secondary">Parse & Fill</button>
-                ${
-                  (await llmService.isTextConfigured())
-                    ? '<button id="btn-llm-parse" class="btn-secondary">✨ Parse with LLM</button>'
-                    : ""
+                ${(
+                  await llmService.isTextConfigured()
+                )
+                  ? `<button id="btn-llm-parse" class="btn-secondary">${i18n.t('bookForm.parseLLM')}</button>`
+                  : ""
                 }
-                <button id="btn-manual-llm" class="btn-secondary">📱 Use Your LLM App</button>
+                <button id="btn-manual-llm" class="btn-secondary">${i18n.t('bookForm.useYourLLM')}</button>
               </div>
               ${
                 !(await llmService.isTextConfigured())
-                  ? '<p class="hint-text">Tip: Configure LLM API in settings for AI-powered parsing, or use your own LLM app</p>'
+                  ? `<p class="hint-text">${i18n.t('bookForm.llmTip')}</p>`
                   : ""
               }
             </div>
-            <div class="divider">OR</div>
+            <div class="divider">${i18n.t('common.or')}</div>
           `
               : ""
           }
@@ -115,17 +117,17 @@ export class BookForm {
             isEdit
               ? `
             <div class="info-box">
-              <p>📚 Update book metadata from API</p>
+              <p>${i18n.t('bookForm.refreshMetadata')}</p>
               <div class="button-group">
                 <button id="btn-refresh-isbn" class="btn btn-secondary btn-small" ${
                   !initialData.isbn ? "disabled" : ""
                 }>
-                  🔄 Refresh by ISBN
+                  ${i18n.t('bookForm.refreshISBN')}
                 </button>
                 <button id="btn-refresh-title" class="btn btn-secondary btn-small" ${
                   !initialData.title ? "disabled" : ""
                 }>
-                  🔄 Refresh by Title
+                  ${i18n.t('bookForm.refreshTitle')}
                 </button>
               </div>
             </div>
@@ -134,45 +136,46 @@ export class BookForm {
           }
 
           <form id="book-form">
+            <h3>${i18n.t('bookForm.basicInfo')}</h3>
             <!-- Always visible fields -->
             <div class="form-group">
-              <label>ISBN</label>
+              <label>${i18n.t('bookForm.label.isbn')}</label>
               <input type="text" id="input-isbn" class="input-full"
                      value="${initialData.isbn || ""}">
               ${this.renderDataSourceOptions("isbn")}
             </div>
 
             <div class="form-group">
-              <label>Title *</label>
+              <label>${i18n.t('bookForm.label.title')} *</label>
               <input type="text" id="input-title" class="input-full" required
                      value="${initialData.title || ""}">
               ${this.renderDataSourceOptions("title")}
             </div>
 
             <div class="form-group">
-              <label>Author *</label>
+              <label>${i18n.t('bookForm.label.author')} *</label>
               <input type="text" id="input-author" class="input-full" required
                      value="${initialData.author || ""}">
               ${this.renderDataSourceOptions("author")}
             </div>
 
             <div class="form-group">
-              <label>Reading Status</label>
+              <label>${i18n.t('bookForm.label.status')}</label>
               <select id="input-status" class="input-full">
                 <option value="want" ${
                   initialData.status === "want" ? "selected" : ""
-                }>Want to Read</option>
+                }>${i18n.t('bookForm.status.want')}</option>
                 <option value="reading" ${
                   initialData.status === "reading" ? "selected" : ""
-                }>Reading</option>
+                }>${i18n.t('bookForm.status.reading')}</option>
                 <option value="read" ${
                   initialData.status === "read" ? "selected" : ""
-                }>Read</option>
+                }>${i18n.t('bookForm.status.read')}</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>Categories</label>
+              <label>${i18n.t('bookForm.label.category')}</label>
               <div class="checkbox-group">
                 ${categories
                   .map(
@@ -196,17 +199,17 @@ export class BookForm {
 
             <!-- Collapsible: Additional Info -->
             <details class="form-section">
-              <summary>Additional Info</summary>
+              <summary>${i18n.t('bookForm.additionalInfo')}</summary>
               <div class="form-section-content">
                 <div class="form-group">
-                  <label>Publisher</label>
+                  <label>${i18n.t('bookForm.label.publisher')}</label>
                   <input type="text" id="input-publisher" class="input-full"
                          value="${initialData.publisher || ""}">
                   ${this.renderDataSourceOptions("publisher")}
                 </div>
 
                 <div class="form-group">
-                  <label>Publish Date</label>
+                  <label>${i18n.t('bookForm.label.publishDate')}</label>
                   <input type="text" id="input-publish-date" class="input-full"
                          placeholder="YYYY or YYYY-MM-DD" value="${
                            initialData.publishDate || ""
@@ -215,16 +218,16 @@ export class BookForm {
                 </div>
 
                 <div class="form-group">
-                  <label>Cover URL</label>
+                  <label>${i18n.t('bookForm.label.coverUrl')}</label>
                   <input type="url" id="input-cover" class="input-full"
                          value="${initialData.cover || ""}">
                   ${this.renderDataSourceOptions("cover")}
                 </div>
 
                 <div class="form-group">
-                  <label>Tags (comma-separated)</label>
+                  <label>${i18n.t('bookForm.label.tags')}</label>
                   <input type="text" id="input-tags" class="input-full"
-                         placeholder="e.g., programming, rust, reference"
+                         placeholder="${i18n.t('bookForm.tags.placeholder')}"
                          value="${initialData.tags?.join(", ") || ""}">
                 </div>
               </div>
@@ -232,17 +235,17 @@ export class BookForm {
 
             <!-- Collapsible: Recommendation & Notes -->
             <details class="form-section" open>
-              <summary>Recommendation & Notes</summary>
+              <summary>${i18n.t('bookForm.label.recommendation')} & ${i18n.t('bookForm.label.notes')}</summary>
               <div class="form-section-content">
                 <div class="form-group">
-                  <label>Recommendation <small>(from others)</small></label>
+                  <label>${i18n.t('bookForm.label.recommendation')} <small>${i18n.t('bookForm.recommendation.note')}</small></label>
                   <textarea id="input-recommendation" class="textarea-full" rows="3">${
                     initialData.recommendation || ""
                   }</textarea>
                 </div>
 
                 <div class="form-group">
-                  <label>My Notes</label>
+                  <label>${i18n.t('bookForm.label.notes')}</label>
                   <textarea id="input-notes" class="textarea-full" rows="4">${
                     initialData.notes || ""
                   }</textarea>
@@ -255,10 +258,10 @@ export class BookForm {
               initialData.isbn || initialData.title
                 ? `
               <details class="form-section">
-                <summary>External Links (10)</summary>
+                <summary>${i18n.t('bookForm.externalLinks', { count: 10 })}</summary>
                 <div class="form-section-content">
                   <div class="external-links">
-                    <h3>Search on other platforms:</h3>
+                    <h3>${i18n.t('bookForm.externalLinks.search')}</h3>
                     ${this.renderExternalLinks(
                       initialData.isbn || "",
                       initialData.title
@@ -271,9 +274,9 @@ export class BookForm {
             }
 
             <div class="modal-actions">
-              <button type="button" class="btn-secondary" id="btn-cancel">Cancel</button>
+              <button type="button" class="btn-secondary" id="btn-cancel">${i18n.t('bookForm.button.cancel')}</button>
               <button type="submit" class="btn-primary">${
-                isEdit ? "Update" : "Add"
+                isEdit ? i18n.t('bookForm.button.update') : i18n.t('bookForm.button.add')
               }</button>
             </div>
           </form>

@@ -1,4 +1,5 @@
 import type { BookDataSource } from '../types';
+import { i18n } from '../modules/i18n';
 
 export class BookSelectorModal {
   private modal: HTMLElement;
@@ -18,20 +19,20 @@ export class BookSelectorModal {
     modal.innerHTML = `
       <div class="modal-content modal-large">
         <div class="modal-header">
-          <h2>Select a Book</h2>
+          <h2>${i18n.t('selector.title')}</h2>
           <button class="btn-close" id="selector-close">&times;</button>
         </div>
         <div class="modal-body">
           <div id="selector-loading" class="loading-message" style="display: none;">
-            <p>Searching for books...</p>
+            <p>${i18n.t('selector.loading')}</p>
           </div>
           <div id="selector-results" class="selector-results"></div>
           <div id="selector-empty" class="empty-message" style="display: none;">
-            <p>No results found. Please try a different search term.</p>
+            <p>${i18n.t('selector.empty')}</p>
           </div>
         </div>
         <div class="modal-footer">
-          <button id="selector-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="selector-cancel" class="btn btn-secondary">${i18n.t('selector.button.cancel')}</button>
         </div>
       </div>
     `;
@@ -78,7 +79,7 @@ export class BookSelectorModal {
           <p class="source">Source: ${result.source}</p>
         </div>
         <div class="selector-item-action">
-          <button class="btn btn-primary btn-select" data-index="${index}">Select</button>
+          <button class="btn btn-primary btn-select" data-index="${index}">${i18n.t('selector.button.select')}</button>
         </div>
       </div>
     `).join('');

@@ -17,6 +17,7 @@ A static web application for scanning book barcodes and managing your personal b
 ✅ **Data Import**: Import previously exported JSON data
 ✅ **Local Storage**: All data stored in your browser (no server required)
 ✅ **Version Control**: Automatic data migration for future updates
+✅ **Multi-language**: Full UI support for English and Simplified Chinese (简体中文)
 
 ## Supported Barcode Formats
 
@@ -146,6 +147,21 @@ Your app will be available at: `https://booka.mahane.me/`
 3. Choose your previously exported JSON file
 4. Data will be merged with existing books (duplicates by ID are skipped)
 
+### Switching Languages
+
+1. Click the menu icon (☰)
+2. Find the "Language / 语言" section
+3. Select your preferred language:
+   - **English** - Default language
+   - **简体中文** - Simplified Chinese
+4. Refresh the page to see the interface in your chosen language
+
+**Language Settings:**
+
+- Language preference is automatically saved
+- Browser language is detected on first visit
+- All UI text, buttons, and messages are translated
+
 ## Data Storage
 
 All data is stored in your browser's `localStorage`:
@@ -168,8 +184,12 @@ All data is stored in your browser's `localStorage`:
 book-scanner/
 ├── src/
 │   ├── components/       # UI components
+│   ├── locales/         # Translation files (i18n)
+│   │   ├── en.ts        # English translations
+│   │   └── zh-CN.ts     # Simplified Chinese translations
 │   ├── modules/          # Core functionality
-│   │   └── api/         # API integrations
+│   │   ├── api/         # API integrations
+│   │   └── i18n.ts      # Internationalization system
 │   ├── utils/           # Utility functions
 │   ├── styles/          # CSS files
 │   ├── types.ts         # TypeScript types
@@ -190,6 +210,50 @@ book-scanner/
 - **Google Books API**: Book metadata
 - **Open Library API**: Alternative book data source
 - **LocalStorage**: Browser-based data persistence
+
+## Internationalization (i18n)
+
+The app includes a lightweight, zero-dependency internationalization system:
+
+**Features:**
+
+- **Auto-detection**: Detects browser language on first visit
+- **Persistence**: Language preference saved to localStorage
+- **Full Coverage**: ~240 translation keys covering entire UI
+- **Parameter Support**: Dynamic text with variable interpolation
+- **Minimal Overhead**: <5KB bundle size impact
+
+**Supported Languages:**
+
+- English (en) - Default
+- Simplified Chinese (zh-CN) - 简体中文
+
+**Adding New Languages:**
+
+1. Create a new translation file in `src/locales/` (e.g., `ja.ts` for Japanese)
+2. Copy the structure from `en.ts` and translate all values
+3. Update `src/modules/i18n.ts` to import and register the new locale:
+
+   ```typescript
+   export type Locale = 'en' | 'zh-CN' | 'ja';
+
+   // In init() method:
+   const [en, zhCN, ja] = await Promise.all([
+     import('../locales/en.js'),
+     import('../locales/zh-CN.js'),
+     import('../locales/ja.js')
+   ]);
+
+   this.translations['ja'] = ja.ja;
+   ```
+
+4. Add the language option to the selector in `src/components/navbar.ts`:
+
+   ```html
+   <option value="ja" ${currentLocale === 'ja' ? 'selected' : ''}>日本語</option>
+   ```
+
+5. Update browser language detection in `detectBrowserLocale()` if needed
 
 ## Limitations
 

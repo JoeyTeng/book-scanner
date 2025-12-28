@@ -1,5 +1,6 @@
 import type { SearchFilters, SortField, SortOrder, ViewMode } from '../types';
 import { storage } from '../modules/storage';
+import { i18n } from '../modules/i18n';
 
 export class SearchBar {
   private element: HTMLElement;
@@ -40,11 +41,11 @@ export class SearchBar {
       if (mode) {
         button.textContent =
           selectedCount > 0
-            ? `Edit Selected (${selectedCount})`
-            : "Cancel Selection";
+            ? i18n.t('searchBar.selected', { count: selectedCount })
+            : i18n.t('searchBar.exitBulkEdit');
         button.className = selectedCount > 0 ? 'btn btn-primary' : 'btn btn-secondary';
       } else {
-        button.textContent = 'Bulk Edit';
+        button.textContent = i18n.t('searchBar.bulkEdit');
         button.className = 'btn btn-secondary';
       }
     }
@@ -60,27 +61,27 @@ export class SearchBar {
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
           </svg>
-          <input type="text" id="search-input" class="search-input" placeholder="Search books...">
+          <input type="text" id="search-input" class="search-input" placeholder="${i18n.t('searchBar.placeholder')}">
         </div>
 
         <div class="filters">
           <select id="filter-category" class="filter-select">
-            <option value="all">All Categories</option>
+            <option value="all">${i18n.t('searchBar.filter.all')}</option>
             ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
           </select>
 
           <select id="filter-status" class="filter-select">
-            <option value="all">All Status</option>
-            <option value="want">Want to Read</option>
-            <option value="reading">Reading</option>
-            <option value="read">Read</option>
+            <option value="all">${i18n.t('searchBar.filter.allStatus')}</option>
+            <option value="want">${i18n.t('bookForm.status.want')}</option>
+            <option value="reading">${i18n.t('bookForm.status.reading')}</option>
+            <option value="read">${i18n.t('bookForm.status.read')}</option>
           </select>
 
           <select id="sort-field" class="filter-select">
-            <option value="addedAt">Sort by Date</option>
-            <option value="title">Sort by Title</option>
-            <option value="author">Sort by Author</option>
-            <option value="publishDate">Sort by Publish Date</option>
+            <option value="addedAt">${i18n.t('searchBar.sort.dateAdded')}</option>
+            <option value="title">${i18n.t('searchBar.sort.title')}</option>
+            <option value="author">${i18n.t('searchBar.sort.author')}</option>
+            <option value="publishDate">${i18n.t('searchBar.sort.publishDate')}</option>
           </select>
 
           <button id="sort-order" class="btn-icon" aria-label="Toggle sort order">
@@ -110,7 +111,7 @@ export class SearchBar {
             </button>
           </div>
 
-          <button id="btn-bulk-edit" class="btn btn-secondary">Bulk Edit</button>
+          <button id="btn-bulk-edit" class="btn btn-secondary">${i18n.t('searchBar.bulkEdit')}</button>
         </div>
       </div>
     `;

@@ -1,5 +1,6 @@
 import type { ReadingStatus } from '../types';
 import { storage } from '../modules/storage';
+import { i18n } from '../modules/i18n';
 
 export class BulkEditModal {
   private modalElement: HTMLDivElement | null = null;
@@ -12,7 +13,7 @@ export class BulkEditModal {
 
   async show(bookIds: string[]): Promise<void> {
     if (bookIds.length === 0) {
-      alert('Please select at least one book to edit.');
+      alert(i18n.t('alert.selectOneBook'));
       return;
     }
 
@@ -29,7 +30,7 @@ export class BulkEditModal {
     this.modalElement.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Bulk Edit (${count} book${count > 1 ? 's' : ''})</h2>
+          <h2>${i18n.t('bulkEdit.title', { count, plural: count > 1 ? 's' : '' })}</h2>
           <button class="btn-close" id="btn-close-bulk-edit">&times;</button>
         </div>
         <div class="modal-body">
@@ -37,19 +38,19 @@ export class BulkEditModal {
             <div class="form-group">
               <label>
                 <input type="checkbox" id="change-status">
-                Change Reading Status
+                ${i18n.t('bulkEdit.changeStatus')}
               </label>
               <select id="input-status" class="input-full" disabled>
-                <option value="want">Want to Read</option>
-                <option value="reading">Reading</option>
-                <option value="read">Read</option>
+                <option value="want">${i18n.t('bookForm.status.want')}</option>
+                <option value="reading">${i18n.t('bookForm.status.reading')}</option>
+                <option value="read">${i18n.t('bookForm.status.read')}</option>
               </select>
             </div>
 
             <div class="form-group">
               <label>
                 <input type="checkbox" id="modify-categories">
-                Modify Categories
+                ${i18n.t('bulkEdit.changeCategory')}
               </label>
               <div id="category-operations" style="display: none; margin-top: var(--spacing-sm);">
                 <div class="radio-group" style="margin-bottom: var(--spacing-sm);">
@@ -80,8 +81,8 @@ export class BulkEditModal {
             </div>
 
             <div class="modal-actions">
-              <button type="button" class="btn-secondary" id="btn-cancel-bulk">Cancel</button>
-              <button type="submit" class="btn-primary">Apply Changes</button>
+              <button type="button" class="btn-secondary" id="btn-cancel-bulk">${i18n.t('bulkEdit.button.cancel')}</button>
+              <button type="submit" class="btn-primary">${i18n.t('bulkEdit.button.apply')}</button>
             </div>
           </form>
         </div>
@@ -132,7 +133,7 @@ export class BulkEditModal {
     const modifyCategories = (this.modalElement?.querySelector('#modify-categories') as HTMLInputElement).checked;
 
     if (!changeStatus && !modifyCategories) {
-      alert('Please select at least one change to apply.');
+      alert(i18n.t('alert.selectOneChange'));
       return;
     }
 
@@ -170,7 +171,7 @@ export class BulkEditModal {
       }
 
       if (selectedCategories.length === 0) {
-        alert("Please select at least one category.");
+        alert(i18n.t('alert.selectOneCategory'));
         return;
       }
     }

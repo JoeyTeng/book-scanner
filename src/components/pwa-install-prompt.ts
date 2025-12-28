@@ -2,6 +2,8 @@
  * PWA Install Prompt Component
  * Shows a banner prompting users to install the app
  */
+import { i18n } from '../modules/i18n';
+
 export class PWAInstallPrompt {
   private deferredPrompt: any = null;
   private promptElement: HTMLElement | null = null;
@@ -40,11 +42,11 @@ export class PWAInstallPrompt {
     this.promptElement.innerHTML = `
       <div class="pwa-install-content">
         <div class="pwa-install-text">
-          <strong>Install Book Scanner</strong>
-          <p>Install this app for offline access and better performance</p>
+          <strong>${i18n.t('pwa.install.title')}</strong>
+          <p>${i18n.t('pwa.install.message')}</p>
         </div>
         <div class="pwa-install-actions">
-          <button class="pwa-install-btn" id="pwa-install">Install</button>
+          <button class="pwa-install-btn" id="pwa-install">${i18n.t('pwa.install.button')}</button>
           <button class="pwa-dismiss-btn" id="pwa-dismiss">×</button>
         </div>
       </div>

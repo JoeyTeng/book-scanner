@@ -1,4 +1,5 @@
 import { ParsedBookInfo } from '../modules/llm';
+import { i18n } from '../modules/i18n';
 
 interface ManualLLMConfig {
   title: string;
@@ -39,26 +40,21 @@ export class ManualLLMHelper {
     this.modalElement.innerHTML = `
       <div class="modal-content manual-llm-modal">
         <div class="modal-header">
-          <h2>${this.config.title}</h2>
+          <h2>${i18n.t("manualLLM.title")}</h2>
           <button class="btn-close" id="manual-llm-close">&times;</button>
         </div>
         <div class="modal-body">
-          <div class="info-box">
-            <h4>📱 Use Your Own LLM App</h4>
-            <p>${this.config.description}</p>
-          </div>
-
           <div class="manual-llm-steps">
             <div class="step-item">
               <div class="step-number">1</div>
               <div class="step-content">
-                <h4>Copy the prompt below</h4>
+                <h4>${i18n.t("manualLLM.step1")}</h4>
                 <div class="prompt-box">
                   <pre id="manual-prompt-text">${this.escapeHtml(
                     promptText
                   )}</pre>
                   <button id="btn-copy-prompt" class="btn-primary btn-small">
-                    📋 Copy Prompt
+                    ${i18n.t("manualLLM.button.copy")}
                   </button>
                 </div>
               </div>
@@ -67,40 +63,33 @@ export class ManualLLMHelper {
             <div class="step-item">
               <div class="step-number">2</div>
               <div class="step-content">
-                <h4>Send to your LLM app</h4>
-                <p>Open ChatGPT, Claude, or any LLM app with vision capability.</p>
-                <p><strong>For image recognition:</strong> Upload your image first, then paste the prompt and send.</p>
-                <p><strong>For text parsing:</strong> Just paste the prompt and send.</p>
+                <h4>${i18n.t("manualLLM.step2")}</h4>
+                <p>${i18n.t("manualLLM.step2.apps")}</p>
+                <p>${i18n.t("manualLLM.step2.paste")}</p>
               </div>
             </div>
 
             <div class="step-item">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h4>Paste the JSON result here</h4>
-                <p>Copy the entire JSON response from your LLM and paste below:</p>
+                <h4>${i18n.t("manualLLM.step3")}</h4>
+                <p>${i18n.t("manualLLM.step3.paste")}</p>
                 <textarea id="manual-result-input" class="textarea-full" rows="8"
-                          placeholder='Paste the JSON result here, e.g.:
-{
-  "isbn": "9787111644101",
-  "title": "代码大全",
-  "author": "Steve McConnell",
-  ...
-}'></textarea>
+                          placeholder='{ "isbn": "...", "title": "...", "author": "..." }'></textarea>
                 <button id="btn-parse-result" class="btn-primary">
-                  ✨ Parse & Fill
+                  ${i18n.t("manualLLM.button.parse")}
                 </button>
               </div>
             </div>
           </div>
 
           <div class="help-box">
-            <h4>💡 Tips:</h4>
+            <h4>${i18n.t("manualLLM.tips.title")}</h4>
             <ul>
-              <li><strong>ChatGPT:</strong> Use GPT-4 or GPT-4o for best results</li>
-              <li><strong>Claude:</strong> Works great with Claude 3.5 Sonnet</li>
-              <li><strong>Other apps:</strong> Any LLM that supports JSON output</li>
-              <li>Make sure to copy the entire JSON response (including { and })</li>
+              <li>${i18n.t("manualLLM.tips.chatgpt")}</li>
+              <li>${i18n.t("manualLLM.tips.claude")}</li>
+              <li>${i18n.t("manualLLM.tips.other")}</li>
+              <li>${i18n.t("manualLLM.tips.copyJSON")}</li>
             </ul>
           </div>
         </div>

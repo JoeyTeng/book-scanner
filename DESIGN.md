@@ -1836,6 +1836,168 @@ npm run deploy
 - `public/CNAME`: 包含 `booka.mahane.me`（部署时保留）
 - `.github/workflows/deploy.yml`: 自动部署工作流
 
+### Phase 6: 国际化 (i18n) (2025-12-28)
+
+**核心目标：**
+- 支持多语言界面切换
+- 保持零依赖原则
+- 最小化 bundle size 影响
+
+**设计决策：**
+
+1. **自定义 i18n 系统 vs i18next**
+   - 选择：自定义轻量级实现
+   - 理由：
+     - i18next 会增加 ~30KB bundle size
+     - 项目只需要简单的字符串替换
+     - 不需要复杂的 pluralization / gender / context 功能
+   - 结果：<5KB 实现，满足所有需求
+
+2. **语言切换策略**
+   - 选择：页面刷新模式
+   - 理由：
+     - 简单可靠，不需要复杂的组件重渲染逻辑
+     - 语言切换是低频操作
+     - 避免引入观察者模式的复杂度
+   - 实现：`setLocale()` 后提示用户手动刷新
+
+**技术实现：**
+
+1. **i18n 核心模块** (`src/modules/i18n.ts`)
+   ```typescript
+   class I18n {
+     private locale: Locale = 'en';
+     private translations: Record<Locale, Translations> = {};
+
+     async init() {
+       // 动态加载语言包
+       const [en, zhCN] = await Promise.all([
+         import('../locales/en.js'),
+         import('../locales/zh-CN.js')
+       ]);
+
+       // 自动检测浏览器语言
+       this.locale = this.detectBrowserLocale();
+     }
+
+     t(key: string, params?: Record<string, any>): string {
+       // 三级 fallback: 当前语言 → 英文 → key 本身
+       const text = this.translations[this.locale]?.[key] ||
+                    this.translations['en']?.[key] ||
+                    key;
+
+       // 参数插值：{variable} → 实际值
+       return params ? this.interpolate(text, params) : text;
+     }
+   }
+   ```
+
+2. **语言包结构** (`src/locales/*.ts`)
+   ```typescript
+   export const en = {
+     'navbar.title': 'Book Scanner',
+     'navbar.menu.exportJSON': 'Export as JSON',
+     'bookForm.title.add': 'Add Book',
+     'bookForm.status.reading': 'Reading',
+     // ... ~240 keys
+   };
+   ```
+
+   - 层级命名：`component.section.element`
+   - 共享文本：`common.*`, `confirm.*`, `alert.*`
+   - 参数支持：`'found {count} results'` → `{count: 5}`
+
+3. **组件集成模式**
+   ```typescript
+   import { i18n } from '../modules/i18n';
+
+   // 静态文本
+   const title = i18n.t('bookForm.title.add');
+
+   // 动态参数
+   const message = i18n.t('bookForm.found', { count: results.length });
+
+   // HTML 模板中
+   `<h2>${i18n.t('navbar.title')}</h2>`
+   ```
+
+**覆盖范围：**
+
+- ✅ 所有 12 个组件完整翻译
+- ✅ 菜单、表单、按钮、提示信息
+- ✅ 错误提示、确认对话框
+- ✅ 占位符、帮助文本
+- ✅ 共约 240+ 翻译 keys（英文 + 中文）
+
+**用户体验：**
+
+1. **首次访问**
+   - 自动检测浏览器语言
+   - 中文浏览器 → 中文界面
+   - 其他语言 → 英文界面
+
+2. **手动切换**
+   - 菜单 → 语言 / Language
+   - 选择 English / 简体中文
+   - 提示刷新页面
+   - 偏好保存到 localStorage
+
+3. **持久化**
+   - localStorage key: `'locale'`
+   - 值: `'en'` | `'zh-CN'`
+   - 优先级：用户选择 > 浏览器检测
+
+**扩展性设计：**
+
+```typescript
+// 添加新语言（如日语）的步骤：
+
+// 1. 创建语言包
+// src/locales/ja.ts
+export const ja = {
+  'navbar.title': '図書スキャナー',
+  // ...
+};
+
+// 2. 更新类型定义
+export type Locale = 'en' | 'zh-CN' | 'ja';
+
+// 3. 加载语言包
+const [en, zhCN, ja] = await Promise.all([
+  import('../locales/en.js'),
+  import('../locales/zh-CN.js'),
+  import('../locales/ja.js')
+]);
+
+// 4. 添加到选择器
+<option value="ja">日本語</option>
+```
+
+**性能优化：**
+
+- 动态导入语言包：减少初始 bundle
+- TypeScript 编译为独立模块：tree-shaking 友好
+- 无运行时依赖：零开销抽象
+- 简单字符串替换：无解析开销
+
+**Bundle Size 影响：**
+
+```
+核心 i18n 系统:  ~2KB (gzipped)
+英文语言包:      ~3KB (gzipped)
+中文语言包:      ~4KB (gzipped)
+总增加:         ~9KB (gzipped)
+```
+
+对比 i18next 方案节省: ~21KB
+
+**关键学习：**
+
+- "零依赖"不是目的，而是对项目需求的精准匹配
+- 简单的需求用简单的方案，避免过度工程
+- 页面刷新在低频操作中是可接受的权衡
+- 浏览器语言检测提升首次体验
+
 ### API Key 配置
 
 **Google Books API:**
@@ -1874,7 +2036,7 @@ npm run deploy
 
 ---
 
-**文档版本：** v2.0
+**文档版本：** v2.1
 **最后更新：** 2025-12-28
 **部署地址：** <https://booka.mahane.me/>
 **维护者：** JoeyTeng

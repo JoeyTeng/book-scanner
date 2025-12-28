@@ -2,6 +2,7 @@ import type { Book, SearchFilters, SortField, SortOrder, ViewMode } from '../typ
 import { storage } from '../modules/storage';
 import { searchBooks, sortBooks } from '../modules/search';
 import { BookCard } from './book-card';
+import { i18n } from '../modules/i18n';
 
 export class BookList {
   private element: HTMLElement;
@@ -50,8 +51,7 @@ export class BookList {
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
-          <h2>No books yet</h2>
-          <p>Scan a barcode to add your first book</p>
+          <p>${i18n.t('bookList.empty')}</p>
         </div>
       `;
       return;

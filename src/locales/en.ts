@@ -1,0 +1,241 @@
+/**
+ * English translations
+ */
+export const en = {
+  // Navbar
+  "navbar.title": "Book Scanner",
+  "navbar.menu": "Menu",
+  "navbar.menu.dataManagement": "Data Management",
+  "navbar.menu.exportJSON": "Export as JSON",
+  "navbar.menu.exportCSV": "Export as CSV",
+  "navbar.menu.exportMarkdown": "Export as Markdown",
+  "navbar.menu.import": "Import JSON",
+  "navbar.menu.addBooks": "Add Books",
+  "navbar.menu.addFromImage": "📸 Add from Image (Vision)",
+  "navbar.menu.settings": "Settings",
+  "navbar.menu.apiKeys": "API Keys Settings",
+  "navbar.menu.language": "Language",
+  "navbar.menu.languageChanged":
+    "Language changed. Please refresh the page to use the English version.",
+  "navbar.menu.dangerZone": "Danger Zone",
+  "navbar.menu.clearData": "Clear All Data",
+  "navbar.menu.close": "Close",
+
+  // API Keys Modal
+  "apiKeys.title": "API Keys Settings",
+  "apiKeys.google.title": "Google Books API",
+  "apiKeys.google.help":
+    "Free API with quota limits. Required for most book lookups.",
+  "apiKeys.google.getKey": "Get API Key →",
+  "apiKeys.isbndb.title": "ISBNdb API",
+  "apiKeys.isbndb.help":
+    "Premium API with better coverage. Optional but recommended.",
+  "apiKeys.llm.title": "LLM Vision API",
+  "apiKeys.llm.help":
+    "For Smart Paste and image recognition. Supports OpenAI, Anthropic, and OpenAI-compatible endpoints.",
+  "apiKeys.llm.endpoint": "API Endpoint:",
+  "apiKeys.llm.endpointPlaceholder":
+    "https://api.openai.com/v1/chat/completions",
+  "apiKeys.llm.key": "API Key:",
+  "apiKeys.llm.keyPlaceholder": "sk-...",
+  "apiKeys.llm.model": "Model:",
+  "apiKeys.llm.modelPlaceholder": "gpt-4o-mini",
+  "apiKeys.llmText.title": "LLM Text API (Optional)",
+  "apiKeys.llmText.help":
+    "For Smart Paste text parsing only. Use a cheaper model to save costs.",
+  "apiKeys.llmText.budget":
+    "Budget-friendly: gpt-4o-mini, deepseek-chat, or leave empty to use Vision API",
+  "apiKeys.llmText.endpointOptional":
+    "API Endpoint (optional, fallback to Vision API if empty):",
+  "apiKeys.llmText.keyOptional": "API Key (optional):",
+  "apiKeys.llmText.modelOptional": "Model (optional):",
+  "apiKeys.freeAPIs": "Free APIs (no key required):",
+  "apiKeys.freeAPI.openLibrary": "Open Library - General books database",
+  "apiKeys.freeAPI.internetArchive":
+    "Internet Archive - Large collection including rare books",
+  "apiKeys.freeAPI.crossref": "Crossref - Academic publications and textbooks",
+  "apiKeys.save": "Save All Keys",
+  "apiKeys.saved": "API keys saved successfully!",
+
+  // Book Form
+  "bookForm.title.add": "Add Book",
+  "bookForm.title.edit": "Edit Book",
+  "bookForm.found":
+    "Found {count} result(s). You can select values or edit manually.",
+  "bookForm.isbnFailed": "No results found for ISBN: {isbn}",
+  "bookForm.searchByTitle": "Search by Title",
+  "bookForm.smartPaste": "Smart Paste",
+  "bookForm.smartPaste.help":
+    "Paste any text (book info, review, recommendation) and AI will extract the details",
+  "bookForm.smartPaste.placeholder": "Paste book information here...",
+  "bookForm.parseLLM": "✨ Parse with LLM",
+  "bookForm.useYourLLM": "📱 Use Your LLM App",
+  "bookForm.llmTip":
+    "Tip: Configure LLM API in settings for AI-powered parsing, or use your own LLM app",
+  "bookForm.refreshMetadata": "📚 Update book metadata from API",
+  "bookForm.refreshISBN": "Refresh by ISBN",
+  "bookForm.refreshTitle": "Refresh by Title",
+  "bookForm.basicInfo": "Basic Information",
+  "bookForm.label.title": "Title",
+  "bookForm.label.author": "Author",
+  "bookForm.label.isbn": "ISBN",
+  "bookForm.label.publisher": "Publisher",
+  "bookForm.label.publishDate": "Publish Date",
+  "bookForm.label.coverUrl": "Cover Image URL",
+  "bookForm.label.category": "Category",
+  "bookForm.label.status": "Reading Status",
+  "bookForm.status.want": "Want to Read",
+  "bookForm.status.reading": "Reading",
+  "bookForm.status.read": "Read",
+  "bookForm.additionalInfo": "Additional Information",
+  "bookForm.label.tags": "Tags",
+  "bookForm.tags.placeholder": "Comma-separated tags",
+  "bookForm.label.recommendation": "Recommendation",
+  "bookForm.recommendation.note": "(from others)",
+  "bookForm.label.notes": "My Notes",
+  "bookForm.externalLinks": "External Links ({count})",
+  "bookForm.externalLinks.search": "Search on other platforms:",
+  "bookForm.button.cancel": "Cancel",
+  "bookForm.button.add": "Add",
+  "bookForm.button.update": "Update",
+
+  // Book List
+  "bookList.empty":
+    "No books yet. Click the scan button to add your first book!",
+  "bookList.viewMode.card": "Card View",
+  "bookList.viewMode.list": "List View",
+
+  // Search Bar
+  "searchBar.placeholder": "Search by title, author, ISBN, or tags...",
+  "searchBar.filter.all": "All Categories",
+  "searchBar.filter.allStatus": "All Status",
+  "searchBar.sort.dateAdded": "Date Added",
+  "searchBar.sort.title": "Title",
+  "searchBar.sort.author": "Author",
+  "searchBar.sort.publishDate": "Publish Date",
+  "searchBar.bulkEdit": "Bulk Edit",
+  "searchBar.exitBulkEdit": "Exit Bulk Edit",
+  "searchBar.selected": "{count} selected",
+
+  // Bulk Edit Modal
+  "bulkEdit.title": "Bulk Edit ({count} book{plural})",
+  "bulkEdit.changeStatus": "Change Reading Status",
+  "bulkEdit.changeCategory": "Change Category",
+  "bulkEdit.button.cancel": "Cancel",
+  "bulkEdit.button.apply": "Apply Changes",
+  "bulkEdit.success": "Successfully updated {count} book{plural}",
+
+  // Scanner Modal
+  "scanner.title": "Scan Barcode",
+  "scanner.selectCamera": "Select Camera:",
+  "scanner.tips": "Position the barcode in the center of the frame",
+  "scanner.orEnter": "Or enter manually:",
+  "scanner.placeholder": "Enter ISBN or book title",
+  "scanner.hint": "Tip: You can also search by book title",
+  "scanner.submit": "Submit",
+  "scanner.recognizeScreenshot": "📸 Recognize Screenshot",
+  "scanner.searchByTitle": "🔍 Search by Title",
+  "scanner.cancel": "Cancel",
+
+  // OCR Modal
+  "ocr.title": "Recognize Book Screenshot",
+  "ocr.upload": "Click to upload or drag & drop",
+  "ocr.hint": "Xiaohongshu screenshot or book photo",
+  "ocr.recognizing": "Initializing OCR...",
+  "ocr.result.title": "Recognized Content",
+  "ocr.result.bookTitle": "Book Title",
+  "ocr.result.recommendation": "Recommendation",
+  "ocr.button.cancel": "Cancel",
+  "ocr.button.useYourLLM": "📱 Use Your Own LLM",
+  "ocr.button.recognize": "Recognize with Tesseract",
+  "ocr.button.llmVision": "✨ Recognize with LLM Vision",
+  "ocr.button.search": "Search Metadata",
+  "ocr.button.confirm": "Add Book",
+
+  // Vision Upload Modal
+  "vision.title": "📸 Add Books from Image",
+  "vision.info": "📷 Upload a screenshot containing book recommendations",
+  "vision.support":
+    "Supports Xiaohongshu, Douban, WeChat Read, Amazon listings, etc.",
+  "vision.noAPI": "⚠️ No LLM Vision API configured",
+  "vision.noAPI.help":
+    "You can still use the manual mode below to extract books with your own LLM app (ChatGPT, Claude, etc.)",
+  "vision.selectImage": "📤 Select Image (Auto Extract)",
+  "vision.analyzing": "Analyzing image with Vision API...",
+  "vision.foundBooks": "Found Books:",
+  "vision.addAll": "Add All Books",
+  "vision.cancelPreview": "Cancel",
+  "vision.manualMode": "📱 Use Your Own LLM App",
+  "vision.manualMode.help":
+    "Extract books manually with ChatGPT, Claude, or any LLM app",
+  "vision.button.cancel": "Cancel",
+
+  // Book Selector Modal
+  "selector.title": "Select a Book",
+  "selector.loading": "Searching for books...",
+  "selector.empty": "No results found. Please try a different search term.",
+  "selector.button.select": "Select",
+  "selector.button.cancel": "Cancel",
+
+  // Manual LLM Helper
+  "manualLLM.title": "Use Your Own LLM App",
+  "manualLLM.step1": "Copy the prompt below",
+  "manualLLM.step2": "Paste into your LLM app",
+  "manualLLM.step2.apps": "Open ChatGPT, Claude, or any LLM app",
+  "manualLLM.step2.paste": "Paste the prompt and get the JSON response",
+  "manualLLM.step3": "Copy the result back here",
+  "manualLLM.step3.paste": "Paste the JSON result from your LLM:",
+  "manualLLM.button.copy": "Copy Prompt",
+  "manualLLM.button.copied": "Copied!",
+  "manualLLM.button.parse": "Parse Result",
+  "manualLLM.button.cancel": "Cancel",
+  "manualLLM.tips.title": "💡 Tips:",
+  "manualLLM.tips.chatgpt": "ChatGPT: chat.openai.com",
+  "manualLLM.tips.claude": "Claude: claude.ai",
+  "manualLLM.tips.other": "Other apps: Any LLM that supports JSON output",
+  "manualLLM.tips.copyJSON":
+    "Make sure to copy the entire JSON response (including { and })",
+
+  // PWA Install Prompt
+  "pwa.install.title": "Install Book Scanner",
+  "pwa.install.message":
+    "Install this app on your device for a better experience and offline access.",
+  "pwa.install.button": "Install",
+  "pwa.install.dismiss": "Not now",
+
+  // Common
+  "common.close": "Close",
+  "common.cancel": "Cancel",
+  "common.save": "Save",
+  "common.delete": "Delete",
+  "common.edit": "Edit",
+  "common.add": "Add",
+  "common.search": "Search",
+  "common.loading": "Loading...",
+  "common.error": "Error",
+  "common.success": "Success",
+  "common.confirm": "Confirm",
+  "common.or": "OR",
+
+  // Confirmations
+  "confirm.clearData":
+    "Are you sure you want to delete all data? This action cannot be undone.",
+  "confirm.deleteBook": "Are you sure you want to delete this book?",
+
+  // External Links
+  "external.dangdang": "Dangdang",
+  "external.jd": "JD.com",
+  "external.amazon": "Amazon",
+  "external.douban": "Douban",
+  "external.wechatRead": "WeChat Read",
+  "external.zlibrary": "Z-Library",
+  "external.annas": "Anna's Archive",
+  "external.libgen": "Library Genesis",
+  "external.googleBooks": "Google Books",
+  "external.openLibrary": "Open Library",
+
+  // Alerts
+  "alert.selectOneBook": "Please select at least one book to edit.",
+  "alert.selectOneChange": "Please select at least one change to apply.",
+  "alert.selectOneCategory": "Please select at least one category.",
+};

@@ -3,6 +3,7 @@ import { storage } from '../modules/storage';
 import { Book } from '../types';
 import { searchBookByTitle } from '../modules/api/aggregator';
 import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from "./manual-llm-helper";
+import { i18n } from '../modules/i18n';
 
 export class VisionUploadModal {
   private modalElement: HTMLDivElement | null = null;
@@ -30,28 +31,28 @@ export class VisionUploadModal {
     this.modalElement.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
-          <h2>📸 Add Books from Image</h2>
+          <h2>${i18n.t('vision.title')}</h2>
           <button class="btn-close" id="btn-close-vision">&times;</button>
         </div>
         <div class="modal-body">
           <div class="info-box">
-            <p>📷 Upload a screenshot containing book recommendations</p>
-            <p>Supports Xiaohongshu, Douban, WeChat Read, Amazon listings, etc.</p>
+            <p>${i18n.t('vision.info')}</p>
+            <p>${i18n.t('vision.support')}</p>
           </div>
 
           ${
             !llmService.isConfigured()
               ? `
               <div class="info-box warning-box">
-                <p>⚠️ No LLM Vision API configured</p>
-                <p>You can still use the manual mode below to extract books with your own LLM app (ChatGPT, Claude, etc.)</p>
+                <p>${i18n.t('vision.noAPI')}</p>
+                <p>${i18n.t('vision.noAPI.help')}</p>
               </div>
             `
               : `
               <div class="upload-section">
                 <input type="file" id="vision-file-input" accept="image/*" style="display: none;">
                 <button id="btn-select-image" class="btn-primary btn-large">
-                  📤 Select Image (Auto Extract)
+                  ${i18n.t('vision.selectImage')}
                 </button>
                 <div id="image-preview" style="display: none; margin-top: 1rem;">
                   <img id="preview-img" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
@@ -61,28 +62,28 @@ export class VisionUploadModal {
 
               <div id="parsing-status" style="display: none; margin-top: 1rem;">
                 <div class="loading-spinner"></div>
-                <p id="status-text">Analyzing image with Vision API...</p>
+                <p id="status-text">${i18n.t('vision.analyzing')}</p>
               </div>
 
               <div id="books-preview" style="display: none; margin-top: 1rem;">
-                <h3>Found Books:</h3>
+                <h3>${i18n.t('vision.foundBooks')}</h3>
                 <div id="books-list"></div>
                 <div class="modal-actions">
-                  <button id="btn-add-all" class="btn-primary">Add All Books</button>
-                  <button id="btn-cancel-preview" class="btn-secondary">Cancel</button>
+                  <button id="btn-add-all" class="btn-primary">${i18n.t('vision.addAll')}</button>
+                  <button id="btn-cancel-preview" class="btn-secondary">${i18n.t('vision.cancelPreview')}</button>
                 </div>
               </div>
             `
           }
 
-          <div class="divider">OR</div>
+          <div class="divider">${i18n.t('common.or')}</div>
 
           <div class="upload-section">
             <button id="btn-manual-vision" class="btn-secondary btn-large">
-              📱 Use Your Own LLM App
+              ${i18n.t('vision.manualMode')}
             </button>
             <p style="text-align: center; color: var(--color-text-secondary); margin-top: var(--spacing-sm);">
-              Extract books manually with ChatGPT, Claude, or any LLM app
+              ${i18n.t('vision.manualMode.help')}
             </p>
           </div>
         </div>
