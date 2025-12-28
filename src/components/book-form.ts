@@ -1,11 +1,14 @@
 import type { Book, BookDataSource } from '../types';
 import { storage } from '../modules/storage';
 import { generateUUID } from '../utils/uuid';
-import { aggregateBookData } from '../modules/api/aggregator';
-import { generateExternalLinks } from '../modules/api/external-links';
-import { parseSmartPaste } from '../utils/text-parser';
+import {
+  aggregateBookData,
+  searchBookByTitle,
+} from "../modules/api/aggregator";
+import { generateExternalLinks } from "../modules/api/external-links";
+import { parseSmartPaste } from "../utils/text-parser";
 import { llmService } from "../modules/llm";
-import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
+import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from "./manual-llm-helper";
 
 export class BookForm {
   private modalElement: HTMLDivElement | null = null;
@@ -108,14 +111,34 @@ export class BookForm {
               : ""
           }
 
+          ${
+            isEdit
+              ? `
+            <div class="info-box">
+              <p>📚 Update book metadata from API</p>
+              <div class="button-group">
+                <button id="btn-refresh-isbn" class="btn btn-secondary btn-small" ${
+                  !initialData.isbn ? "disabled" : ""
+                }>
+                  🔄 Refresh by ISBN
+                </button>
+                <button id="btn-refresh-title" class="btn btn-secondary btn-small" ${
+                  !initialData.title ? "disabled" : ""
+                }>
+                  🔄 Refresh by Title
+                </button>
+              </div>
+            </div>
+          `
+              : ""
+          }
+
           <form id="book-form">
             <!-- Always visible fields -->
             <div class="form-group">
               <label>ISBN</label>
               <input type="text" id="input-isbn" class="input-full"
-                     value="${initialData.isbn || ""}" ${
-      isEdit ? "readonly" : ""
-    }>
+                     value="${initialData.isbn || ""}">
               ${this.renderDataSourceOptions("isbn")}
             </div>
 
@@ -348,6 +371,45 @@ export class BookForm {
         this.hide();
       });
 
+    // Refresh from API buttons (edit mode only)
+    this.modalElement
+      ?.querySelector("#btn-refresh-isbn")
+      ?.addEventListener("click", async () => {
+        await this.handleRefreshFromAPI("isbn");
+      });
+
+    this.modalElement
+      ?.querySelector("#btn-refresh-title")
+      ?.addEventListener("click", async () => {
+        await this.handleRefreshFromAPI("title");
+      });
+
+    // Enable/disable refresh buttons based on input values
+    const isbnInput = this.modalElement?.querySelector(
+      "#input-isbn"
+    ) as HTMLInputElement;
+    const titleInput = this.modalElement?.querySelector(
+      "#input-title"
+    ) as HTMLInputElement;
+    const isbnRefreshBtn = this.modalElement?.querySelector(
+      "#btn-refresh-isbn"
+    ) as HTMLButtonElement;
+    const titleRefreshBtn = this.modalElement?.querySelector(
+      "#btn-refresh-title"
+    ) as HTMLButtonElement;
+
+    if (isbnInput && isbnRefreshBtn) {
+      isbnInput.addEventListener("input", () => {
+        isbnRefreshBtn.disabled = !isbnInput.value.trim();
+      });
+    }
+
+    if (titleInput && titleRefreshBtn) {
+      titleInput.addEventListener("input", () => {
+        titleRefreshBtn.disabled = !titleInput.value.trim();
+      });
+    }
+
     // Data source selection
     this.modalElement?.querySelectorAll(".btn-source").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -538,8 +600,9 @@ export class BookForm {
         const text = textarea.value.trim();
 
         const helper = new ManualLLMHelper({
-          title: '📱 Smart Paste with Your LLM App',
-          description: 'Use ChatGPT, Claude, or any LLM app you already have to parse book information without API keys.',
+          title: "📱 Smart Paste with Your LLM App",
+          description:
+            "Use ChatGPT, Claude, or any LLM app you already have to parse book information without API keys.",
           systemPrompt: MANUAL_LLM_PROMPTS.smartPaste.system,
           userPromptTemplate: MANUAL_LLM_PROMPTS.smartPaste.user,
           onResult: (result) => {
@@ -552,11 +615,15 @@ export class BookForm {
             // Fill form fields
             if (parsed.isbn)
               (
-                this.modalElement?.querySelector("#input-isbn") as HTMLInputElement
+                this.modalElement?.querySelector(
+                  "#input-isbn"
+                ) as HTMLInputElement
               ).value = parsed.isbn;
             if (parsed.title)
               (
-                this.modalElement?.querySelector("#input-title") as HTMLInputElement
+                this.modalElement?.querySelector(
+                  "#input-title"
+                ) as HTMLInputElement
               ).value = parsed.title;
             if (parsed.author)
               (
@@ -588,7 +655,7 @@ export class BookForm {
                   "#input-notes"
                 ) as HTMLTextAreaElement
               ).value = parsed.notes;
-          }
+          },
         });
 
         helper.show(text || undefined);
@@ -716,6 +783,231 @@ export class BookForm {
 
     this.hide();
     this.onSave();
+  }
+
+  private async handleRefreshFromAPI(method: "isbn" | "title"): Promise<void> {
+    if (!this.book) return;
+
+    // Get current value from form input (may be updated but not yet saved)
+    const query =
+      method === "isbn"
+        ? (this.modalElement?.querySelector("#input-isbn") as HTMLInputElement)
+            ?.value || this.book.isbn
+        : (this.modalElement?.querySelector("#input-title") as HTMLInputElement)
+            ?.value || this.book.title;
+
+    if (!query) return;
+
+    try {
+      // Show loading state
+      const button = this.modalElement?.querySelector(
+        `#btn-refresh-${method}`
+      ) as HTMLButtonElement;
+      if (!button) return;
+
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "⏳ Loading...";
+
+      // Fetch data from API
+      let results: BookDataSource[] = [];
+      if (method === "isbn") {
+        results = await aggregateBookData(query);
+      } else {
+        results = await searchBookByTitle(query);
+      }
+
+      button.disabled = false;
+      button.textContent = originalText;
+
+      if (results.length === 0) {
+        alert(`No results found for ${method}: ${query}`);
+        return;
+      }
+
+      // Store results and show selection UI
+      this.dataSources = results;
+      this.showRefreshSelectionUI(results);
+    } catch (error) {
+      console.error("Failed to fetch from API:", error);
+
+      // Restore button state
+      const button = this.modalElement?.querySelector(
+        `#btn-refresh-${method}`
+      ) as HTMLButtonElement;
+      if (button) {
+        button.disabled = false;
+        button.textContent =
+          method === "isbn" ? "🔄 Refresh by ISBN" : "🔄 Refresh by Title";
+      }
+
+      // Show detailed error message
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("403") || errorMessage.includes("quota")) {
+        alert(
+          "API quota exceeded or permission denied.\n\nPossible solutions:\n1. Wait a few minutes and try again\n2. Check your API key configuration in Settings\n3. Try using a different API key"
+        );
+      } else if (errorMessage.includes("401")) {
+        alert(
+          "API authentication failed.\n\nPlease check your API key in Settings."
+        );
+      } else {
+        alert(
+          `Failed to fetch data from API.\n\nError: ${errorMessage}\n\nPlease try again or check your network connection.`
+        );
+      }
+    }
+  }
+
+  private showRefreshSelectionUI(results: BookDataSource[]): void {
+    if (!this.modalElement) return;
+
+    // Create a modal overlay for field selection
+    const selectionModal = document.createElement("div");
+    selectionModal.className = "modal";
+    selectionModal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Update Book Metadata</h2>
+          <button class="btn-close" id="btn-close-selection">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="info-box">
+            <p>Found ${results.length} result(s). Select fields to update:</p>
+          </div>
+
+          <form id="refresh-selection-form">
+            ${this.renderRefreshField("isbn", results)}
+            ${this.renderRefreshField("title", results)}
+            ${this.renderRefreshField("author", results)}
+            ${this.renderRefreshField("publisher", results)}
+            ${this.renderRefreshField("publishDate", results)}
+            ${this.renderRefreshField("cover", results)}
+          </form>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btn-cancel-refresh">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-apply-refresh">Apply Updates</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(selectionModal);
+    selectionModal.style.display = "flex";
+
+    // Event listeners
+    selectionModal
+      .querySelector("#btn-close-selection")
+      ?.addEventListener("click", () => {
+        selectionModal.remove();
+      });
+
+    selectionModal
+      .querySelector("#btn-cancel-refresh")
+      ?.addEventListener("click", () => {
+        selectionModal.remove();
+      });
+
+    selectionModal
+      .querySelector("#btn-apply-refresh")
+      ?.addEventListener("click", () => {
+        this.applyRefreshUpdates(selectionModal);
+        selectionModal.remove();
+      });
+  }
+
+  private renderRefreshField(
+    field: keyof BookDataSource,
+    results: BookDataSource[]
+  ): string {
+    // Map to include original index, then filter
+    const sources = results
+      .map((s, index) => ({ data: s, index }))
+      .filter((item) => item.data[field]);
+
+    if (sources.length === 0) return "";
+
+    const currentValue = this.book?.[field as keyof Book] || "";
+
+    // Format field name for display
+    const fieldLabel =
+      field === "isbn"
+        ? "ISBN"
+        : field === "publishDate"
+        ? "Publish Date"
+        : field.charAt(0).toUpperCase() + field.slice(1);
+
+    return `
+      <div class="form-group">
+        <label>${fieldLabel}</label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="refresh-${field}" value="keep" checked>
+            Keep current: <strong>${currentValue || "(empty)"}</strong>
+          </label>
+          ${sources
+            .map(
+              (item) => `
+            <label>
+              <input type="radio" name="refresh-${field}" value="${item.index}">
+              Update to: <strong>${item.data[field]}</strong> <span class="hint-text">(${item.data.source})</span>
+            </label>
+          `
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  private applyRefreshUpdates(selectionModal: HTMLElement): void {
+    if (!this.modalElement || !this.book) {
+      console.error("Missing modalElement or book");
+      return;
+    }
+
+    const fields: (keyof BookDataSource)[] = [
+      "isbn",
+      "title",
+      "author",
+      "publisher",
+      "publishDate",
+      "cover",
+    ];
+
+    fields.forEach((field) => {
+      const selector = `input[name="refresh-${field}"]:checked`;
+      const selected = selectionModal.querySelector<HTMLInputElement>(selector);
+
+      if (selected && selected.value !== "keep") {
+        const sourceIndex = parseInt(selected.value);
+        const newValue = this.dataSources[sourceIndex]?.[field];
+
+        if (newValue) {
+          // Convert field name to input ID (e.g., 'publishDate' -> 'publish-date', 'isbn' -> 'isbn')
+          const inputId = `#input-${field
+            .replace(/([A-Z])/g, "-$1")
+            .toLowerCase()}`;
+          const input = this.modalElement?.querySelector(
+            inputId
+          ) as HTMLInputElement;
+
+          if (input) {
+            // Temporarily remove readonly for ISBN field
+            const wasReadonly = input.readOnly;
+            if (wasReadonly) input.readOnly = false;
+            input.value = newValue;
+            // Trigger change event to ensure any listeners update
+            input.dispatchEvent(new Event("change"));
+            input.dispatchEvent(new Event("input"));
+            if (wasReadonly) input.readOnly = true;
+          }
+        }
+      }
+    });
+
+    alert('Fields updated! Click "Update" to save changes.');
   }
 
   hide(): void {
