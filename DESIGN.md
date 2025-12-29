@@ -1998,6 +1998,466 @@ const [en, zhCN, ja] = await Promise.all([
 - 页面刷新在低频操作中是可接受的权衡
 - 浏览器语言检测提升首次体验
 
+### Phase 7: Category 管理增强 (2025-12-29)
+
+**核心目标：**
+
+- 改进 Category 选择体验（类似微信标签交互）
+- 支持 Category 的完整 CRUD 操作
+- 智能排序（按使用频率自动优化）
+- 提升移动端体验
+
+**问题背景：**
+
+当前 Category 管理存在以下问题：
+
+1. **添加入口不明显**：长输入框位于 checkbox 列表下方，容易被忽略
+2. **无法管理已有 Category**：不能重命名或删除系统默认或用户创建的 Category
+3. **排序固定**：按照添加顺序展示，常用的不会自动靠前
+4. **无使用统计**：用户不知道哪些 Category 使用频繁
+
+**设计决策：**
+
+1. **Tag Input 交互模式 vs 传统 Checkbox**
+   - 选择：Tag Input（类似微信标签、邮件收件人）
+   - 理由：
+     - 更直观的"已选择"状态（标签形式）
+     - 支持搜索过滤（Category 多时更高效）
+     - 更容易添加新 Category（内联输入框）
+     - 移动端友好（避免长列表滚动）
+   - 权衡：实现复杂度略高，但用户体验显著提升
+
+2. **智能排序算法**
+   - 三级排序优先级：
+     1. 最后使用时间（lastUsedAt 降序）
+     2. 使用书籍数量（bookCount 降序）
+     3. 字典序（localeCompare，忽略大小写）
+   - 理由：
+     - 常用的自动靠前，减少搜索时间
+     - 书籍多的 Category 更重要
+     - 相同情况下按字母顺序便于查找
+   - 动态更新：每次添加/编辑书籍时更新 lastUsedAt
+
+3. **搜索过滤实现**
+   - Phase 1（立即实现）：零成本原生方案
+     - 使用原生 `String.includes()` + `localeCompare()`
+     - 支持 accent/diacritic 忽略（café = cafe）
+     - 中文直接字符匹配（"科技" 搜 "科" 可匹配）
+     - Bundle 增加：0KB
+   - Phase 2（未来优化）：拼音搜索增强
+     - 引入 `pinyin-pro` 库（45KB gzipped）
+     - 支持中文拼音首字母搜索（如 "zg" 搜 "中国"）
+     - 支持中文拼音全拼搜索（如 "zhongguo" 搜 "中国"）
+     - 通过动态 `import()` 按需加载
+     - 触发条件：用户反馈中文搜索体验不佳时
+   - 权衡：先用简单方案快速上线，根据实际需求再升级
+
+**数据结构设计：**
+
+1. **CategoryMetadata 定义**
+
+   ```typescript
+   // 旧结构（Phase 1-6）
+   settings.categories: string[]  // ['Technology', 'Fiction', ...]
+
+   // 新结构（Phase 7+）
+   settings.categories: CategoryMetadata[]
+
+   interface CategoryMetadata {
+     name: string;         // Category 名称
+     lastUsedAt: number;   // 最后使用时间戳（添加/编辑书籍时更新）
+   }
+   ```
+
+2. **为什么不需要 createdAt？**
+   - ❌ 不用于排序（已有 lastUsedAt）
+   - ❌ 不展示给用户（只显示 lastUsedAt）
+   - ❌ 无统计分析需求
+   - ✅ 数据结构更简洁
+   - ✅ 存储空间更小
+   - ✅ 迁移更容易（只需补一个字段）
+
+3. **数据迁移策略**
+
+   ```typescript
+   // 迁移代码（在 storage.init() 中）
+   const oldCategories = await db.settings.get('categories');
+   if (oldCategories && Array.isArray(oldCategories.value)) {
+     // 检查是否为旧格式（string[]）
+     if (typeof oldCategories.value[0] === 'string') {
+       // 转换为新格式
+       const newCategories: CategoryMetadata[] = oldCategories.value.map(name => ({
+         name: name,
+         lastUsedAt: Date.now()  // 默认为迁移时间
+       }));
+       await db.settings.put({ key: 'categories', value: newCategories });
+     }
+   }
+   ```
+
+**功能实现：**
+
+**1. Category Manager Modal**（集中管理界面）
+
+- **位置**：Navbar 菜单 → Settings 区域 → "Manage Categories"
+- **功能列表**：
+
+  ```
+  ┌────────────────────────────────────────┐
+  │  Manage Categories              [×]    │
+  │ ────────────────────────────────────── │
+  │  [Input: Add new category...]  [+ Add] │
+  │ ────────────────────────────────────── │
+  │  Technology    (25 books)  2 days ago  │
+  │                         [✏️ Edit] [🗑️]  │
+  │                                        │
+  │  Fiction       (15 books)  5 days ago  │
+  │                         [✏️ Edit] [🗑️]  │
+  │                                        │
+  │  ...                                   │
+  └────────────────────────────────────────┘
+  ```
+
+- **添加新 Category**：
+  - 输入框 + [+ Add] 按钮
+  - 验证：不能为空、不能重复
+  - 添加后自动排序刷新列表
+
+- **重命名 Category**：
+  - 点击 [✏️ Edit] 按钮
+  - 原地变为输入框：`[Technology___] [✓] [✕]`
+  - 验证：不能为空、不能与其他重名
+  - 保存后更新所有关联书籍的 categories 数组
+
+- **删除 Category**：
+  - 点击 [🗑️ Delete] 按钮
+  - 确认对话框：
+
+    ```
+    Delete "Fiction"?
+
+    This category is used by 5 books.
+    The category will be removed from all books.
+
+    [Cancel]  [Delete]
+    ```
+
+  - 删除后遍历所有书籍，从 categories 数组中移除该 Category
+
+- **实时排序**：
+  - 每次操作后重新排序列表
+  - 显示相对时间（如 "2 days ago"）
+  - 显示书籍数量（实时统计）
+
+**2. Tag Input 选择器**（书籍表单中）
+
+- **替换原有的 checkbox 列表**
+- **UI 设计**：
+
+  ```
+  Category:
+  ┌────────────────────────────────────────┐
+  │ [×] Technology  [×] Science  [___] [+] │
+  └────────────────────────────────────────┘
+         ↓ 点击输入框或开始输入
+  ┌────────────────────────────────────────┐
+  │ [×] Tech  [×] Science  [fic____]  [+] │
+  │ ──────────────────────────────────────│
+  │ Fiction       (5 books)    2 days ago │
+  │ ──────────────────────────────────────│
+  │ ✓ Press Enter or click + to create   │
+  └────────────────────────────────────────┘
+  ```
+
+- **已选标签显示**：
+  - 输入框内显示已选的 Categories（类似 email to: 字段）
+  - 每个标签有 [×] 移除按钮
+  - 标签可以换行（`flex-wrap: wrap`）
+  - 最大高度限制：桌面 200px，移动 120px
+  - 超出高度后框内滚动
+
+- **下拉列表**：
+  - 展开时机：点击输入框 **或** 开始输入
+  - 显示未选中的 Categories（按智能排序）
+  - 每项显示：名称 + 书籍数量 + 最后使用时间
+  - 点击某个 Category → 添加为标签 → 从列表移除
+
+- **搜索过滤**（Phase 1）：
+  - 实时过滤：输入 "tech" 只显示包含 "tech" 的
+  - 不区分大小写：`searchText.toLowerCase()`
+  - 支持 accent 忽略：
+
+    ```typescript
+    const normalized = text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    ```
+
+  - 中文直接字符匹配：`"科技".includes("科")` → true
+
+- **创建新 Category**：
+  - 输入不存在的名称时提示：
+
+    ```
+    ✓ Press Enter or click + to create "Biography"
+    ```
+
+  - **两种触发方式**：
+    1. 按 Enter 键
+    2. 点击右侧 [+] 按钮
+  - 创建后：
+    1. 保存到数据库（包含 metadata）
+    2. 立即作为标签添加到输入框
+    3. 输入框清空
+    4. 保持焦点（支持连续添加）
+
+- **移除标签**：
+  - 点击标签的 [×] 按钮
+  - 标签从输入框消失
+  - 该 Category 重新出现在下拉列表（按排序规则）
+  - lastUsedAt 不变（只有添加时才更新）
+
+- **键盘导航**：
+  - ↑/↓ 键：在下拉列表中导航
+  - Enter 键：选择当前高亮项 或 创建新 Category
+  - Escape 键：关闭下拉列表
+  - Backspace 键（输入框为空时）：删除最后一个标签
+
+- **移动端适配**：
+  - **软键盘遮挡问题**：
+
+    ```typescript
+    inputElement.addEventListener('focus', () => {
+      setTimeout(() => {
+        inputElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 300);
+    });
+    ```
+
+  - **下拉列表定位**：
+
+    ```css
+    @media (max-width: 768px) {
+      .category-dropdown {
+        position: fixed;
+        bottom: calc(env(safe-area-inset-bottom) + 60px);
+        max-height: 40vh;
+        overflow-y: auto;
+      }
+    }
+    ```
+
+  - **iOS Safari 特殊处理**：
+    - 监听 viewport resize（键盘弹出时触发）
+    - 动态调整下拉列表位置
+
+**3. Storage 新增方法**
+
+```typescript
+/**
+ * 更新 Category 使用时间
+ * 在添加/编辑书籍时调用
+ */
+async touchCategory(name: string): Promise<void> {
+  const categories = await this.getCategoriesSorted();
+  const category = categories.find(c => c.name === name);
+  if (category) {
+    category.lastUsedAt = Date.now();
+    await db.settings.put({ key: 'categories', value: categories });
+  }
+}
+
+/**
+ * 获取某个 Category 下的书籍数量
+ */
+async getBookCountForCategory(name: string): Promise<number> {
+  const books = await this.getBooks();
+  return books.filter(b => b.categories.includes(name)).length;
+}
+
+/**
+ * 获取排序后的 Categories
+ * 三级排序：lastUsedAt → bookCount → alphabetical
+ */
+async getCategoriesSorted(): Promise<CategoryMetadata[]> {
+  const setting = await db.settings.get('categories');
+  const categories = setting?.value || [];
+
+  // 获取每个 Category 的书籍数量
+  const categoriesWithCount = await Promise.all(
+    categories.map(async (cat) => ({
+      ...cat,
+      bookCount: await this.getBookCountForCategory(cat.name)
+    }))
+  );
+
+  // 三级排序
+  return categoriesWithCount.sort((a, b) => {
+    // 1. lastUsedAt 降序
+    if (a.lastUsedAt !== b.lastUsedAt) {
+      return b.lastUsedAt - a.lastUsedAt;
+    }
+
+    // 2. bookCount 降序
+    if (a.bookCount !== b.bookCount) {
+      return b.bookCount - a.bookCount;
+    }
+
+    // 3. 字典序（忽略大小写，中文按拼音）
+    return a.name.localeCompare(b.name, 'zh-CN', {
+      sensitivity: 'base'
+    });
+  });
+}
+
+/**
+ * 重命名 Category
+ * 同时更新所有书籍中的 Category 引用
+ */
+async updateCategoryName(oldName: string, newName: string): Promise<void> {
+  // 1. 更新 Category metadata
+  const categories = await this.getCategoriesSorted();
+  const category = categories.find(c => c.name === oldName);
+  if (category) {
+    category.name = newName;
+    await db.settings.put({ key: 'categories', value: categories });
+  }
+
+  // 2. 更新所有书籍中的引用
+  const books = await this.getBooks();
+  for (const book of books) {
+    if (book.categories.includes(oldName)) {
+      book.categories = book.categories.map(c =>
+        c === oldName ? newName : c
+      );
+      await this.updateBook(book);
+    }
+  }
+}
+
+/**
+ * 删除 Category
+ * 同时从所有书籍中移除该 Category
+ */
+async deleteCategory(name: string): Promise<void> {
+  // 1. 从 metadata 中删除
+  const categories = await this.getCategoriesSorted();
+  const filtered = categories.filter(c => c.name !== name);
+  await db.settings.put({ key: 'categories', value: filtered });
+
+  // 2. 从所有书籍中移除
+  const books = await this.getBooks();
+  for (const book of books) {
+    if (book.categories.includes(name)) {
+      book.categories = book.categories.filter(c => c !== name);
+      await this.updateBook(book);
+    }
+  }
+}
+```
+
+**4. 国际化文本**
+
+新增翻译 keys（英文 + 中文）：
+
+```typescript
+// Category Manager
+'categoryManager.title': 'Manage Categories'
+'categoryManager.add': 'Add Category'
+'categoryManager.placeholder': 'New category name'
+'categoryManager.edit': 'Edit'
+'categoryManager.delete': 'Delete'
+'categoryManager.save': 'Save'
+'categoryManager.cancel': 'Cancel'
+'categoryManager.booksCount': '{count} books'
+'categoryManager.booksCount_plural': '{count} books'
+'categoryManager.lastUsed': '{time} ago'
+'categoryManager.deleteConfirm': 'Delete "{name}"?'
+'categoryManager.deleteWarning': 'This category is used by {count} books. The category will be removed from all books.'
+'categoryManager.emptyList': 'No categories yet. Add one above!'
+
+// Category Input (Tag Input 组件)
+'categoryInput.placeholder': 'Type to search or add...'
+'categoryInput.createHint': 'Press Enter or click + to create "{name}"'
+'categoryInput.noResults': 'No matching categories'
+'categoryInput.remove': 'Remove'
+
+// Errors
+'error.categoryExists': 'Category "{name}" already exists'
+'error.categoryEmpty': 'Category name cannot be empty'
+'error.categoryInvalid': 'Category name contains invalid characters'
+```
+
+**性能优化：**
+
+1. **排序算法优化**：
+   - 书籍数量计算结果缓存（避免重复遍历）
+   - 使用 `Promise.all` 并行计算多个 Category 的数量
+   - 只在必要时重新排序（添加/删除/重命名）
+
+2. **搜索过滤性能**：
+   - 使用防抖（debounce）避免频繁过滤：
+
+     ```typescript
+     const debouncedFilter = debounce((text) => {
+       filterCategories(text);
+     }, 200);
+     ```
+
+   - 预处理 normalized 字符串（避免重复计算）
+
+3. **移动端滚动优化**：
+   - 虚拟滚动（如果 Category 超过 100 个）
+   - 使用 CSS `will-change` 优化动画性能
+   - 避免在滚动时触发重排（reflow）
+
+**预估影响：**
+
+- **Bundle Size**: +15-20KB (gzipped: ~5-7KB)
+  - 新增 CategoryManager 组件：~8KB
+  - 新增 TagInput 组件：~7KB
+  - Storage 方法扩展：~2KB
+  - CSS 样式：~3KB
+- **Breaking Changes**: 数据迁移（自动处理，用户无感知）
+- **性能影响**:
+  - 排序计算：O(n log n)，n = Category 数量（通常 < 50）
+  - 书籍数量统计：O(m × n)，m = 书籍数量，n = Category 数量
+  - 优化后：首次加载 ~50ms，后续操作 <10ms
+
+**测试重点：**
+
+1. **数据迁移正确性**：
+   - 旧格式 string[] → 新格式 CategoryMetadata[]
+   - 默认 lastUsedAt 设置正确
+   - 书籍的 categories 数组不受影响
+
+2. **排序算法正确性**：
+   - 三级排序逻辑验证
+   - 边界情况（相同时间、相同数量）
+   - 中文 localeCompare 行为
+
+3. **移动端适配**：
+   - 软键盘遮挡问题解决
+   - 触摸滚动流畅性
+   - iOS Safari 兼容性
+
+4. **并发操作**：
+   - 重命名 Category 时同时编辑书籍
+   - 删除 Category 时大量书籍更新
+   - 多个标签快速添加/移除
+
+**关键学习：**
+
+- 用户体验优先于实现复杂度（Tag Input 虽然复杂但体验好）
+- 智能排序减少用户搜索时间（常用的自动靠前）
+- 分阶段实现（Phase 1 零成本方案，Phase 2 按需升级）
+- 移动端键盘适配是 PWA 的重要细节
+- 数据结构设计要考虑未来扩展但避免过度设计（去掉不必要的 createdAt）
+
 ### API Key 配置
 
 **Google Books API:**
@@ -2036,7 +2496,7 @@ const [en, zhCN, ja] = await Promise.all([
 
 ---
 
-**文档版本：** v2.1
-**最后更新：** 2025-12-28
+**文档版本：** v2.2
+**最后更新：** 2025-12-29
 **部署地址：** <https://booka.mahane.me/>
 **维护者：** JoeyTeng
