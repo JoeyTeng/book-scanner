@@ -1,5 +1,5 @@
 import type { Book } from '../types';
-import { STATUS_LABELS, STATUS_COLORS } from '../config';
+import { STATUS_COLORS } from '../config';
 import { storage } from '../modules/storage';
 import { formatISBN } from '../utils/isbn';
 import { i18n } from '../modules/i18n';
@@ -7,7 +7,7 @@ import { i18n } from '../modules/i18n';
 export class BookCard {
   static render(book: Book, _onEdit: (book: Book) => void, _onDelete: (id: string) => void, bulkSelectMode: boolean = false): string {
     const statusColor = STATUS_COLORS[book.status];
-    const statusLabel = STATUS_LABELS[book.status];
+    const statusLabel = i18n.t(`bookForm.status.${book.status}`);
 
     return `
       <div class="book-card" data-id="${book.id}">

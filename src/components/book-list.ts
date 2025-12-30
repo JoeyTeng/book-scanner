@@ -260,12 +260,7 @@ export class BookList {
   }
 
   private getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      want: "Want to Read",
-      reading: "Reading",
-      read: "Read",
-    };
-    return labels[status] || status;
+    return i18n.t(`bookForm.status.${status}`);
   }
 
   private escapeHtml(text: string): string {
