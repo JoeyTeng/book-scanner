@@ -1,4 +1,4 @@
-import type { Book, StorageData } from '../types';
+import type { Book, StorageData, CategoryMetadata } from '../types';
 import { APP_VERSION, STORAGE_KEY, DEFAULT_CATEGORIES } from '../config';
 import { db, migrateFromLocalStorage } from './db';
 
@@ -21,14 +21,29 @@ class Storage {
       // Migrate from localStorage on first run
       await migrateFromLocalStorage(STORAGE_KEY);
 
-      // Ensure default categories exist (directly access DB, don't use getCategories)
+      // Ensure default categories exist and migrate old format
       const setting = await db.settings.get("categories");
       const categories = setting?.value || [];
 
       if (categories.length === 0) {
+        // Initialize with default categories
+        const defaultCategoryMetadata: CategoryMetadata[] = DEFAULT_CATEGORIES.map(name => ({
+          name,
+          lastUsedAt: Date.now(),
+        }));
         await db.settings.put({
           key: "categories",
-          value: [...DEFAULT_CATEGORIES],
+          value: defaultCategoryMetadata,
+        });
+      } else if (categories.length > 0 && typeof categories[0] === 'string') {
+        // Migrate old format (string[]) to new format (CategoryMetadata[])
+        const migratedCategories: CategoryMetadata[] = (categories as unknown as string[]).map(name => ({
+          name,
+          lastUsedAt: Date.now(),
+        }));
+        await db.settings.put({
+          key: "categories",
+          value: migratedCategories,
         });
       }
 
@@ -121,16 +136,59 @@ class Storage {
   }
 
   /**
-   * Get all categories
+   * Get all categories (returns names only for backward compatibility)
    */
   async getCategories(): Promise<string[]> {
     await this.ensureInit();
     try {
       const setting = await db.settings.get('categories');
-      return setting?.value || [...DEFAULT_CATEGORIES];
+      const categoryMetadata: CategoryMetadata[] = setting?.value || [];
+      const categoryNames = categoryMetadata.map(c => c.name);
+      return categoryNames;
     } catch (error) {
       console.error('Failed to get categories:', error);
       return [...DEFAULT_CATEGORIES];
+    }
+  }
+
+  /**
+   * Get all categories with metadata (sorted)
+   */
+  async getCategoriesSorted(): Promise<CategoryMetadata[]> {
+    await this.ensureInit();
+    try {
+      const setting = await db.settings.get("categories");
+      const categories: CategoryMetadata[] = setting?.value || [];
+
+      // Get book count for each category
+      const books = await this.getBooks();
+      const categoriesWithCount = categories.map((cat) => {
+        const bookCount = books.filter((b) =>
+          b.categories.includes(cat.name)
+        ).length;
+        return { ...cat, bookCount };
+      });
+
+      // Three-level sorting: lastUsedAt DESC -> bookCount DESC -> alphabetical
+      return categoriesWithCount.sort((a, b) => {
+        // 1. lastUsedAt descending
+        if (a.lastUsedAt !== b.lastUsedAt) {
+          return b.lastUsedAt - a.lastUsedAt;
+        }
+
+        // 2. bookCount descending
+        if (a.bookCount !== b.bookCount) {
+          return b.bookCount - a.bookCount;
+        }
+
+        // 3. alphabetical (case-insensitive, Chinese by pinyin)
+        return a.name.localeCompare(b.name, "zh-CN", {
+          sensitivity: "base",
+        });
+      });
+    } catch (error) {
+      console.error('Failed to get sorted categories:', error);
+      return [];
     }
   }
 
@@ -140,14 +198,154 @@ class Storage {
   async addCategory(category: string): Promise<void> {
     await this.ensureInit();
     try {
-      const categories = await this.getCategories();
-      if (!categories.includes(category)) {
-        categories.push(category);
+      const setting = await db.settings.get('categories');
+      const categories: CategoryMetadata[] = setting?.value || [];
+
+      if (!categories.find(c => c.name === category)) {
+        categories.push({
+          name: category,
+          lastUsedAt: Date.now(),
+        });
         await db.settings.put({ key: 'categories', value: categories });
       }
     } catch (error) {
       console.error('Failed to add category:', error);
       throw new Error('Failed to add category');
+    }
+  }
+
+  /**
+   * Update category usage timestamp
+   * Called when a book with this category is added or updated
+   */
+  async touchCategory(name: string): Promise<void> {
+    await this.ensureInit();
+    try {
+      const setting = await db.settings.get('categories');
+      const categories: CategoryMetadata[] = setting?.value || [];
+
+      const category = categories.find(c => c.name === name);
+      if (category) {
+        category.lastUsedAt = Date.now();
+        await db.settings.put({ key: 'categories', value: categories });
+      }
+    } catch (error) {
+      console.error('Failed to touch category:', error);
+    }
+  }
+
+  /**
+   * Get book count for a specific category
+   */
+  async getBookCountForCategory(name: string): Promise<number> {
+    await this.ensureInit();
+    try {
+      const books = await this.getBooks();
+      return books.filter(b => b.categories.includes(name)).length;
+    } catch (error) {
+      console.error('Failed to get book count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Rename a category and update all books using it
+   */
+  async updateCategoryName(oldName: string, newName: string): Promise<void> {
+    await this.ensureInit();
+    try {
+      // 1. Update category metadata
+      const setting = await db.settings.get('categories');
+      const categories: CategoryMetadata[] = setting?.value || [];
+
+      const category = categories.find((c) => c.name === oldName);
+      if (category) {
+        category.name = newName;
+        await db.settings.put({ key: "categories", value: categories });
+      }
+
+      // 2. Update all books using this category
+      const books = await this.getBooks();
+      for (const book of books) {
+        if (book.categories.includes(oldName)) {
+          book.categories = book.categories.map((c) =>
+            c === oldName ? newName : c
+          );
+          await this.updateBook(book.id, { categories: book.categories });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update category name:', error);
+      throw new Error('Failed to update category name');
+    }
+  }
+
+  /**
+   * Delete a category and remove it from all books
+   */
+  async deleteCategory(name: string): Promise<void> {
+    await this.ensureInit();
+    try {
+      // 1. Remove from category metadata
+      const setting = await db.settings.get('categories');
+      const categories: CategoryMetadata[] = setting?.value || [];
+
+      const filtered = categories.filter((c) => c.name !== name);
+      await db.settings.put({ key: "categories", value: filtered });
+
+      // 2. Remove from all books (bulk update for performance)
+      const books = await this.getBooks();
+      const booksToUpdate = books.filter(book => book.categories.includes(name));
+
+      if (booksToUpdate.length > 0) {
+        // Update all affected books in parallel
+        await Promise.all(
+          booksToUpdate.map(book => {
+            book.categories = book.categories.filter(c => c !== name);
+            return db.books.put(book);
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      throw new Error('Failed to delete category');
+    }
+  }
+
+  /**
+   * Delete multiple categories at once (avoids race conditions)
+   */
+  async deleteCategoriesBatch(names: string[]): Promise<void> {
+    await this.ensureInit();
+    try {
+      if (names.length === 0) return;
+
+      const namesToDelete = new Set(names);
+
+      // 1. Remove from all books first (so if metadata deletion fails, we can retry)
+      const books = await this.getBooks();
+      const booksToUpdate = books.filter((book) =>
+        book.categories.some((cat) => namesToDelete.has(cat))
+      );
+
+      if (booksToUpdate.length > 0) {
+        // Update all affected books in parallel
+        await Promise.all(
+          booksToUpdate.map(book => {
+            book.categories = book.categories.filter(c => !namesToDelete.has(c));
+            return db.books.put(book);
+          })
+        );
+      }
+
+      // 2. Remove from category metadata (after books are updated successfully)
+      const setting = await db.settings.get('categories');
+      const categories: CategoryMetadata[] = setting?.value || [];
+      const filtered = categories.filter((c) => !namesToDelete.has(c.name));
+      await db.settings.put({ key: "categories", value: filtered });
+    } catch (error) {
+      console.error('Failed to delete categories:', error);
+      throw new Error('Failed to delete categories');
     }
   }
 
@@ -357,11 +555,12 @@ class Storage {
         }
 
         // Merge categories
-        const categories = await this.getCategories();
+        const setting = await db.settings.get('categories');
+        const categories: CategoryMetadata[] = setting?.value || [];
         let categoriesUpdated = false;
 
         imported.settings.categories.forEach((cat) => {
-          if (!categories.includes(cat)) {
+          if (!categories.find(c => c.name === cat.name)) {
             categories.push(cat);
             categoriesUpdated = true;
           }
@@ -384,7 +583,8 @@ class Storage {
     await this.ensureInit();
     try {
       const books = await db.books.toArray();
-      const categories = await this.getCategories();
+      const setting = await db.settings.get('categories');
+      const categories: CategoryMetadata[] = setting?.value || [];
       const googleBooksApiKey = await this.getGoogleBooksApiKey();
       const isbndbApiKey = await this.getISBNdbApiKey();
       const llmApiEndpoint = await this.getLLMApiEndpoint();

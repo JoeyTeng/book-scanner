@@ -4,14 +4,22 @@ import { i18n } from '../modules/i18n';
 
 export class SearchBar {
   private element: HTMLElement;
-  private onFilterChange: (filters: SearchFilters, sortField: SortField, sortOrder: SortOrder) => void;
+  private onFilterChange: (
+    filters: SearchFilters,
+    sortField: SortField,
+    sortOrder: SortOrder
+  ) => void;
   private onBulkEditClick?: () => void;
   private onViewModeChange?: (mode: ViewMode) => void;
   private initPromise: Promise<void>;
 
   constructor(
     containerId: string,
-    onFilterChange: (filters: SearchFilters, sortField: SortField, sortOrder: SortOrder) => void
+    onFilterChange: (
+      filters: SearchFilters,
+      sortField: SortField,
+      sortOrder: SortOrder
+    ) => void
   ) {
     this.element = document.getElementById(containerId)!;
     this.onFilterChange = onFilterChange;
@@ -36,19 +44,74 @@ export class SearchBar {
   }
 
   updateBulkEditButton(mode: boolean, selectedCount: number = 0): void {
-    const button = this.element.querySelector('#btn-bulk-edit') as HTMLButtonElement;
+    const button = this.element.querySelector(
+      "#btn-bulk-edit"
+    ) as HTMLButtonElement;
     if (button) {
       if (mode) {
         button.textContent =
           selectedCount > 0
-            ? i18n.t('searchBar.selected', { count: selectedCount })
-            : i18n.t('searchBar.exitBulkEdit');
-        button.className = selectedCount > 0 ? 'btn btn-primary' : 'btn btn-secondary';
+            ? i18n.t("searchBar.selected", { count: selectedCount })
+            : i18n.t("searchBar.exitBulkEdit");
+        button.className =
+          selectedCount > 0 ? "btn btn-primary" : "btn btn-secondary";
       } else {
-        button.textContent = i18n.t('searchBar.bulkEdit');
-        button.className = 'btn btn-secondary';
+        button.textContent = i18n.t("searchBar.bulkEdit");
+        button.className = "btn btn-secondary";
       }
     }
+  }
+
+  async refresh(): Promise<void> {
+    // Save current filter values before re-rendering
+    const searchInput = this.element.querySelector(
+      "#search-input"
+    ) as HTMLInputElement;
+    const categorySelect = this.element.querySelector(
+      "#filter-category"
+    ) as HTMLSelectElement;
+    const statusSelect = this.element.querySelector(
+      "#filter-status"
+    ) as HTMLSelectElement;
+    const sortFieldSelect = this.element.querySelector(
+      "#sort-field"
+    ) as HTMLSelectElement;
+
+    const currentValues = {
+      search: searchInput?.value || "",
+      category: categorySelect?.value || "all",
+      status: statusSelect?.value || "all",
+      sortField: sortFieldSelect?.value || "addedAt",
+    };
+
+    // Re-render with updated categories
+    await this.render();
+    this.attachEventListeners();
+
+    // Restore filter values
+    const newSearchInput = this.element.querySelector(
+      "#search-input"
+    ) as HTMLInputElement;
+    const newCategorySelect = this.element.querySelector(
+      "#filter-category"
+    ) as HTMLSelectElement;
+    const newStatusSelect = this.element.querySelector(
+      "#filter-status"
+    ) as HTMLSelectElement;
+    const newSortFieldSelect = this.element.querySelector(
+      "#sort-field"
+    ) as HTMLSelectElement;
+
+    if (newSearchInput) newSearchInput.value = currentValues.search;
+    if (newCategorySelect) {
+      // Check if the selected category still exists
+      const optionExists = Array.from(newCategorySelect.options).some(
+        (opt) => opt.value === currentValues.category
+      );
+      newCategorySelect.value = optionExists ? currentValues.category : "all";
+    }
+    if (newStatusSelect) newStatusSelect.value = currentValues.status;
+    if (newSortFieldSelect) newSortFieldSelect.value = currentValues.sortField;
   }
 
   private async render(): Promise<void> {
@@ -61,27 +124,37 @@ export class SearchBar {
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.35-4.35"></path>
           </svg>
-          <input type="text" id="search-input" class="search-input" placeholder="${i18n.t('searchBar.placeholder')}">
+          <input type="text" id="search-input" class="search-input" placeholder="${i18n.t(
+            "searchBar.placeholder"
+          )}">
         </div>
 
         <div class="filters">
           <select id="filter-category" class="filter-select">
-            <option value="all">${i18n.t('searchBar.filter.all')}</option>
-            ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+            <option value="all">${i18n.t("searchBar.filter.all")}</option>
+            ${categories
+              .map((cat) => `<option value="${cat}">${cat}</option>`)
+              .join("")}
           </select>
 
           <select id="filter-status" class="filter-select">
-            <option value="all">${i18n.t('searchBar.filter.allStatus')}</option>
-            <option value="want">${i18n.t('bookForm.status.want')}</option>
-            <option value="reading">${i18n.t('bookForm.status.reading')}</option>
-            <option value="read">${i18n.t('bookForm.status.read')}</option>
+            <option value="all">${i18n.t("searchBar.filter.allStatus")}</option>
+            <option value="want">${i18n.t("bookForm.status.want")}</option>
+            <option value="reading">${i18n.t(
+              "bookForm.status.reading"
+            )}</option>
+            <option value="read">${i18n.t("bookForm.status.read")}</option>
           </select>
 
           <select id="sort-field" class="filter-select">
-            <option value="addedAt">${i18n.t('searchBar.sort.dateAdded')}</option>
-            <option value="title">${i18n.t('searchBar.sort.title')}</option>
-            <option value="author">${i18n.t('searchBar.sort.author')}</option>
-            <option value="publishDate">${i18n.t('searchBar.sort.publishDate')}</option>
+            <option value="addedAt">${i18n.t(
+              "searchBar.sort.dateAdded"
+            )}</option>
+            <option value="title">${i18n.t("searchBar.sort.title")}</option>
+            <option value="author">${i18n.t("searchBar.sort.author")}</option>
+            <option value="publishDate">${i18n.t(
+              "searchBar.sort.publishDate"
+            )}</option>
           </select>
 
           <button id="sort-order" class="btn-icon" aria-label="Toggle sort order">
@@ -111,29 +184,48 @@ export class SearchBar {
             </button>
           </div>
 
-          <button id="btn-bulk-edit" class="btn btn-secondary">${i18n.t('searchBar.bulkEdit')}</button>
+          <button id="btn-bulk-edit" class="btn btn-secondary">${i18n.t(
+            "searchBar.bulkEdit"
+          )}</button>
         </div>
       </div>
     `;
   }
 
   private attachEventListeners(): void {
-    const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const categorySelect = document.getElementById('filter-category') as HTMLSelectElement;
-    const statusSelect = document.getElementById('filter-status') as HTMLSelectElement;
-    const sortFieldSelect = document.getElementById('sort-field') as HTMLSelectElement;
-    const sortOrderBtn = document.getElementById('sort-order') as HTMLButtonElement;
-    const bulkEditBtn = document.getElementById('btn-bulk-edit') as HTMLButtonElement;
-    const viewGridBtn = document.getElementById('view-grid') as HTMLButtonElement;
-    const viewListBtn = document.getElementById('view-list') as HTMLButtonElement;
+    const searchInput = document.getElementById(
+      "search-input"
+    ) as HTMLInputElement;
+    const categorySelect = document.getElementById(
+      "filter-category"
+    ) as HTMLSelectElement;
+    const statusSelect = document.getElementById(
+      "filter-status"
+    ) as HTMLSelectElement;
+    const sortFieldSelect = document.getElementById(
+      "sort-field"
+    ) as HTMLSelectElement;
+    const sortOrderBtn = document.getElementById(
+      "sort-order"
+    ) as HTMLButtonElement;
+    const bulkEditBtn = document.getElementById(
+      "btn-bulk-edit"
+    ) as HTMLButtonElement;
+    const viewGridBtn = document.getElementById(
+      "view-grid"
+    ) as HTMLButtonElement;
+    const viewListBtn = document.getElementById(
+      "view-list"
+    ) as HTMLButtonElement;
 
-    let currentOrder: SortOrder = 'desc';
+    let currentOrder: SortOrder = "desc";
 
     const emitChange = () => {
       const filters: SearchFilters = {
         query: searchInput.value,
-        category: categorySelect.value === 'all' ? undefined : categorySelect.value,
-        status: statusSelect.value as any
+        category:
+          categorySelect.value === "all" ? undefined : categorySelect.value,
+        status: statusSelect.value as any,
       };
 
       const sortField = sortFieldSelect.value as SortField;
@@ -141,42 +233,43 @@ export class SearchBar {
       this.onFilterChange(filters, sortField, currentOrder);
     };
 
-    searchInput.addEventListener('input', emitChange);
-    categorySelect.addEventListener('change', emitChange);
-    statusSelect.addEventListener('change', emitChange);
-    sortFieldSelect.addEventListener('change', emitChange);
+    searchInput.addEventListener("input", emitChange);
+    categorySelect.addEventListener("change", emitChange);
+    statusSelect.addEventListener("change", emitChange);
+    sortFieldSelect.addEventListener("change", emitChange);
 
-    sortOrderBtn.addEventListener('click', () => {
-      currentOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    sortOrderBtn.addEventListener("click", () => {
+      currentOrder = currentOrder === "asc" ? "desc" : "asc";
 
       // Update button icon
-      sortOrderBtn.innerHTML = currentOrder === 'asc'
-        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'
-        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+      sortOrderBtn.innerHTML =
+        currentOrder === "asc"
+          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'
+          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
 
       emitChange();
     });
 
-    bulkEditBtn.addEventListener('click', () => {
+    bulkEditBtn.addEventListener("click", () => {
       if (this.onBulkEditClick) {
         this.onBulkEditClick();
       }
     });
 
     // View mode toggle
-    viewGridBtn.addEventListener('click', () => {
-      viewGridBtn.classList.add('active');
-      viewListBtn.classList.remove('active');
+    viewGridBtn.addEventListener("click", () => {
+      viewGridBtn.classList.add("active");
+      viewListBtn.classList.remove("active");
       if (this.onViewModeChange) {
-        this.onViewModeChange('grid');
+        this.onViewModeChange("grid");
       }
     });
 
-    viewListBtn.addEventListener('click', () => {
-      viewListBtn.classList.add('active');
-      viewGridBtn.classList.remove('active');
+    viewListBtn.addEventListener("click", () => {
+      viewListBtn.classList.add("active");
+      viewGridBtn.classList.remove("active");
       if (this.onViewModeChange) {
-        this.onViewModeChange('list');
+        this.onViewModeChange("list");
       }
     });
   }

@@ -10,6 +10,7 @@ import { parseSmartPaste } from "../utils/text-parser";
 import { llmService } from "../modules/llm";
 import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from "./manual-llm-helper";
 import { i18n } from '../modules/i18n';
+import { CategoryTagInput } from './category-tag-input';
 
 export class BookForm {
   private modalElement: HTMLDivElement | null = null;
@@ -19,6 +20,7 @@ export class BookForm {
   private initialRecommendation: string = "";
   private onSave: () => void;
   private onTitleSearchRequest?: () => void;
+  private categoryTagInput: CategoryTagInput | null = null;
 
   constructor(onSave: () => void) {
     this.onSave = onSave;
@@ -49,7 +51,6 @@ export class BookForm {
   }
 
   private async render(): Promise<void> {
-    const categories = await storage.getCategories();
     const isEdit = this.book !== null;
 
     // Prepare initial values
@@ -176,25 +177,7 @@ export class BookForm {
 
             <div class="form-group">
               <label>${i18n.t('bookForm.label.category')}</label>
-              <div class="checkbox-group">
-                ${categories
-                  .map(
-                    (cat) => `
-                  <label class="checkbox-label">
-                    <input type="checkbox" name="category" value="${cat}"
-                           ${
-                             initialData.categories?.includes(cat)
-                               ? "checked"
-                               : ""
-                           }>
-                    ${cat}
-                  </label>
-                `
-                  )
-                  .join("")}
-              </div>
-              <input type="text" id="input-new-category" class="input-full"
-                     placeholder="Add new category">
+              <div id="category-tag-input-container"></div>
             </div>
 
             <!-- Collapsible: Additional Info -->
@@ -289,6 +272,13 @@ export class BookForm {
     document.body.style.overflow = "hidden";
 
     this.attachEventListeners();
+
+    // Initialize CategoryTagInput
+    const container = this.modalElement.querySelector('#category-tag-input-container');
+    if (container) {
+      this.categoryTagInput = new CategoryTagInput(initialData.categories || []);
+      await this.categoryTagInput.render(container as HTMLElement);
+    }
   }
 
   private getInitialFromSources(): Partial<Book> {
@@ -722,19 +712,12 @@ export class BookForm {
       form.querySelector("#input-notes") as HTMLTextAreaElement
     ).value.trim();
 
-    const categories: string[] = [];
-    form
-      .querySelectorAll('input[name="category"]:checked')
-      .forEach((checkbox) => {
-        categories.push((checkbox as HTMLInputElement).value);
-      });
+    // Get categories from CategoryTagInput
+    const categories = this.categoryTagInput?.getSelectedCategories() || [];
 
-    const newCategory = (
-      form.querySelector("#input-new-category") as HTMLInputElement
-    ).value.trim();
-    if (newCategory) {
-      categories.push(newCategory);
-      await storage.addCategory(newCategory);
+    // Touch all selected categories to update their lastUsedAt
+    for (const category of categories) {
+      await storage.touchCategory(category);
     }
 
     const tagsInput = (
@@ -1015,6 +998,8 @@ export class BookForm {
 
   hide(): void {
     if (this.modalElement) {
+      this.categoryTagInput?.destroy();
+      this.categoryTagInput = null;
       this.modalElement.remove();
       this.modalElement = null;
     }

@@ -14,6 +14,7 @@ export const en = {
   "navbar.menu.addFromImage": "📸 Add from Image (Vision)",
   "navbar.menu.settings": "Settings",
   "navbar.menu.apiKeys": "API Keys Settings",
+  "navbar.menu.manageCategories": "Manage Categories",
   "navbar.menu.language": "Language",
   "navbar.menu.languageChanged":
     "Language changed. Please refresh the page to use the English version.",
@@ -121,6 +122,9 @@ export const en = {
   "bulkEdit.title": "Bulk Edit ({count} book{plural})",
   "bulkEdit.changeStatus": "Change Reading Status",
   "bulkEdit.changeCategory": "Change Category",
+  "bulkEdit.operation.add": "Add categories",
+  "bulkEdit.operation.remove": "Remove categories",
+  "bulkEdit.operation.replace": "Replace all categories",
   "bulkEdit.button.cancel": "Cancel",
   "bulkEdit.button.apply": "Apply Changes",
   "bulkEdit.success": "Successfully updated {count} book{plural}",
@@ -209,6 +213,7 @@ export const en = {
   "common.save": "Save",
   "common.delete": "Delete",
   "common.edit": "Edit",
+  "common.done": "Done",
   "common.add": "Add",
   "common.search": "Search",
   "common.loading": "Loading...",
@@ -238,4 +243,41 @@ export const en = {
   "alert.selectOneBook": "Please select at least one book to edit.",
   "alert.selectOneChange": "Please select at least one change to apply.",
   "alert.selectOneCategory": "Please select at least one category.",
+
+  // Category Manager
+  "categoryManager.title": "Manage Categories",
+  "categoryManager.add": "Add",
+  "categoryManager.placeholder": "New category name",
+  "categoryManager.edit": "Edit",
+  "categoryManager.delete": "Delete",
+  "categoryManager.save": "Save",
+  "categoryManager.cancel": "Cancel",
+  "categoryManager.booksCount": "{count} book",
+  "categoryManager.booksCount_plural": "{count} books",
+  "categoryManager.lastUsed": "{time}",
+  "categoryManager.deleteConfirm": 'Delete "{name}"?',
+  "categoryManager.deleteWarning":
+    "This category is used by {count} book(s). The category will be removed from all books.",
+  "categoryManager.emptyList": "No categories yet. Add one above!",
+  "categoryManager.justNow": "just now",
+  "categoryManager.minutesAgo": "{count} minute ago",
+  "categoryManager.minutesAgo_plural": "{count} minutes ago",
+  "categoryManager.hoursAgo": "{count} hour ago",
+  "categoryManager.hoursAgo_plural": "{count} hours ago",
+  "categoryManager.daysAgo": "{count} day ago",
+  "categoryManager.daysAgo_plural": "{count} days ago",
+
+  // Category Input (Tag Input)
+  "categoryInput.placeholder": "Type to search or add...",
+  "categoryInput.createHint": 'Press Enter or click + to create "{name}"',
+  "categoryInput.noResults": "No matching categories",
+  "categoryInput.remove": "Remove",
+
+  // Errors
+  "error.categoryExists": 'Category "{name}" already exists',
+  "error.categoryEmpty": "Category name cannot be empty",
+  "error.categoryInvalid": "Category name contains invalid characters",
+  "error.categoryAdd": "Failed to add category",
+  "error.categoryUpdate": "Failed to update category",
+  "error.categoryDelete": "Failed to delete category",
 };

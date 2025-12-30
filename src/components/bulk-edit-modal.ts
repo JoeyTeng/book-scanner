@@ -1,11 +1,13 @@
 import type { ReadingStatus } from '../types';
 import { storage } from '../modules/storage';
 import { i18n } from '../modules/i18n';
+import { CategoryTagInput } from './category-tag-input';
 
 export class BulkEditModal {
   private modalElement: HTMLDivElement | null = null;
   private selectedBookIds: string[] = [];
   private onSave: () => void;
+  private categoryTagInput: CategoryTagInput | null = null;
 
   constructor(onSave: () => void) {
     this.onSave = onSave;
@@ -22,7 +24,6 @@ export class BulkEditModal {
   }
 
   private async render(): Promise<void> {
-    const categories = await storage.getCategories();
     const count = this.selectedBookIds.length;
 
     this.modalElement = document.createElement('div');
@@ -56,27 +57,18 @@ export class BulkEditModal {
                 <div class="radio-group" style="margin-bottom: var(--spacing-sm);">
                   <label>
                     <input type="radio" name="category-operation" value="add" checked>
-                    Add categories
+                    ${i18n.t('bulkEdit.operation.add')}
                   </label>
                   <label>
                     <input type="radio" name="category-operation" value="remove">
-                    Remove categories
+                    ${i18n.t('bulkEdit.operation.remove')}
                   </label>
                   <label>
                     <input type="radio" name="category-operation" value="replace">
-                    Replace all categories
+                    ${i18n.t('bulkEdit.operation.replace')}
                   </label>
                 </div>
-                <div class="checkbox-group">
-                  ${categories.map(cat => `
-                    <label class="checkbox-label">
-                      <input type="checkbox" name="category" value="${cat}">
-                      ${cat}
-                    </label>
-                  `).join('')}
-                </div>
-                <input type="text" id="input-new-category" class="input-full"
-                       placeholder="Add new category">
+                <div id="category-tag-input-container"></div>
               </div>
             </div>
 
@@ -92,6 +84,13 @@ export class BulkEditModal {
     document.getElementById('modal-container')?.appendChild(this.modalElement);
     this.modalElement.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    // Initialize CategoryTagInput
+    const container = this.modalElement.querySelector('#category-tag-input-container');
+    if (container) {
+      this.categoryTagInput = new CategoryTagInput([]);
+      await this.categoryTagInput.render(container as HTMLElement);
+    }
 
     this.attachEventListeners();
   }
@@ -115,10 +114,22 @@ export class BulkEditModal {
     });
 
     // Enable/disable category operations
-    this.modalElement?.querySelector('#modify-categories')?.addEventListener('change', (e) => {
+    this.modalElement?.querySelector('#modify-categories')?.addEventListener('change', async (e) => {
       const checked = (e.target as HTMLInputElement).checked;
       const categoryOps = this.modalElement?.querySelector('#category-operations') as HTMLElement;
       categoryOps.style.display = checked ? 'block' : 'none';
+
+      // Update available categories when enabled
+      if (checked) {
+        await this.updateCategoryOperationMode();
+      }
+    });
+
+    // Listen to category operation mode changes
+    this.modalElement?.querySelectorAll('input[name="category-operation"]').forEach((radio) => {
+      radio.addEventListener('change', async () => {
+        await this.updateCategoryOperationMode();
+      });
     });
 
     // Form submission
@@ -126,6 +137,38 @@ export class BulkEditModal {
       e.preventDefault();
       this.handleSubmit();
     });
+  }
+
+  private async updateCategoryOperationMode(): Promise<void> {
+    const operation = (
+      this.modalElement?.querySelector(
+        'input[name="category-operation"]:checked'
+      ) as HTMLInputElement
+    )?.value;
+
+    if (!this.categoryTagInput) return;
+
+    if (operation === 'remove') {
+      // Get union of categories from selected books
+      const existingCategories = await this.getExistingCategoriesFromSelectedBooks();
+      this.categoryTagInput.setAvailableCategories(existingCategories);
+    } else {
+      // Reset to all categories for add/replace operations
+      this.categoryTagInput.setAvailableCategories(null);
+    }
+  }
+
+  private async getExistingCategoriesFromSelectedBooks(): Promise<string[]> {
+    const categoriesSet = new Set<string>();
+
+    for (const bookId of this.selectedBookIds) {
+      const book = await storage.getBook(bookId);
+      if (book) {
+        book.categories.forEach((cat) => categoriesSet.add(cat));
+      }
+    }
+
+    return Array.from(categoriesSet);
   }
 
   private async handleSubmit(): Promise<void> {
@@ -154,25 +197,17 @@ export class BulkEditModal {
         ) as HTMLInputElement
       ).value as "add" | "remove" | "replace";
 
-      // Get selected categories
-      const checkboxes = this.modalElement?.querySelectorAll(
-        'input[name="category"]:checked'
-      ) as NodeListOf<HTMLInputElement>;
-      selectedCategories = Array.from(checkboxes).map((cb) => cb.value);
-
-      // Add new category if provided
-      const newCategoryInput = this.modalElement?.querySelector(
-        "#input-new-category"
-      ) as HTMLInputElement;
-      const newCategory = newCategoryInput.value.trim();
-      if (newCategory) {
-        selectedCategories.push(newCategory);
-        await storage.addCategory(newCategory);
-      }
+      // Get selected categories from CategoryTagInput
+      selectedCategories = this.categoryTagInput?.getSelectedCategories() || [];
 
       if (selectedCategories.length === 0) {
         alert(i18n.t('alert.selectOneCategory'));
         return;
+      }
+
+      // Touch all categories to update lastUsedAt
+      for (const cat of selectedCategories) {
+        await storage.touchCategory(cat);
       }
     }
 
@@ -218,6 +253,8 @@ export class BulkEditModal {
 
   hide(): void {
     if (this.modalElement) {
+      this.categoryTagInput?.destroy();
+      this.categoryTagInput = null;
       this.modalElement.remove();
       this.modalElement = null;
     }

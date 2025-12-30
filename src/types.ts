@@ -1,6 +1,11 @@
 export type ReadingStatus = 'want' | 'reading' | 'read';
 export type ViewMode = 'grid' | 'list';
 
+export interface CategoryMetadata {
+  name: string;
+  lastUsedAt: number;
+}
+
 export interface Book {
   id: string;
   isbn: string;
@@ -23,7 +28,7 @@ export interface StorageData {
   version: string;
   books: Book[];
   settings: {
-    categories: string[];
+    categories: CategoryMetadata[];
     googleBooksApiKey?: string;
     isbndbApiKey?: string;
     llmApiEndpoint?: string;
@@ -39,7 +44,7 @@ export interface ExportData {
   version: string;
   exportedAt: number;
   books: Book[];
-  categories: string[];
+  categories: CategoryMetadata[];
 }
 
 export interface BookDataSource {

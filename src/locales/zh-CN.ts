@@ -14,6 +14,7 @@ export const zhCN = {
   "navbar.menu.addFromImage": "📸 从图片添加（视觉识别）",
   "navbar.menu.settings": "设置",
   "navbar.menu.apiKeys": "API 密钥设置",
+  "navbar.menu.manageCategories": "管理分类",
   "navbar.menu.language": "语言",
   "navbar.menu.languageChanged": "语言已更改。请刷新页面以使用中文版。",
   "navbar.menu.dangerZone": "危险操作",
@@ -114,8 +115,9 @@ export const zhCN = {
   // Bulk Edit Modal
   "bulkEdit.title": "批量编辑（{count} 本书{plural}）",
   "bulkEdit.changeStatus": "更改阅读状态",
-  "bulkEdit.changeCategory": "更改分类",
-  "bulkEdit.button.cancel": "取消",
+  "bulkEdit.changeCategory": "更改分类",  "bulkEdit.operation.add": "添加分类",
+  "bulkEdit.operation.remove": "移除分类",
+  "bulkEdit.operation.replace": "替换所有分类",  "bulkEdit.button.cancel": "取消",
   "bulkEdit.button.apply": "应用更改",
   "bulkEdit.success": "成功更新 {count} 本书{plural}",
 
@@ -199,6 +201,7 @@ export const zhCN = {
   "common.save": "保存",
   "common.delete": "删除",
   "common.edit": "编辑",
+  "common.done": "完成",
   "common.add": "添加",
   "common.search": "搜索",
   "common.loading": "加载中...",
@@ -227,4 +230,40 @@ export const zhCN = {
   "alert.selectOneBook": "请至少选择一本书进行编辑。",
   "alert.selectOneChange": "请至少选择一项更改以应用。",
   "alert.selectOneCategory": "请至少选择一个分类。",
+
+  // Category Manager
+  "categoryManager.title": "管理分类",
+  "categoryManager.add": "添加",
+  "categoryManager.placeholder": "新分类名称",
+  "categoryManager.edit": "编辑",
+  "categoryManager.delete": "删除",
+  "categoryManager.save": "保存",
+  "categoryManager.cancel": "取消",
+  "categoryManager.booksCount": "{count} 本书",
+  "categoryManager.booksCount_plural": "{count} 本书",
+  "categoryManager.lastUsed": "{time}",
+  "categoryManager.deleteConfirm": '删除"{name}"？',
+  "categoryManager.deleteWarning": "该分类被 {count} 本书使用。删除后将从所有书籍中移除该分类。",
+  "categoryManager.emptyList": "暂无分类。在上方添加一个吧！",
+  "categoryManager.justNow": "刚刚",
+  "categoryManager.minutesAgo": "{count} 分钟前",
+  "categoryManager.minutesAgo_plural": "{count} 分钟前",
+  "categoryManager.hoursAgo": "{count} 小时前",
+  "categoryManager.hoursAgo_plural": "{count} 小时前",
+  "categoryManager.daysAgo": "{count} 天前",
+  "categoryManager.daysAgo_plural": "{count} 天前",
+
+  // Category Input (Tag Input)
+  "categoryInput.placeholder": "输入搜索或添加...",
+  "categoryInput.createHint": '按 Enter 或点击 + 创建"{name}"',
+  "categoryInput.noResults": "无匹配的分类",
+  "categoryInput.remove": "移除",
+
+  // Errors
+  "error.categoryExists": '分类"{name}"已存在',
+  "error.categoryEmpty": "分类名称不能为空",
+  "error.categoryInvalid": "分类名称包含无效字符",
+  "error.categoryAdd": "添加分类失败",
+  "error.categoryUpdate": "更新分类失败",
+  "error.categoryDelete": "删除分类失败",
 };

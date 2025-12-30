@@ -59,45 +59,67 @@ export async function migrateFromLocalStorage(
 
     // Migrate settings
     if (data.settings) {
-      await db.settings.put({
-        key: "categories",
-        value: data.settings.categories || [],
-      });
-      if (data.settings.googleBooksApiKey) {
+      // Only migrate if settings don't exist yet
+      const existingCategories = await db.settings.get('categories');
+      if (!existingCategories) {
         await db.settings.put({
-          key: "googleBooksApiKey",
-          value: data.settings.googleBooksApiKey,
+          key: "categories",
+          value: data.settings.categories || [],
         });
+      }
+
+      // Migrate API keys only if they don't exist
+      if (data.settings.googleBooksApiKey) {
+        const existing = await db.settings.get('googleBooksApiKey');
+        if (!existing) {
+          await db.settings.put({
+            key: "googleBooksApiKey",
+            value: data.settings.googleBooksApiKey,
+          });
+        }
       }
       if (data.settings.isbndbApiKey) {
-        await db.settings.put({
-          key: "isbndbApiKey",
-          value: data.settings.isbndbApiKey,
-        });
+        const existing = await db.settings.get('isbndbApiKey');
+        if (!existing) {
+          await db.settings.put({
+            key: "isbndbApiKey",
+            value: data.settings.isbndbApiKey,
+          });
+        }
       }
       if (data.settings.llmApiEndpoint) {
-        await db.settings.put({
-          key: "llmApiEndpoint",
-          value: data.settings.llmApiEndpoint,
-        });
+        const existing = await db.settings.get('llmApiEndpoint');
+        if (!existing) {
+          await db.settings.put({
+            key: "llmApiEndpoint",
+            value: data.settings.llmApiEndpoint,
+          });
+        }
       }
       if (data.settings.llmApiKey) {
-        await db.settings.put({
-          key: "llmApiKey",
-          value: data.settings.llmApiKey,
-        });
+        const existing = await db.settings.get('llmApiKey');
+        if (!existing) {
+          await db.settings.put({
+            key: "llmApiKey",
+            value: data.settings.llmApiKey,
+          });
+        }
       }
       if (data.settings.llmModel) {
-        await db.settings.put({
-          key: "llmModel",
-          value: data.settings.llmModel,
-        });
+        const existing = await db.settings.get('llmModel');
+        if (!existing) {
+          await db.settings.put({
+            key: "llmModel",
+            value: data.settings.llmModel,
+          });
+        }
       }
       console.log("Migrated settings to IndexedDB");
     }
 
-    // Keep localStorage as backup for now
-    localStorage.setItem(storageKey + "_backup", stored);
+    // Mark migration as complete and remove original localStorage data
+    localStorage.setItem(storageKey + "_migrated", "true");
+    localStorage.removeItem(storageKey);
   } catch (error) {
     console.error("Failed to migrate from localStorage:", error);
   }

@@ -2,14 +2,16 @@ import { storage } from '../modules/storage';
 import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
 import { importFromJSON } from '../modules/import';
 import { VisionUploadModal } from './vision-upload-modal';
+import { CategoryManagerModal } from './category-manager-modal';
 import { i18n } from '../modules/i18n';
 
 export class Navbar {
   private element: HTMLElement;
-  private onDataChange?: () => void;
+  private onDataChange?: () => void | Promise<void>;
   private initPromise: Promise<void>;
+  private categoryManagerModal?: CategoryManagerModal;
 
-  constructor(containerId: string, onDataChange?: () => void) {
+  constructor(containerId: string, onDataChange?: () => void | Promise<void>) {
     this.element = document.getElementById(containerId)!;
     this.onDataChange = onDataChange;
     this.initPromise = this.init();
@@ -71,6 +73,7 @@ export class Navbar {
             <div class="menu-section">
               <h3>${i18n.t('navbar.menu.settings')}</h3>
               <button id="btn-api-key" class="btn-full">${i18n.t('navbar.menu.apiKeys')}</button>
+              <button id="btn-manage-categories" class="btn-full">${i18n.t('navbar.menu.manageCategories')}</button>
             </div>
 
             <div class="menu-section">
@@ -244,6 +247,23 @@ export class Navbar {
 
     document.getElementById('btn-close-api-key')?.addEventListener('click', () => {
       this.hideModal('api-key-modal');
+    });
+
+    // Category Manager
+    document.getElementById('btn-manage-categories')?.addEventListener('click', () => {
+      this.hideModal('menu-modal');
+      // Always create a new instance to ensure callbacks are fresh
+      this.categoryManagerModal = new CategoryManagerModal(
+        () => {
+          // Refresh data when category manager closes
+          this.onDataChange?.();
+        },
+        () => {
+          // Refresh data immediately when categories are changed (e.g., after deletion)
+          this.onDataChange?.();
+        }
+      );
+      this.categoryManagerModal.show();
     });
 
     // Language switcher

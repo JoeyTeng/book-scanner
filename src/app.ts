@@ -22,7 +22,8 @@ export class App {
 
   async init(): Promise<void> {
     // Initialize components
-    const navbar = new Navbar("navbar", () => {
+    const navbar = new Navbar("navbar", async () => {
+      await this.searchBar.refresh();
       void this.bookList.render();
     });
 
