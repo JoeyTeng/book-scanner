@@ -11,7 +11,9 @@ export class SearchBar {
   ) => void;
   private onBulkEditClick?: () => void;
   private onViewModeChange?: (mode: ViewMode) => void;
+  private onSelectAllClick?: () => void;
   private initPromise: Promise<void>;
+  private allSelected: boolean = false;
 
   constructor(
     containerId: string,
@@ -43,7 +45,13 @@ export class SearchBar {
     this.onViewModeChange = handler;
   }
 
-  updateBulkEditButton(mode: boolean, selectedCount: number = 0): void {
+  setSelectAllClickHandler(handler: () => void): void {
+    this.onSelectAllClick = handler;
+  }
+
+  updateBulkEditButton(mode: boolean, selectedCount: number = 0, totalCount: number = 0): void {
+    this.allSelected = selectedCount > 0 && selectedCount === totalCount;
+
     const button = this.element.querySelector(
       "#btn-bulk-edit"
     ) as HTMLButtonElement;
@@ -58,6 +66,21 @@ export class SearchBar {
       } else {
         button.textContent = i18n.t("searchBar.bulkEdit");
         button.className = "btn btn-secondary";
+      }
+    }
+
+    // Update select all button visibility and text
+    const selectAllBtn = this.element.querySelector(
+      "#btn-select-all"
+    ) as HTMLButtonElement;
+    if (selectAllBtn) {
+      if (mode) {
+        selectAllBtn.style.display = "inline-block";
+        selectAllBtn.textContent = this.allSelected
+          ? i18n.t("searchBar.deselectAll")
+          : i18n.t("searchBar.selectAll");
+      } else {
+        selectAllBtn.style.display = "none";
       }
     }
   }
@@ -187,6 +210,9 @@ export class SearchBar {
           <button id="btn-bulk-edit" class="btn btn-secondary">${i18n.t(
             "searchBar.bulkEdit"
           )}</button>
+          <button id="btn-select-all" class="btn btn-secondary" style="display: none;">${i18n.t(
+            "searchBar.selectAll"
+          )}</button>
         </div>
       </div>
     `;
@@ -210,6 +236,9 @@ export class SearchBar {
     ) as HTMLButtonElement;
     const bulkEditBtn = document.getElementById(
       "btn-bulk-edit"
+    ) as HTMLButtonElement;
+    const selectAllBtn = document.getElementById(
+      "btn-select-all"
     ) as HTMLButtonElement;
     const viewGridBtn = document.getElementById(
       "view-grid"
@@ -253,6 +282,12 @@ export class SearchBar {
     bulkEditBtn.addEventListener("click", () => {
       if (this.onBulkEditClick) {
         this.onBulkEditClick();
+      }
+    });
+
+    selectAllBtn.addEventListener("click", () => {
+      if (this.onSelectAllClick) {
+        this.onSelectAllClick();
       }
     });
 

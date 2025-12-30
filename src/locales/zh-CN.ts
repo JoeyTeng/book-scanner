@@ -110,6 +110,8 @@ export const zhCN = {
   "searchBar.sort.publishDate": "出版日期",
   "searchBar.bulkEdit": "批量编辑",
   "searchBar.exitBulkEdit": "退出批量编辑",
+  "searchBar.selectAll": "全选",
+  "searchBar.deselectAll": "取消全选",
   "searchBar.selected": "已选择 {count} 项",
 
   // Bulk Edit Modal

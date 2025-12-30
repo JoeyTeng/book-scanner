@@ -64,6 +64,11 @@ export class App {
       this.handleBulkEditClick();
     });
 
+    // Set up select all handler
+    this.searchBar.setSelectAllClickHandler(() => {
+      this.handleSelectAllClick();
+    });
+
     // Set up view mode change handler
     this.searchBar.setViewModeChangeHandler((mode) => {
       this.bookList.setViewMode(mode);
@@ -274,9 +279,11 @@ export class App {
     this.selectedBookIds = [];
     this.bookList.setBulkSelectMode(true, (selectedIds) => {
       this.selectedBookIds = selectedIds;
-      this.searchBar.updateBulkEditButton(true, selectedIds.length);
+      const totalCount = this.getCurrentVisibleBookCount();
+      this.searchBar.updateBulkEditButton(true, selectedIds.length, totalCount);
     });
-    this.searchBar.updateBulkEditButton(true, 0);
+    const totalCount = this.getCurrentVisibleBookCount();
+    this.searchBar.updateBulkEditButton(true, 0, totalCount);
   }
 
   private exitBulkEditMode(): void {
@@ -284,5 +291,22 @@ export class App {
     this.selectedBookIds = [];
     this.bookList.setBulkSelectMode(false);
     this.searchBar.updateBulkEditButton(false, 0);
+  }
+
+  private handleSelectAllClick(): void {
+    const visibleCount = this.getCurrentVisibleBookCount();
+
+    if (this.selectedBookIds.length === visibleCount) {
+      // Deselect all
+      this.bookList.deselectAll();
+    } else {
+      // Select all
+      this.bookList.selectAll();
+    }
+  }
+
+  private getCurrentVisibleBookCount(): number {
+    const checkboxes = document.querySelectorAll('.bulk-select-checkbox');
+    return checkboxes.length;
   }
 }

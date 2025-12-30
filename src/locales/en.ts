@@ -116,6 +116,8 @@ export const en = {
   "searchBar.sort.publishDate": "Publish Date",
   "searchBar.bulkEdit": "Bulk Edit",
   "searchBar.exitBulkEdit": "Exit Bulk Edit",
+  "searchBar.selectAll": "Select All",
+  "searchBar.deselectAll": "Deselect All",
   "searchBar.selected": "{count} selected",
 
   // Bulk Edit Modal
