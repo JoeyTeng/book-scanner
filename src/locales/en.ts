@@ -5,6 +5,7 @@ export const en = {
   // Navbar
   "navbar.title": "Book Scanner",
   "navbar.menu": "Menu",
+  "navbar.exportCurrentList": "Export current list",
   "navbar.menu.dataManagement": "Data Management",
   "navbar.menu.exportJSON": "Export as JSON",
   "navbar.menu.exportCSV": "Export as CSV",
@@ -323,6 +324,17 @@ export const en = {
   "bookListManager.deleteWarning":
     "This book list contains {count} book(s). The books themselves will not be deleted.",
   "bookListManager.emptyList": "No book lists yet. Add one above!",
+  "bookListManager.export": "Export",
+  "bookListManager.exportHint": "Private fields (recommendations, notes) are not exported",
+  "bookListManager.exportSelected": "Export Selected",
+  "bookListManager.deleteSelected": "Delete Selected",
+  "bookListManager.selectedCount": "{count} list(s) selected",
+  "bookListManager.batchDeleteConfirm": "Delete {count} book list(s)?",
+  "bookListManager.books": "book(s)",
+  "bookListManager.cannotUndo": "This action cannot be undone.",
+  "bookListManager.batchDeleteSuccess": "Batch delete successful",
+  "bookListManager.exportSuccess": "Export successful",
+  "bookListManager.exportError": "Export failed",
 
   // Book Comment Edit
   "bookCommentEdit.title": "Edit Book List Comment",

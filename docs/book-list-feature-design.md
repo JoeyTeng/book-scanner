@@ -374,93 +374,244 @@ interface BookList {
 
 ---
 
-## Phase 3: Import/Export (PLANNED)
+## Phase 3: Import/Export (IN PROGRESS)
 
-### 1. Export Book Lists
+### Step 1: Export Book Lists ✅ COMPLETED
 
 **Feature**: Export one or more book lists as JSON with full book data
 
 **Export format**:
 ```typescript
-interface BookListExport {
-  id: string;
+interface BookListExportFormat {
+  version: number;        // DB version (currently 3)
+  exportedAt: string;     // ISO 8601 timestamp
+  lists: BookListExportData[];
+}
+
+interface BookListExportData {
+  id: string;             // Original list ID (for reference)
   name: string;
   description?: string;
-  books: Book[];  // Full book objects, not just IDs
-  createdAt: Date;
-  updatedAt: Date;
-  exportedAt: Date;
-  version: number;
+  createdAt: string;      // ISO 8601
+  updatedAt: string;      // ISO 8601
+  books: ExportedBook[];
+}
+
+interface ExportedBook {
+  // Basic book info (copied from Book object)
+  title: string;
+  author: string;
+  isbn?: string;
+  publisher?: string;
+  publishDate?: string;
+  coverUrl?: string;
+  rating?: number;
+  // Note: recommendation and notes are NOT exported (private fields)
+
+  // List-specific info
+  comment?: string;       // Book's comment in this list
+  addedAt: string;        // ISO 8601
 }
 ```
 
-**UI flow**:
-1. In Book List Manager Modal, add "Export" button next to each list
-2. Click → Download JSON file
-3. Alternatively: "Export All Lists" button to export all lists at once
+**File naming**:
 
-**Benefits**:
-- Share curated book lists with others
-- Backup specific collections
-- Portable format includes all book metadata
+- Single list: `${listName}_${YYYY-MM-DD}.json`
+- Multiple lists: `book-lists_${YYYY-MM-DD}.json`
+- Special chars in filename replaced with `_`
 
-### 2. Import Book Lists with Conflict Resolution
+**UI Entry Points**:
+
+1. **Book List Manager Modal**:
+   - Checkbox for each list (batch selection)
+   - Actions toolbar appears when ≥1 list selected:
+     - "📤 Export Selected (N)" button
+     - "🗑️ Delete Selected (N)" button
+   - Individual "📤" button for quick single export
+   - Static hint: "📝 导出不包含私有字段（推荐语、笔记）"
+
+2. **Navbar (when a list is active)**:
+   - "📤" export button next to current list name
+   - Tooltip: "Export current list"
+   - Click → Directly export current list
+
+**Privacy Handling**:
+
+- Private fields (`recommendation`, `notes`) are **never exported**
+- Static gray text hint in modal: "导出不包含私有字段（推荐语、笔记）"
+- No per-export confirmation needed
+
+**Implementation**:
+
+**New file**: `src/modules/book-list-export.ts`
+
+- `exportBookList(listId: string): Promise<void>` - Single list export
+- `exportBookLists(listIds: string[]): Promise<void>` - Batch export
+- Helper: `sanitizeFilename(name: string): string`
+- Helper: `downloadJSON(data: any, filename: string): void`
+
+**Modified files**:
+
+- `src/components/book-list-manager-modal.ts`:
+  - Add checkbox column
+  - Add batch selection state
+  - Add actions toolbar (export/delete buttons)
+  - Keep individual export button
+  - Add export hint text
+
+- `src/components/navbar.ts`:
+  - Add export button (📤) next to active list name
+  - Show only when `activeBookListId !== null`
+  - Call `exportBookList(activeBookListId)`
+
+- `src/locales/zh-CN.ts`, `en.ts`:
+  - Add `bookListManager.export*` translations
+  - Add `navbar.exportCurrentList` translation
+
+**Error handling**:
+
+- List not found → Error toast
+- Empty list → Still export (with `books: []`)
+- Download blocked → Error toast
+
+**Verification Points**:
+
+- ✅ Can export single list from manager modal
+- ✅ Can export single list from navbar button
+- ✅ Can select multiple lists and batch export
+- ✅ Export creates valid JSON file
+- ✅ Private fields (recommendation, notes) not included
+- ✅ Comments are included in exported books
+- ✅ Filename is sanitized and formatted correctly
+- ✅ Empty lists can be exported
+- ✅ Batch delete works correctly
+
+---
+
+### Step 2: Batch Delete Enhancement ✅ COMPLETED
+
+**Feature**: Delete multiple book lists at once
+
+**UI**:
+
+- Uses same checkbox selection as batch export
+- "🗑️ Delete Selected (N)" button in actions toolbar
+- Confirmation dialog before deletion:
+
+  ```
+  Delete 3 book lists?
+  - "Sci-Fi" (12 books)
+  - "Must-Read" (5 books)
+  - "Wishlist" (empty)
+
+  This action cannot be undone.
+
+  [Cancel] [Delete]
+  ```
+
+**Implementation**:
+
+- `storage.ts`: `deleteBookLists(listIds: string[]): Promise<void>` - Batch delete helper
+- `book-list-manager-modal.ts`: Batch delete logic with confirmation
+
+**Verification Points**:
+
+- ✅ Can select multiple lists and batch delete
+- ✅ Confirmation dialog shows list details
+- ✅ Deletion removes all selected lists
+- ✅ UI updates correctly after deletion
+- ✅ No success toast after deletion (clean UX)
+
+---
+
+### Step 3: Import Book Lists (TODO)
 
 **Feature**: Import book lists from JSON, handle naming conflicts and duplicate books
 
 **Import flow**:
+
 1. User selects JSON file (via menu: "Import Book Lists")
-2. System detects:
+2. System validates and parses JSON
+3. Detects conflicts (if any):
    - Name conflicts (list with same name exists)
    - Book duplicates (match by ISBN or title+author)
-3. Show conflict resolution dialog
+4. Show conflict resolution dialog (if needed)
+5. Execute import based on user choices
+6. Show import summary
 
-**Conflict Resolution Dialog**:
+**Import format** (accepts Step 1 export format):
 
-```
-Importing "Sci-Fi Classics"
-⚠️ A book list with this name already exists.
+- Parse `BookListExportFormat`
+- Generate new list IDs (ignore imported IDs)
+- Skip private fields if present in import data
 
-Book List Conflict:
-○ Replace existing list (delete old, import new)
-○ Keep both (rename import to "Sci-Fi Classics (2)")
-○ Skip this list
+**Conflict Resolution Options**:
 
-Book Conflicts (3 books):
-- "Foundation" by Isaac Asimov
-  ○ Skip (keep existing book data)
-  ○ Update (merge with import data)
-  ○ Add as duplicate
+**List name conflicts**:
 
-[Apply to all similar conflicts] ✓
+- Replace: Delete existing, import new
+- Keep both: Auto-rename import (append " (2)", " (3)", etc.)
+- Skip: Don't import this list
 
-[Cancel] [Import]
-```
+**Book duplicates** (match by ISBN, or title+author if no ISBN):
 
-**Resolution options**:
-- **List name conflicts**:
-  - Replace: Delete existing, import new
-  - Keep both: Auto-rename import (append number)
-  - Skip: Don't import this list
+- Skip: Keep existing book, add to list
+- Update: Merge data (import data preferred)
+- Duplicate: Add as new book (generate new ID)
 
-- **Book duplicates** (matched by ISBN):
-  - Skip: Don't import, keep existing book
-  - Update: Merge data (prefer import for conflicts)
-  - Duplicate: Add as separate book (change ID)
+**Default strategy** (if no conflicts):
 
-**Implementation needs**:
-- Create `book-list-import-modal.ts`: Conflict resolution UI
-- Enhance `storage.ts`: Add merge/conflict detection logic
-- Update `import.ts`: Handle book list imports
-- Add menu item in navbar
-- Extensive i18n for all resolution options
+- New lists → Import directly with new IDs
+- New books → Add to database
+- Existing books → Reuse existing book IDs
 
-**Files to modify**:
-- Create `modules/book-list-import.ts`: Import logic
-- Create `book-list-import-modal.ts`: Conflict UI
-- `storage.ts`: Merge helpers
-- `navbar.ts`: Add menu items
-- `en.ts`, `zh-CN.ts`: Import/export translations
+**Implementation**:
+
+**New files**:
+
+- `src/modules/book-list-import.ts`: Import logic, conflict detection
+- `src/components/book-list-import-modal.ts`: Conflict resolution UI
+
+**Modified files**:
+
+- `src/components/navbar.ts`: Add "Import Book Lists" menu item
+- `src/locales/zh-CN.ts`, `en.ts`: Import translations
+
+**Verification Points**:
+
+- ✅ Can import lists without conflicts
+- ✅ Detects list name conflicts
+- ✅ Detects book duplicates (ISBN match)
+- ✅ Detects book duplicates (title+author match)
+- ✅ Conflict dialog shows all conflicts
+- ✅ Can resolve conflicts individually
+- ✅ "Apply to all" works correctly
+- ✅ Import summary shows results
+- ✅ Private fields not imported
+- ✅ UI refreshes after import
+
+---
+
+### Implementation Plan
+
+**Priority 1: Export (Current)** ✅ COMPLETED
+
+1. ✅ Create `book-list-export.ts`
+2. ✅ Add batch selection to Book List Manager Modal
+3. ✅ Add export buttons (individual + batch)
+4. ✅ Add export button to navbar
+5. ✅ Add batch delete functionality
+6. ✅ Add i18n translations
+7. ✅ Test all export scenarios
+
+**Priority 2: Import (Next)** ⏳ PLANNED
+
+1. ⏳ Create `book-list-import.ts` (parsing + validation)
+2. ⏳ Implement conflict detection logic
+3. ⏳ Create `book-list-import-modal.ts` (UI)
+4. ⏳ Add import menu item to navbar
+5. ⏳ Test all import scenarios
+6. ⏳ Test conflict resolution paths
 
 ---
 
@@ -519,6 +670,7 @@ Book Conflicts (3 books):
 | Phase 1: Core Functionality | ✅ Completed | 2025-12-30 |
 | Phase 2: Enhanced Operations | ✅ Completed | 2025-12-31 |
 | Phase 2.5: Book List Comments | ✅ Completed | 2025-12-31 |
-| Phase 3: Import/Export | 📋 Planned | - |
+| Phase 3.1: Export Book Lists | ✅ Completed | 2025-12-31 |
+| Phase 3.2: Import Book Lists | 📋 Planned | - |
 
 Last updated: 2025-12-31

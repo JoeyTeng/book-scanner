@@ -5,6 +5,7 @@ export const zhCN = {
   // Navbar
   "navbar.title": "图书扫描器",
   "navbar.menu": "菜单",
+  "navbar.exportCurrentList": "导出当前书单",
   "navbar.menu.dataManagement": "数据管理",
   "navbar.menu.exportJSON": "导出为 JSON",
   "navbar.menu.exportCSV": "导出为 CSV",
@@ -311,6 +312,17 @@ export const zhCN = {
   "bookListManager.deleteWarning":
     "该书单包含 {count} 本书。删除书单不会删除书籍本身。",
   "bookListManager.emptyList": "暂无书单。在上方添加一个吧！",
+  "bookListManager.export": "导出",
+  "bookListManager.exportHint": "导出不包含私有字段（推荐语、笔记）",
+  "bookListManager.exportSelected": "导出所选",
+  "bookListManager.deleteSelected": "删除所选",
+  "bookListManager.selectedCount": "已选择 {count} 个书单",
+  "bookListManager.batchDeleteConfirm": "确认删除 {count} 个书单？",
+  "bookListManager.books": "本书",
+  "bookListManager.cannotUndo": "此操作无法撤销。",
+  "bookListManager.batchDeleteSuccess": "批量删除成功",
+  "bookListManager.exportSuccess": "导出成功",
+  "bookListManager.exportError": "导出失败",
 
   // Book Comment Edit
   "bookCommentEdit.title": "编辑书单评语",

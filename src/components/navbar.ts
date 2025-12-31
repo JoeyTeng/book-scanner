@@ -1,6 +1,7 @@
 import { storage } from '../modules/storage';
 import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
 import { importFromJSON } from '../modules/import';
+import { exportBookLists } from '../modules/book-list-export';
 import { VisionUploadModal } from './vision-upload-modal';
 import { CategoryManagerModal } from './category-manager-modal';
 import { BookListManagerModal } from './book-list-manager-modal';
@@ -52,6 +53,11 @@ export class Navbar {
               </option>
             `).join('')}
           </select>
+          ${this.activeBookListId ? `
+            <button id="btn-export-current-list" class="btn-icon" title="${i18n.t('navbar.exportCurrentList')}" aria-label="${i18n.t('navbar.exportCurrentList')}">
+              ${i18n.t('bookListManager.export')}
+            </button>
+          ` : ''}
         </div>
         <div class="navbar-actions">
           <button id="btn-menu" class="btn-icon" aria-label="${i18n.t('navbar.menu')}">
@@ -202,12 +208,29 @@ export class Navbar {
     // Book list selector
     const selectorElement = document.getElementById('booklist-selector');
     console.log('[Navbar] Book list selector element:', selectorElement);
-    selectorElement?.addEventListener('change', (e) => {
+    selectorElement?.addEventListener('change', async (e) => {
       const value = (e.target as HTMLSelectElement).value;
-      console.log('[Navbar] Book list selector changed to:', value);
+      console.log("[Navbar] Book list selector changed to:", value);
       this.activeBookListId = value || null;
+
+      // Re-render navbar to show/hide export button
+      await this.render();
+      this.attachEventListeners();
+
       if (this.onBookListChange) {
         this.onBookListChange(this.activeBookListId);
+      }
+    });
+
+    // Export current book list button
+    document.getElementById('btn-export-current-list')?.addEventListener('click', async () => {
+      if (this.activeBookListId) {
+        try {
+          await exportBookLists([this.activeBookListId]);
+        } catch (error) {
+          console.error('Export current list failed:', error);
+          alert(i18n.t('bookListManager.exportError'));
+        }
       }
     });
 

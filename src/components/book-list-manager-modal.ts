@@ -1,9 +1,11 @@
 import { storage } from '../modules/storage';
 import { i18n } from '../modules/i18n';
+import { exportBookLists } from '../modules/book-list-export';
 
 export class BookListManagerModal {
   private modalElement: HTMLElement | null = null;
   private onBookListsChanged?: () => void;
+  private selectedListIds: Set<string> = new Set();
 
   constructor(onBookListsChanged?: () => void) {
     this.onBookListsChanged = onBookListsChanged;
@@ -16,6 +18,7 @@ export class BookListManagerModal {
       this.modalElement.remove();
     }
 
+    this.selectedListIds.clear();
     this.modalElement = document.createElement('div');
     this.modalElement.className = 'modal';
     console.log('[BookListManagerModal] Created modal element');
@@ -35,6 +38,18 @@ export class BookListManagerModal {
             />
             <button id="btn-add-booklist" class="btn btn-primary">
               ${i18n.t("bookListManager.add")}
+            </button>
+          </div>
+          <small class="export-hint">
+            📝 ${i18n.t("bookListManager.exportHint")}
+          </small>
+          <div id="batch-actions-toolbar" class="batch-actions-toolbar" style="display: none;">
+            <span id="selection-count" class="selection-count"></span>
+            <button id="btn-export-selected" class="btn btn-primary">
+              📤 ${i18n.t("bookListManager.exportSelected")}
+            </button>
+            <button id="btn-delete-selected" class="btn btn-danger">
+              🗑️ ${i18n.t("bookListManager.deleteSelected")}
             </button>
           </div>
           <div id="booklist-list" class="category-list"></div>
@@ -83,9 +98,18 @@ export class BookListManagerModal {
       bookLists.map(async (list) => {
         const books = await storage.getBooksInList(list.id);
         const bookCount = books.length;
+        const isChecked = this.selectedListIds.has(list.id);
 
         return `
-          <div class="category-item" data-id="${list.id}">
+          <div class="category-item ${isChecked ? "selected" : ""}" data-id="${
+          list.id
+        }">
+            <input
+              type="checkbox"
+              class="list-checkbox"
+              data-id="${list.id}"
+              ${isChecked ? "checked" : ""}
+            />
             <div class="category-content">
               <div class="category-main">
                 <span class="category-name">${this.escapeHtml(list.name)}</span>
@@ -104,6 +128,11 @@ export class BookListManagerModal {
               }
             </div>
             <div class="category-actions">
+              <button class="btn-icon btn-export" data-id="${
+                list.id
+              }" title="${i18n.t("bookListManager.export")}">
+                📤
+              </button>
               <button class="btn-icon btn-edit" data-id="${
                 list.id
               }" title="${i18n.t("bookListManager.edit")}">
@@ -121,6 +150,7 @@ export class BookListManagerModal {
     );
 
     listContainer.innerHTML = itemsHTML.join('');
+    this.updateBatchActionsToolbar();
   }
 
   private attachEventListeners(): void {
@@ -161,7 +191,34 @@ export class BookListManagerModal {
       } else if (target.classList.contains('btn-delete')) {
         const id = target.dataset.id!;
         await this.handleDelete(id);
+      } else if (target.classList.contains('btn-export')) {
+        const id = target.dataset.id!;
+        await this.handleExportSingle(id);
       }
+    });
+
+    // Checkbox change events
+    listContainer?.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.classList.contains('list-checkbox')) {
+        const id = target.dataset.id!;
+        if (target.checked) {
+          this.selectedListIds.add(id);
+        } else {
+          this.selectedListIds.delete(id);
+        }
+        this.updateBatchActionsToolbar();
+      }
+    });
+
+    // Batch export button
+    this.modalElement?.querySelector('#btn-export-selected')?.addEventListener('click', async () => {
+      await this.handleBatchExport();
+    });
+
+    // Batch delete button
+    this.modalElement?.querySelector('#btn-delete-selected')?.addEventListener('click', async () => {
+      await this.handleBatchDelete();
     });
   }
 
@@ -247,6 +304,87 @@ export class BookListManagerModal {
     } catch (error) {
       console.error('Failed to delete book list:', error);
       alert(i18n.t('error.bookListDelete'));
+    }
+  }
+
+  private async handleExportSingle(id: string): Promise<void> {
+    try {
+      await exportBookLists([id]);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(i18n.t('bookListManager.exportError'));
+    }
+  }
+
+  private async handleBatchExport(): Promise<void> {
+    if (this.selectedListIds.size === 0) return;
+
+    try {
+      await exportBookLists(Array.from(this.selectedListIds));
+      this.selectedListIds.clear();
+      await this.renderBookLists();
+    } catch (error) {
+      console.error('Batch export failed:', error);
+      alert(i18n.t('bookListManager.exportError'));
+    }
+  }
+
+  private async handleBatchDelete(): Promise<void> {
+    if (this.selectedListIds.size === 0) return;
+
+    const bookLists = await storage.getBookLists();
+    const selectedLists = bookLists.filter(list => this.selectedListIds.has(list.id));
+
+    // Build confirmation message
+    let message = i18n.t('bookListManager.batchDeleteConfirm', { count: selectedLists.length }) + '\n\n';
+    for (const list of selectedLists) {
+      const books = await storage.getBooksInList(list.id);
+      message += `- "${list.name}" (${books.length} ${i18n.t('bookListManager.books')})\n`;
+    }
+    message += '\n' + i18n.t('bookListManager.cannotUndo');
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    try {
+      for (const id of this.selectedListIds) {
+        await storage.deleteBookList(id);
+      }
+      this.selectedListIds.clear();
+      await this.renderBookLists();
+
+      if (this.onBookListsChanged) {
+        this.onBookListsChanged();
+      }
+    } catch (error) {
+      console.error('Batch delete failed:', error);
+      alert(i18n.t('error.bookListDelete'));
+    }
+  }
+
+  private updateBatchActionsToolbar(): void {
+    const toolbar = this.modalElement?.querySelector('#batch-actions-toolbar') as HTMLElement;
+    const countSpan = this.modalElement?.querySelector('#selection-count');
+    const exportBtn = this.modalElement?.querySelector('#btn-export-selected');
+    const deleteBtn = this.modalElement?.querySelector('#btn-delete-selected');
+
+    if (!toolbar) return;
+
+    const count = this.selectedListIds.size;
+    if (count > 0) {
+      toolbar.style.display = 'flex';
+      if (countSpan) {
+        countSpan.textContent = i18n.t('bookListManager.selectedCount', { count });
+      }
+      if (exportBtn) {
+        (exportBtn as HTMLElement).textContent = `📤 ${i18n.t('bookListManager.exportSelected')} (${count})`;
+      }
+      if (deleteBtn) {
+        (deleteBtn as HTMLElement).textContent = `🗑️ ${i18n.t('bookListManager.deleteSelected')} (${count})`;
+      }
+    } else {
+      toolbar.style.display = 'none';
     }
   }
 

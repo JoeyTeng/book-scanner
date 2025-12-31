@@ -1415,6 +1415,18 @@ textarea.over-limit {
   transition: background-color 0.2s;
 }
 
+.category-item.selected {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-primary);
+}
+
+.category-item .list-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-right: var(--spacing-xs);
+}
+
 .category-item.edit-mode {
   background: var(--color-bg-secondary);
 }
@@ -1497,6 +1509,38 @@ textarea.over-limit {
 .btn-icon.btn-cancel:hover {
   background: var(--color-danger);
   color: white;
+}
+
+/* Export hint */
+.export-hint {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: var(--spacing-sm) 0;
+  opacity: 0.8;
+}
+
+/* Batch actions toolbar */
+.batch-actions-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  margin: var(--spacing-md) 0;
+}
+
+.selection-count {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.batch-actions-toolbar .btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
 }
 
 /* Mobile Optimizations */
