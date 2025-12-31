@@ -218,6 +218,162 @@ Dropdown menu:
 
 ---
 
+## Phase 2.5: Book List Comments ✅ COMPLETED
+
+### Overview
+Add per-list comments for each book, allowing users to add public, shareable notes specific to each book list context.
+
+### Features to Implement
+
+#### 1. Data Model Changes ✅
+
+**Updated BookList Interface**:
+```typescript
+interface BookInList {
+  bookId: string;
+  comment?: string;     // Public comment, 500 char limit
+  addedAt: Date;        // When book was added to this list
+}
+
+interface BookList {
+  id: string;
+  name: string;
+  description?: string;
+  books: BookInList[];  // Replaces bookIds: string[]
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+**Database Migration**: v2 → v3
+- Convert `bookIds: string[]` to `books: BookInList[]`
+- Set `addedAt` to `bookList.updatedAt` or current time
+- Initial `comment` is `undefined`
+
+#### 2. Storage API Updates ✅
+
+**Modified methods**:
+- `addBookToList(bookListId, bookId, comment?)`: Accept optional comment
+- `getBooksInList(bookListId)`: Return books with comment and addedAt
+
+**New methods**:
+- `updateBookComment(bookListId, bookId, comment)`: Update comment
+- `getBookComment(bookListId, bookId)`: Get comment for specific book
+
+#### 3. UI Components ✅
+
+**3.1 Comment Edit Modal** ✅
+- Modal popup for editing comments
+- Textarea with 500 character limit
+- Real-time character counter (e.g., "234/500")
+- Red border and warning when over limit
+- Does not prevent typing (supports IME)
+- Prevents submission when over limit
+- Note: "This comment can be publicly shared"
+
+**3.2 Book List Management Modal** ✅
+- **Google Maps-style collection interface**
+- Single modal for managing all book list memberships
+- Shows book info preview at top
+- Two sections:
+  - "已添加到" (In Lists): Lists containing the book
+  - "可添加到" (Add to): Available lists to add
+- In-place operations: add, remove, edit comment
+- No page flash when adding/removing (content-only updates)
+- Unified entry point from BookForm and BookCard
+
+**3.3 BookCard Display** ✅
+- Single ⭐/☆ button for collection management
+- Dynamic icon based on list membership:
+  - ☆ (empty star): Book not in any list
+  - ⭐ (filled star): Book in one or more lists
+- Visual feedback:
+  - Opacity 0.6 for unsaved books
+  - Opacity 1.0 for saved books
+  - Scale 1.15x on hover
+- Opens BookListManagementModal
+
+**3.4 BookForm - Book Lists Section** ✅
+- Replaced detailed list section with collection button
+- Button shows "⭐ 管理收藏书单" with badge showing count
+- Badge only visible when book is in lists
+- Opens BookListManagementModal
+- Privacy notices changed to inline text (mobile-friendly)
+
+#### 4. Technical Improvements ✅
+
+**4.1 Modal Flash Fix**
+- **Problem**: Modal flickered when adding/removing books (entire modal was removed and recreated)
+- **Solution**: Separated modal into static and dynamic parts
+  - `createModal()`: Creates modal skeleton once (header, close buttons, static event listeners)
+  - `updateContent()`: Updates only the body content
+  - `attachDynamicEventListeners()`: Rebinds only content-related listeners
+- **Result**: Smooth content updates without visual interruption
+
+**4.2 Privacy Notice Improvements**
+- Removed clickable alert buttons
+- Changed to inline `<small class="privacy-hint">` text
+- Always visible, better for mobile UX
+
+**4.3 Visual State Feedback**
+- Icon distinction: ☆ vs ⭐ for unsaved vs saved
+- CSS transitions for smooth opacity and scale changes
+- Consistent collection paradigm across all components
+
+#### 5. Files Modified ✅
+
+**New files created**:
+- `src/components/book-comment-edit-modal.ts`: Comment editing modal
+- `src/components/book-list-management-modal.ts`: Unified collection management modal
+
+**Modified files**:
+- `src/types.ts`: Added `BookInList` interface, updated `BookList`
+- `src/modules/db.ts`: Database v2→v3 migration
+- `src/modules/storage.ts`: Updated methods for comment support
+- `src/components/book-form.ts`: Collection button with inline privacy hints
+- `src/components/book-card.ts`: Single ⭐/☆ button with state detection
+- `src/styles/components.css`: Collection UI styles, button states, privacy hints
+- `src/locales/zh-CN.ts`: Added collection management translations
+- `src/locales/en.ts`: Added collection management translations
+
+#### 6. Design Decisions ✅
+
+**Character Limit Handling**:
+- 500 char soft limit (respects IME composition)
+- Over-limit: Red border + warning, but allows typing
+- Submit disabled when over limit
+- Bulk edit: Does not support comments
+
+**Google Maps-Style Collection Interface**:
+- Unified modal approach reduces UI complexity
+- Clear visual separation of "in lists" vs "available lists"
+- In-place operations avoid navigation overhead
+- Content-only updates prevent modal flicker
+- Badge count provides at-a-glance membership info
+
+**Icon Selection**:
+- ☆ (empty star): Universal symbol for "not saved"
+- ⭐ (filled star): Universal symbol for "saved/favorited"
+- Consistent with Google Maps collection metaphor
+
+### Verification Points
+
+- ✅ Can add comment when adding book to list
+- ✅ Comment respects 500 char limit
+- ✅ Over-limit shows warning but allows typing
+- ✅ Cannot submit over-limit comment
+- ✅ BookCard shows ⭐/☆ based on membership
+- ✅ BookCard opacity changes based on state (0.6 vs 1.0)
+- ✅ BookForm shows collection button with count badge
+- ✅ BookListManagementModal opens from both BookForm and BookCard
+- ✅ Can add/remove books from lists in modal
+- ✅ Can edit comment from modal
+- ✅ Modal updates smoothly without flashing
+- ✅ Privacy notices shown as inline text
+- ✅ All operations auto-update counts and states
+
+---
+
 ## Phase 3: Import/Export (PLANNED)
 
 ### 1. Export Book Lists
@@ -362,6 +518,7 @@ Book Conflicts (3 books):
 |-------|--------|----------------|
 | Phase 1: Core Functionality | ✅ Completed | 2025-12-30 |
 | Phase 2: Enhanced Operations | ✅ Completed | 2025-12-31 |
+| Phase 2.5: Book List Comments | ✅ Completed | 2025-12-31 |
 | Phase 3: Import/Export | 📋 Planned | - |
 
 Last updated: 2025-12-31

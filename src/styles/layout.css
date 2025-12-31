@@ -295,6 +295,17 @@
   line-height: 1.4;
 }
 
+.book-table .comment-preview {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: var(--spacing-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
 .book-table .col-author {
   min-width: 150px;
 }

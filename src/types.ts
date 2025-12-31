@@ -47,11 +47,17 @@ export interface ExportData {
   categories: CategoryMetadata[];
 }
 
+export interface BookInList {
+  bookId: string;
+  comment?: string;
+  addedAt: number;
+}
+
 export interface BookList {
   id: string;
   name: string;
   description?: string;
-  bookIds: string[];
+  books: BookInList[];
   createdAt: number;
   updatedAt: number;
 }

@@ -44,6 +44,37 @@ class BookScannerDB extends Dexie {
       imageCache: "url, timestamp",
       bookLists: "id, name, createdAt, updatedAt",
     });
+
+    // Version 3: Migrate bookIds to books array with BookInList structure
+    this.version(3).stores({
+      books: "id, isbn, title, author, status, *categories, addedAt, updatedAt",
+      settings: "key",
+      imageCache: "url, timestamp",
+      bookLists: "id, name, createdAt, updatedAt",
+    }).upgrade(async (trans) => {
+      // Migrate all book lists from bookIds to books structure
+      const bookLists = await trans.table('bookLists').toArray();
+
+      for (const list of bookLists) {
+        // Check if list has old bookIds format
+        if ("bookIds" in list && Array.isArray((list as any).bookIds)) {
+          const bookIds = (list as any).bookIds as string[];
+          const books = bookIds.map((bookId) => ({
+            bookId,
+            comment: undefined,
+            addedAt: list.updatedAt || Date.now(),
+          }));
+
+          // Update the list with new structure
+          await trans.table("bookLists").update(list.id, {
+            books,
+            bookIds: undefined, // Remove old field
+          });
+        }
+      }
+
+      console.log(`Migrated ${bookLists.length} book lists to v3 structure`);
+    });
   }
 }
 

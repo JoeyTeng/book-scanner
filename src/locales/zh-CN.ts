@@ -89,7 +89,20 @@ export const zhCN = {
   "bookForm.tags.placeholder": "逗号分隔的标签",
   "bookForm.label.recommendation": "推荐",
   "bookForm.recommendation.note": "（来自他人）",
+  "bookForm.recommendation.privacy": "仅自己可见，书单分享时会被忽略",
   "bookForm.label.notes": "我的笔记",
+  "bookForm.notes.privacy": "仅自己可见，书单分享时会被忽略",
+  "bookForm.bookLists": "书单",
+  "bookForm.bookLists.manage": "管理收藏书单",
+  "bookForm.bookLists.inLists": "已添加到",
+  "bookForm.bookLists.notInLists": "可添加到",
+  "bookForm.bookLists.empty": "此书尚未添加到任何书单",
+  "bookForm.bookLists.addTo": "添加到书单...",
+  "bookForm.bookLists.removeConfirm": "确定要将此书从\"{name}\"中移除吗？",
+  "bookForm.bookLists.comment": "评语",
+  "bookForm.bookLists.noComment": "暂无评语",
+  "bookForm.bookLists.editComment": "编辑评语",
+  "bookForm.bookLists.removeFrom": "从书单移除",
   "bookForm.externalLinks": "外部链接 ({count})",
   "bookForm.externalLinks.search": "在其他平台搜索：",
   "bookForm.button.cancel": "取消",
@@ -282,6 +295,8 @@ export const zhCN = {
   "bookCard.addToBookList": "添加到书单",
   "bookCard.addToList": "添加到 {name}",
   "bookCard.removeFromList": "从 {name} 移除",
+  "bookCard.editComment": "编辑评语",
+  "bookCard.manageBookLists": "管理收藏书单",
 
   // Book List Manager
   "bookListManager.title": "管理书单",
@@ -296,6 +311,14 @@ export const zhCN = {
   "bookListManager.deleteWarning":
     "该书单包含 {count} 本书。删除书单不会删除书籍本身。",
   "bookListManager.emptyList": "暂无书单。在上方添加一个吧！",
+
+  // Book Comment Edit
+  "bookCommentEdit.title": "编辑书单评语",
+  "bookCommentEdit.commentLabel": "评语",
+  "bookCommentEdit.commentPlaceholder": "在此输入这本书在该书单中的专属评语...",
+  "bookCommentEdit.overLimit": "超出字符限制！",
+  "bookCommentEdit.deleteComment": "删除评语",
+  "bookCommentEdit.confirmDelete": "确定要删除这条评语吗？",
 
   // Errors
   "error.categoryExists": '分类"{name}"已存在',

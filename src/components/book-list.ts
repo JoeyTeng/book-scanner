@@ -78,14 +78,15 @@ export class BookList {
   }
 
   async render(): Promise<void> {
-    let books = await storage.getBooks();
+    let books: Array<Book & { comment?: string }> = [];
 
     // Apply book list filter if active and scope is "current"
     if (this.activeBookListId && this.searchScope === "current") {
-      const bookList = await storage.getBookList(this.activeBookListId);
-      if (bookList) {
-        books = books.filter((book) => bookList.bookIds.includes(book.id));
-      }
+      // Get books with comments from the active book list
+      books = await storage.getBooksInList(this.activeBookListId);
+    } else {
+      // Get all books (no comments)
+      books = await storage.getBooks();
     }
 
     // Apply filters and sorting
@@ -171,7 +172,7 @@ export class BookList {
     this.attachListEventListeners();
   }
 
-  private async renderListRow(book: Book): Promise<string> {
+  private async renderListRow(book: Book & { comment?: string }): Promise<string> {
     const statusColor = this.getStatusColor(book.status);
     const statusLabel = this.getStatusLabel(book.status);
 
@@ -198,6 +199,11 @@ export class BookList {
         <td class="col-title">
           <div class="title-cell">
             <strong>${this.escapeHtml(book.title)}</strong>
+            ${
+              book.comment && this.activeBookListId
+                ? `<div class="comment-preview">💬 ${this.escapeHtml(book.comment)}</div>`
+                : ""
+            }
             ${
               book.notes
                 ? `<div class="notes-preview">${this.escapeHtml(
@@ -249,15 +255,20 @@ export class BookList {
     if (isInList) {
       const bookList = await storage.getBookList(this.activeBookListId);
       const listName = bookList?.name || "";
-      return `<button class="btn-icon btn-small btn-list-remove" data-id="${bookId}" title="${i18n.t(
-        "bookCard.removeFromList"
-      )}: ${this.escapeHtml(listName)}">➖</button>`;
+      return `
+        <button class="btn-icon btn-small btn-list-remove" data-id="${bookId}" title="${i18n.t(
+          "bookCard.removeFromList",
+          { name: this.escapeHtml(listName) }
+        )}">➖</button>
+        <button class="btn-icon btn-small btn-list-edit-comment" data-id="${bookId}" data-list-id="${this.activeBookListId}" title="${i18n.t("bookCard.editComment")}">💬</button>
+      `;
     } else {
       const bookList = await storage.getBookList(this.activeBookListId);
       const listName = bookList?.name || "";
       return `<button class="btn-icon btn-small btn-list-add-to-current" data-id="${bookId}" title="${i18n.t(
-        "bookCard.addToList"
-      )}: ${this.escapeHtml(listName)}">➕</button>`;
+        "bookCard.addToList",
+        { name: this.escapeHtml(listName) }
+      )}">➕</button>`;
     }
   }
 
@@ -296,6 +307,22 @@ export class BookList {
           await storage.removeBookFromList(this.activeBookListId, bookId);
           void this.render();
         }
+      });
+    });
+
+    // Book list buttons - Edit comment
+    this.element.querySelectorAll(".btn-list-edit-comment").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        const listId = (btn as HTMLElement).dataset.listId!;
+        const currentComment = await storage.getBookComment(listId, bookId);
+
+        const { BookCommentEditModal } = await import("./book-comment-edit-modal");
+        const modal = new BookCommentEditModal();
+        await modal.show(bookId, listId, currentComment, async (newComment) => {
+          await storage.updateBookComment(listId, bookId, newComment);
+          void this.render();
+        });
       });
     });
 

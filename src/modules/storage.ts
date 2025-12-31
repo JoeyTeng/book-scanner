@@ -132,10 +132,12 @@ class Storage {
 
       // Clean up references in book lists
       const bookLists = await db.bookLists.toArray();
-      const listsToUpdate = bookLists.filter(list => list.bookIds.includes(id));
+      const listsToUpdate = bookLists.filter((list) =>
+        list.books.some((item) => item.bookId === id)
+      );
       await Promise.all(
         listsToUpdate.map(list => {
-          list.bookIds = list.bookIds.filter(bookId => bookId !== id);
+          list.books = list.books.filter(item => item.bookId !== id);
           list.updatedAt = Date.now();
           return db.bookLists.put(list);
         })
@@ -673,7 +675,7 @@ class Storage {
         id: crypto.randomUUID(),
         name,
         description,
-        bookIds: [],
+        books: [],
         createdAt: now,
         updatedAt: now,
       };
@@ -721,15 +723,19 @@ class Storage {
   /**
    * Add a book to a book list
    */
-  async addBookToList(bookListId: string, bookId: string): Promise<void> {
+  async addBookToList(bookListId: string, bookId: string, comment?: string): Promise<void> {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(bookListId);
       if (!bookList) {
         throw new Error('Book list not found');
       }
-      if (!bookList.bookIds.includes(bookId)) {
-        bookList.bookIds.push(bookId);
+      if (!bookList.books.some(item => item.bookId === bookId)) {
+        bookList.books.push({
+          bookId,
+          comment,
+          addedAt: Date.now()
+        });
         bookList.updatedAt = Date.now();
         await db.bookLists.put(bookList);
       }
@@ -749,7 +755,7 @@ class Storage {
       if (!bookList) {
         throw new Error('Book list not found');
       }
-      bookList.bookIds = bookList.bookIds.filter(id => id !== bookId);
+      bookList.books = bookList.books.filter(item => item.bookId !== bookId);
       bookList.updatedAt = Date.now();
       await db.bookLists.put(bookList);
     } catch (error) {
@@ -759,20 +765,29 @@ class Storage {
   }
 
   /**
-   * Get books in a book list
+   * Get books in a book list with their comments and addedAt
    */
-  async getBooksInList(bookListId: string): Promise<Book[]> {
+  async getBooksInList(bookListId: string): Promise<Array<Book & { comment?: string, addedAt?: number }>> {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(bookListId);
       if (!bookList) {
         return [];
       }
-      const books = await Promise.all(
-        bookList.bookIds.map(id => db.books.get(id))
-      );
-      // Filter out books that no longer exist
-      return books.filter((book): book is Book => book !== undefined);
+      const booksWithMeta: Array<Book & { comment?: string, addedAt?: number }> = [];
+
+      for (const item of bookList.books) {
+        const book = await this.getBook(item.bookId);
+        if (book) {
+          booksWithMeta.push({
+            ...book,
+            comment: item.comment,
+            addedAt: item.addedAt,
+          });
+        }
+      }
+
+      return booksWithMeta;
     } catch (error) {
       console.error('Failed to get books in list:', error);
       return [];
@@ -786,10 +801,50 @@ class Storage {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(bookListId);
-      return bookList ? bookList.bookIds.includes(bookId) : false;
+      return bookList ? bookList.books.some(item => item.bookId === bookId) : false;
     } catch (error) {
       console.error('Failed to check book in list:', error);
       return false;
+    }
+  }
+
+  /**
+   * Update comment for a book in a book list
+   */
+  async updateBookComment(bookListId: string, bookId: string, comment: string | undefined): Promise<void> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(bookListId);
+      if (!bookList) {
+        throw new Error('Book list not found');
+      }
+
+      const bookItem = bookList.books.find(item => item.bookId === bookId);
+      if (bookItem) {
+        bookItem.comment = comment;
+        bookList.updatedAt = Date.now();
+        await db.bookLists.put(bookList);
+      }
+    } catch (error) {
+      console.error('Failed to update book comment:', error);
+      throw new Error('Failed to update book comment');
+    }
+  }
+
+  /**
+   * Get comment for a book in a book list
+   */
+  async getBookComment(bookListId: string, bookId: string): Promise<string | undefined> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(bookListId);
+      if (!bookList) return undefined;
+
+      const bookItem = bookList.books.find(item => item.bookId === bookId);
+      return bookItem?.comment;
+    } catch (error) {
+      console.error('Failed to get book comment:', error);
+      return undefined;
     }
   }
 }

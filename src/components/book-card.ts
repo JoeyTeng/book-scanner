@@ -6,7 +6,7 @@ import { i18n } from '../modules/i18n';
 
 export class BookCard {
   static async render(
-    book: Book,
+    book: Book & { comment?: string },
     _onEdit: (book: Book) => void,
     _onDelete: (id: string) => void,
     bulkSelectMode: boolean = false,
@@ -17,23 +17,33 @@ export class BookCard {
 
     // Determine book list button state
     let bookListButton = '';
+    let commentSection = '';
+
     if (!bulkSelectMode) {
-      if (activeBookListId) {
-        // Check if book is in the active list
-        const isInList = await storage.isBookInList(activeBookListId, book.id);
+      // Check if book is in any book list
+      const allLists = await storage.getBookLists();
+      const isInAnyList = allLists.some((list) =>
+        list.books.some((item) => item.bookId === book.id)
+      );
+
+      // Use different icon based on whether book is in any list
+      const icon = isInAnyList ? "⭐" : "☆";
+      const buttonClass = isInAnyList
+        ? "btn-manage-book-lists in-lists"
+        : "btn-manage-book-lists";
+
+      bookListButton = `<button class="btn-small btn-icon ${buttonClass}" data-id="${book.id}" title="${i18n.t("bookCard.manageBookLists")}">${icon}</button>`;
+
+      // Show comment if exists and in active list
+      if (activeBookListId && book.comment) {
         const bookList = await storage.getBookList(activeBookListId);
-        const listName = bookList?.name || '';
-        
-        if (isInList) {
-          // Book is in list - show remove button
-          bookListButton = `<button class="btn-small btn-icon btn-remove-from-list" data-id="${book.id}" title="${i18n.t('bookCard.removeFromList', { name: listName })}">➖</button>`;
-        } else {
-          // Book not in list - show add button
-          bookListButton = `<button class="btn-small btn-icon btn-add-to-list" data-id="${book.id}" title="${i18n.t('bookCard.addToList', { name: listName })}">➕</button>`;
-        }
-      } else {
-        // No active list - show generic add button
-        bookListButton = `<button class="btn-small btn-icon btn-select-list" data-id="${book.id}" title="${i18n.t('bookCard.addToBookList')}">➕</button>`;
+        const listName = bookList?.name || "";
+        commentSection = `
+          <div class="book-comment">
+            <div class="comment-label">📚 ${this.escapeHtml(listName)}:</div>
+            <div class="comment-text">${this.escapeHtml(book.comment)}</div>
+          </div>
+        `;
       }
     }
 
@@ -74,6 +84,8 @@ export class BookCard {
           ${book.notes ? `
             <p class="book-notes">${this.escapeHtml(book.notes)}</p>
           ` : ''}
+
+          ${commentSection}
 
           <div class="book-actions">
             <button class="btn-small btn-edit" data-id="${book.id}">${i18n.t('common.edit')}</button>
@@ -150,6 +162,34 @@ export class BookCard {
         const modal = new BookListSelectorModal();
         await modal.show(bookId, async (listId) => {
           await storage.addBookToList(listId, bookId);
+          if (onBookListChange) onBookListChange();
+        });
+      });
+    });
+
+    // Edit comment buttons
+    container.querySelectorAll('.btn-edit-comment').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        const listId = (btn as HTMLElement).dataset.listId!;
+        const currentComment = await storage.getBookComment(listId, bookId);
+
+        const { BookCommentEditModal } = await import('./book-comment-edit-modal');
+        const modal = new BookCommentEditModal();
+        await modal.show(bookId, listId, currentComment, async (newComment) => {
+          await storage.updateBookComment(listId, bookId, newComment);
+          if (onBookListChange) onBookListChange();
+        });
+      });
+    });
+
+    // Manage book lists button
+    container.querySelectorAll('.btn-manage-book-lists').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        const { BookListManagementModal } = await import('./book-list-management-modal');
+        const modal = new BookListManagementModal();
+        await modal.show(bookId, () => {
           if (onBookListChange) onBookListChange();
         });
       });

@@ -94,7 +94,20 @@ export const en = {
   "bookForm.tags.placeholder": "Comma-separated tags",
   "bookForm.label.recommendation": "Recommendation",
   "bookForm.recommendation.note": "(from others)",
+  "bookForm.recommendation.privacy": "Private to you, excluded from shared book lists",
   "bookForm.label.notes": "My Notes",
+  "bookForm.notes.privacy": "Private to you, excluded from shared book lists",
+  "bookForm.bookLists": "Book Lists",
+  "bookForm.bookLists.manage": "Manage Saved Lists",
+  "bookForm.bookLists.inLists": "In Lists",
+  "bookForm.bookLists.notInLists": "Add to",
+  "bookForm.bookLists.empty": "This book is not in any book list yet",
+  "bookForm.bookLists.addTo": "Add to book list...",
+  "bookForm.bookLists.removeConfirm": 'Remove this book from "{name}"?',
+  "bookForm.bookLists.comment": "Comment",
+  "bookForm.bookLists.noComment": "No comment yet",
+  "bookForm.bookLists.editComment": "Edit comment",
+  "bookForm.bookLists.removeFrom": "Remove from list",
   "bookForm.externalLinks": "External Links ({count})",
   "bookForm.externalLinks.search": "Search on other platforms:",
   "bookForm.button.cancel": "Cancel",
@@ -294,6 +307,8 @@ export const en = {
   "bookCard.addToBookList": "Add to book list",
   "bookCard.addToList": "Add to {name}",
   "bookCard.removeFromList": "Remove from {name}",
+  "bookCard.editComment": "Edit comment",
+  "bookCard.manageBookLists": "Manage saved lists",
 
   // Book List Manager
   "bookListManager.title": "Manage Book Lists",
@@ -308,6 +323,14 @@ export const en = {
   "bookListManager.deleteWarning":
     "This book list contains {count} book(s). The books themselves will not be deleted.",
   "bookListManager.emptyList": "No book lists yet. Add one above!",
+
+  // Book Comment Edit
+  "bookCommentEdit.title": "Edit Book List Comment",
+  "bookCommentEdit.commentLabel": "Comment",
+  "bookCommentEdit.commentPlaceholder": "Enter your comment for this book in this list...",
+  "bookCommentEdit.overLimit": "Character limit exceeded!",
+  "bookCommentEdit.deleteComment": "Delete Comment",
+  "bookCommentEdit.confirmDelete": "Are you sure you want to delete this comment?",
 
   // Errors
   "error.categoryExists": 'Category "{name}" already exists',

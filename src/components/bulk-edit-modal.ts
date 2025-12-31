@@ -265,7 +265,7 @@ export class BulkEditModal {
     for (const bookId of this.selectedBookIds) {
       const allLists = await storage.getBookLists();
       for (const list of allLists) {
-        if (list.bookIds.includes(bookId)) {
+        if (list.books.some(item => item.bookId === bookId)) {
           bookListIds.add(list.id);
         }
       }
@@ -394,14 +394,14 @@ export class BulkEditModal {
         if (bookListOperation === 'add') {
           // Add books to list
           for (const bookId of this.selectedBookIds) {
-            if (!bookList.bookIds.includes(bookId)) {
+            if (!bookList.books.some(item => item.bookId === bookId)) {
               await storage.addBookToList(bookListId, bookId);
             }
           }
         } else if (bookListOperation === 'remove') {
           // Remove books from list
           for (const bookId of this.selectedBookIds) {
-            if (bookList.bookIds.includes(bookId)) {
+            if (bookList.books.some(item => item.bookId === bookId)) {
               await storage.removeBookFromList(bookListId, bookId);
             }
           }

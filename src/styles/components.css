@@ -88,6 +88,21 @@
   justify-content: center;
 }
 
+/* Book list management button states */
+.btn-manage-book-lists {
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.btn-manage-book-lists.in-lists {
+  opacity: 1;
+}
+
+.btn-manage-book-lists:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 .btn-full {
   width: 100%;
   padding: var(--spacing-md);
@@ -159,6 +174,15 @@
 .form-group label small {
   font-weight: normal;
   color: var(--color-text-secondary);
+}
+
+/* Privacy Notice Icon */
+.privacy-hint {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  opacity: 0.8;
 }
 
 /* Checkbox List */
@@ -235,6 +259,121 @@
 
 .form-section-content {
   padding: var(--spacing-md);
+}
+
+/* Book Collection Button */
+.btn-collection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-weight: 600;
+}
+
+.btn-collection .badge {
+  background: var(--color-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+  display: none;
+}
+
+.btn-collection .badge.visible {
+  display: inline-block;
+}
+
+/* Book Lists Management Modal */
+.book-lists-management-container,
+.book-lists-add-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.book-list-management-item {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.book-lists-add-container .btn-list-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.book-lists-add-container .btn-list-option:hover {
+  transform: translateX(4px);
+  border-color: var(--color-primary);
+}
+
+.book-lists-add-container .action-icon {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+}
+
+/* Book Lists Container in Form (deprecated, keeping for compatibility) */
+.book-lists-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-book-lists {
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.book-list-item {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.book-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.book-list-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.book-list-comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.book-list-comment .comment-display {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  padding: var(--spacing-sm);
+  background: var(--color-bg);
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--color-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.book-list-comment .no-comment {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-style: italic;
 }
 
 /* Scanner Actions */
@@ -458,6 +597,31 @@
   line-height: 1.4;
 }
 
+/* Book Comment (in Book List) */
+.book-comment {
+  margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.book-comment .comment-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.book-comment .comment-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .book-actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -532,6 +696,53 @@
 
 .modal-body {
   padding: var(--spacing-lg);
+}
+
+/* Book info preview in comment modal */
+.book-info-preview {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-sm);
+}
+
+.book-info-preview .book-title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.book-info-preview .book-list-name {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Character counter for comment textarea */
+.char-counter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.char-counter .over-limit-warning {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+textarea.over-limit {
+  border-color: var(--color-danger);
+  border-width: 2px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
 }
 
 .modal-actions {
