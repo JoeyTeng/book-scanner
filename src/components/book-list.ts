@@ -105,18 +105,17 @@ export class BookList {
     }
 
     if (this.viewMode === "grid") {
-      this.renderGrid(books);
+      await this.renderGrid(books);
     } else {
       this.renderList(books);
     }
   }
 
-  private renderGrid(books: Book[]): void {
-    const cardsHtml = books
-      .map((book) =>
-        BookCard.render(book, this.onEdit, this.onDelete, this.bulkSelectMode)
-      )
-      .join("");
+  private async renderGrid(books: Book[]): Promise<void> {
+    const cardsHtmlPromises = books.map((book) =>
+      BookCard.render(book, this.onEdit, this.onDelete, this.bulkSelectMode, this.activeBookListId)
+    );
+    const cardsHtml = (await Promise.all(cardsHtmlPromises)).join("");
 
     this.element.innerHTML = `
       <div class="book-grid">
@@ -129,7 +128,9 @@ export class BookList {
       this.element,
       this.onEdit,
       this.onDelete,
-      this.onBulkSelectChange
+      this.onBulkSelectChange,
+      this.activeBookListId,
+      () => void this.render()
     );
   }
 

@@ -271,6 +271,14 @@ export const zhCN = {
 
   // Book List Selector
   "bookListSelector.allBooks": "📚 所有图书",
+  "bookListSelector.selectTitle": "选择书单",
+  "bookListSelector.noLists": "没有可用的书单。请先创建一个。",
+  "bookListSelector.alreadyInList": "已在书单中",
+
+  // Book Card
+  "bookCard.addToBookList": "添加到书单",
+  "bookCard.addToList": "添加到 {name}",
+  "bookCard.removeFromList": "从 {name} 移除",
 
   // Book List Manager
   "bookListManager.title": "管理书单",

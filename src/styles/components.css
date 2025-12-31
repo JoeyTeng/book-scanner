@@ -78,6 +78,16 @@
   border-radius: var(--border-radius);
 }
 
+.btn-icon.btn-small {
+  padding: var(--spacing-xs);
+  font-size: 1rem;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .btn-full {
   width: 100%;
   padding: var(--spacing-md);
@@ -529,6 +539,48 @@
   gap: var(--spacing-sm);
   justify-content: flex-end;
   margin-top: var(--spacing-lg);
+}
+
+/* Book List Options (for selector modal) */
+.book-list-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.btn-list-option {
+  text-align: left;
+  padding: var(--spacing-md);
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-list-option:hover:not(.disabled) {
+  transform: translateX(4px);
+  border-color: var(--color-primary);
+}
+
+.btn-list-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-bg-secondary);
+}
+
+.btn-list-option.disabled:hover {
+  transform: none;
+  border-color: var(--color-border);
+}
+
+.badge-in-list {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: normal;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
 }
 
 /* Info Box */

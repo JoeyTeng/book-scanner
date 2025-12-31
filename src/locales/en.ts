@@ -283,6 +283,14 @@ export const en = {
 
   // Book List Selector
   "bookListSelector.allBooks": "📚 All Books",
+  "bookListSelector.selectTitle": "Select a Book List",
+  "bookListSelector.noLists": "No book lists available. Create one first.",
+  "bookListSelector.alreadyInList": "Already in list",
+
+  // Book Card
+  "bookCard.addToBookList": "Add to book list",
+  "bookCard.addToList": "Add to {name}",
+  "bookCard.removeFromList": "Remove from {name}",
 
   // Book List Manager
   "bookListManager.title": "Manage Book Lists",
