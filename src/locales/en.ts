@@ -15,6 +15,7 @@ export const en = {
   "navbar.menu.settings": "Settings",
   "navbar.menu.apiKeys": "API Keys Settings",
   "navbar.menu.manageCategories": "Manage Categories",
+  "navbar.menu.manageBookLists": "Manage Book Lists",
   "navbar.menu.language": "Language",
   "navbar.menu.languageChanged":
     "Language changed. Please refresh the page to use the English version.",
@@ -275,6 +276,23 @@ export const en = {
   "categoryInput.noResults": "No matching categories",
   "categoryInput.remove": "Remove",
 
+  // Book List Selector
+  "bookListSelector.allBooks": "📚 All Books",
+
+  // Book List Manager
+  "bookListManager.title": "Manage Book Lists",
+  "bookListManager.placeholder": "New book list name...",
+  "bookListManager.add": "Add",
+  "bookListManager.booksCount": "{count} book",
+  "bookListManager.booksCount_plural": "{count} books",
+  "bookListManager.edit": "Edit",
+  "bookListManager.delete": "Delete",
+  "bookListManager.editPrompt": "Edit name:",
+  "bookListManager.deleteConfirm": 'Delete book list "{name}"?',
+  "bookListManager.deleteWarning":
+    "This book list contains {count} book(s). The books themselves will not be deleted.",
+  "bookListManager.emptyList": "No book lists yet. Add one above!",
+
   // Errors
   "error.categoryExists": 'Category "{name}" already exists',
   "error.categoryEmpty": "Category name cannot be empty",
@@ -282,4 +300,9 @@ export const en = {
   "error.categoryAdd": "Failed to add category",
   "error.categoryUpdate": "Failed to update category",
   "error.categoryDelete": "Failed to delete category",
+  "error.bookListExists": 'Book list "{name}" already exists',
+  "error.bookListEmpty": "Book list name cannot be empty",
+  "error.bookListAdd": "Failed to add book list",
+  "error.bookListUpdate": "Failed to update book list",
+  "error.bookListDelete": "Failed to delete book list",
 };

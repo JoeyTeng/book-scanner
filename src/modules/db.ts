@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Book, StorageData } from '../types';
+import type { Book, StorageData, BookList } from '../types';
 
 // Define database schema
 interface BookDB extends Book {
@@ -17,11 +17,16 @@ interface CacheDB {
   timestamp: number;
 }
 
+interface BookListDB extends BookList {
+  id: string;
+}
+
 // Create database
 class BookScannerDB extends Dexie {
   books!: EntityTable<BookDB, "id">;
   settings!: EntityTable<SettingsDB, "key">;
   imageCache!: EntityTable<CacheDB, "url">;
+  bookLists!: EntityTable<BookListDB, "id">;
 
   constructor() {
     super("BookScannerDB");
@@ -30,6 +35,14 @@ class BookScannerDB extends Dexie {
       books: "id, isbn, title, author, status, *categories, addedAt, updatedAt",
       settings: "key",
       imageCache: "url, timestamp",
+    });
+
+    // Version 2: Add bookLists table
+    this.version(2).stores({
+      books: "id, isbn, title, author, status, *categories, addedAt, updatedAt",
+      settings: "key",
+      imageCache: "url, timestamp",
+      bookLists: "id, name, createdAt, updatedAt",
     });
   }
 }

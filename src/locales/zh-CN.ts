@@ -15,6 +15,7 @@ export const zhCN = {
   "navbar.menu.settings": "设置",
   "navbar.menu.apiKeys": "API 密钥设置",
   "navbar.menu.manageCategories": "管理分类",
+  "navbar.menu.manageBookLists": "管理书单",
   "navbar.menu.language": "语言",
   "navbar.menu.languageChanged": "语言已更改。请刷新页面以使用中文版。",
   "navbar.menu.dangerZone": "危险操作",
@@ -261,6 +262,23 @@ export const zhCN = {
   "categoryInput.noResults": "无匹配的分类",
   "categoryInput.remove": "移除",
 
+  // Book List Selector
+  "bookListSelector.allBooks": "📚 所有图书",
+
+  // Book List Manager
+  "bookListManager.title": "管理书单",
+  "bookListManager.placeholder": "新书单名称...",
+  "bookListManager.add": "添加",
+  "bookListManager.booksCount": "{count} 本书",
+  "bookListManager.booksCount_plural": "{count} 本书",
+  "bookListManager.edit": "编辑",
+  "bookListManager.delete": "删除",
+  "bookListManager.editPrompt": "编辑名称：",
+  "bookListManager.deleteConfirm": '删除书单"{name}"？',
+  "bookListManager.deleteWarning":
+    "该书单包含 {count} 本书。删除书单不会删除书籍本身。",
+  "bookListManager.emptyList": "暂无书单。在上方添加一个吧！",
+
   // Errors
   "error.categoryExists": '分类"{name}"已存在',
   "error.categoryEmpty": "分类名称不能为空",
@@ -268,4 +286,9 @@ export const zhCN = {
   "error.categoryAdd": "添加分类失败",
   "error.categoryUpdate": "更新分类失败",
   "error.categoryDelete": "删除分类失败",
+  "error.bookListExists": '书单"{name}"已存在',
+  "error.bookListEmpty": "书单名称不能为空",
+  "error.bookListAdd": "添加书单失败",
+  "error.bookListUpdate": "更新书单失败",
+  "error.bookListDelete": "删除书单失败",
 };

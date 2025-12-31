@@ -3,6 +3,7 @@ import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../mo
 import { importFromJSON } from '../modules/import';
 import { VisionUploadModal } from './vision-upload-modal';
 import { CategoryManagerModal } from './category-manager-modal';
+import { BookListManagerModal } from './book-list-manager-modal';
 import { i18n } from '../modules/i18n';
 
 export class Navbar {
@@ -10,6 +11,9 @@ export class Navbar {
   private onDataChange?: () => void | Promise<void>;
   private initPromise: Promise<void>;
   private categoryManagerModal?: CategoryManagerModal;
+  private bookListManagerModal?: BookListManagerModal;
+  private onBookListChange?: (bookListId: string | null) => void;
+  private activeBookListId: string | null = null;
 
   constructor(containerId: string, onDataChange?: () => void | Promise<void>) {
     this.element = document.getElementById(containerId)!;
@@ -28,6 +32,7 @@ export class Navbar {
 
   private async render(): Promise<void> {
     const currentLocale = i18n.getLocale();
+    const bookLists = await storage.getBookLists();
 
     this.element.innerHTML = `
       <div class="navbar">
@@ -37,6 +42,16 @@ export class Navbar {
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
           <span>${i18n.t('navbar.title')}</span>
+        </div>
+        <div class="navbar-center">
+          <select id="booklist-selector" class="booklist-selector">
+            <option value="">${i18n.t('bookListSelector.allBooks')}</option>
+            ${bookLists.map(list => `
+              <option value="${list.id}" ${list.id === this.activeBookListId ? 'selected' : ''}>
+                📚 ${this.escapeHtml(list.name)}
+              </option>
+            `).join('')}
+          </select>
         </div>
         <div class="navbar-actions">
           <button id="btn-menu" class="btn-icon" aria-label="${i18n.t('navbar.menu')}">
@@ -74,6 +89,7 @@ export class Navbar {
               <h3>${i18n.t('navbar.menu.settings')}</h3>
               <button id="btn-api-key" class="btn-full">${i18n.t('navbar.menu.apiKeys')}</button>
               <button id="btn-manage-categories" class="btn-full">${i18n.t('navbar.menu.manageCategories')}</button>
+              <button id="btn-manage-booklists" class="btn-full">${i18n.t('navbar.menu.manageBookLists')}</button>
             </div>
 
             <div class="menu-section">
@@ -183,6 +199,18 @@ export class Navbar {
   }
 
   private attachEventListeners(): void {
+    // Book list selector
+    const selectorElement = document.getElementById('booklist-selector');
+    console.log('[Navbar] Book list selector element:', selectorElement);
+    selectorElement?.addEventListener('change', (e) => {
+      const value = (e.target as HTMLSelectElement).value;
+      console.log('[Navbar] Book list selector changed to:', value);
+      this.activeBookListId = value || null;
+      if (this.onBookListChange) {
+        this.onBookListChange(this.activeBookListId);
+      }
+    });
+
     // Menu toggle
     document.getElementById('btn-menu')?.addEventListener('click', () => {
       this.showModal('menu-modal');
@@ -264,6 +292,24 @@ export class Navbar {
         }
       );
       this.categoryManagerModal.show();
+    });
+
+    // Book List Manager
+    const manageBtnElement = document.getElementById('btn-manage-booklists');
+    console.log('[Navbar] Manage book lists button element:', manageBtnElement);
+    manageBtnElement?.addEventListener('click', () => {
+      console.log('[Navbar] Manage book lists button clicked');
+      this.hideModal('menu-modal');
+      this.bookListManagerModal = new BookListManagerModal(async () => {
+        console.log('[Navbar] Book list manager callback triggered');
+        await this.render();
+        this.attachEventListeners();
+        if (this.onDataChange) {
+          await this.onDataChange();
+        }
+      });
+      console.log('[Navbar] Opening book list manager modal');
+      this.bookListManagerModal.open();
     });
 
     // Language switcher
@@ -384,5 +430,32 @@ export class Navbar {
       modal.style.display = 'none';
       document.body.style.overflow = '';
     }
+  }
+
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  setBookListChangeHandler(handler: (bookListId: string | null) => void): void {
+    this.onBookListChange = handler;
+  }
+
+  setActiveBookList(bookListId: string | null): void {
+    this.activeBookListId = bookListId;
+    const selector = document.getElementById('booklist-selector') as HTMLSelectElement;
+    if (selector) {
+      selector.value = bookListId || '';
+    }
+  }
+
+  getActiveBookListId(): string | null {
+    return this.activeBookListId;
+  }
+
+  async refreshBookListSelector(): Promise<void> {
+    await this.render();
+    this.attachEventListeners();
   }
 }

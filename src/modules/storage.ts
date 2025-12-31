@@ -1,4 +1,4 @@
-import type { Book, StorageData, CategoryMetadata } from '../types';
+import type { Book, StorageData, CategoryMetadata, BookList } from '../types';
 import { APP_VERSION, STORAGE_KEY, DEFAULT_CATEGORIES } from '../config';
 import { db, migrateFromLocalStorage } from './db';
 
@@ -129,6 +129,17 @@ class Storage {
     await this.ensureInit();
     try {
       await db.books.delete(id);
+
+      // Clean up references in book lists
+      const bookLists = await db.bookLists.toArray();
+      const listsToUpdate = bookLists.filter(list => list.bookIds.includes(id));
+      await Promise.all(
+        listsToUpdate.map(list => {
+          list.bookIds = list.bookIds.filter(bookId => bookId !== id);
+          list.updatedAt = Date.now();
+          return db.bookLists.put(list);
+        })
+      );
     } catch (error) {
       console.error('Failed to delete book:', error);
       throw new Error('Failed to delete book');
@@ -620,6 +631,166 @@ class Storage {
    */
   async waitForInit(): Promise<void> {
     await this.ensureInit();
+  }
+
+  // ============ Book List Management ============
+
+  /**
+   * Get all book lists
+   */
+  async getBookLists(): Promise<BookList[]> {
+    await this.ensureInit();
+    try {
+      const lists = await db.bookLists.toArray();
+      return lists.sort((a, b) => b.updatedAt - a.updatedAt);
+    } catch (error) {
+      console.error('Failed to get book lists:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get a book list by ID
+   */
+  async getBookList(id: string): Promise<BookList | undefined> {
+    await this.ensureInit();
+    try {
+      return await db.bookLists.get(id);
+    } catch (error) {
+      console.error('Failed to get book list:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Create a new book list
+   */
+  async createBookList(name: string, description?: string): Promise<BookList> {
+    await this.ensureInit();
+    try {
+      const now = Date.now();
+      const bookList: BookList = {
+        id: crypto.randomUUID(),
+        name,
+        description,
+        bookIds: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.bookLists.add(bookList);
+      return bookList;
+    } catch (error) {
+      console.error('Failed to create book list:', error);
+      throw new Error('Failed to create book list');
+    }
+  }
+
+  /**
+   * Update a book list
+   */
+  async updateBookList(id: string, updates: Partial<Omit<BookList, 'id' | 'createdAt'>>): Promise<void> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(id);
+      if (!bookList) {
+        throw new Error('Book list not found');
+      }
+      await db.bookLists.update(id, {
+        ...updates,
+        updatedAt: Date.now(),
+      });
+    } catch (error) {
+      console.error('Failed to update book list:', error);
+      throw new Error('Failed to update book list');
+    }
+  }
+
+  /**
+   * Delete a book list
+   */
+  async deleteBookList(id: string): Promise<void> {
+    await this.ensureInit();
+    try {
+      await db.bookLists.delete(id);
+    } catch (error) {
+      console.error('Failed to delete book list:', error);
+      throw new Error('Failed to delete book list');
+    }
+  }
+
+  /**
+   * Add a book to a book list
+   */
+  async addBookToList(bookListId: string, bookId: string): Promise<void> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(bookListId);
+      if (!bookList) {
+        throw new Error('Book list not found');
+      }
+      if (!bookList.bookIds.includes(bookId)) {
+        bookList.bookIds.push(bookId);
+        bookList.updatedAt = Date.now();
+        await db.bookLists.put(bookList);
+      }
+    } catch (error) {
+      console.error('Failed to add book to list:', error);
+      throw new Error('Failed to add book to list');
+    }
+  }
+
+  /**
+   * Remove a book from a book list
+   */
+  async removeBookFromList(bookListId: string, bookId: string): Promise<void> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(bookListId);
+      if (!bookList) {
+        throw new Error('Book list not found');
+      }
+      bookList.bookIds = bookList.bookIds.filter(id => id !== bookId);
+      bookList.updatedAt = Date.now();
+      await db.bookLists.put(bookList);
+    } catch (error) {
+      console.error('Failed to remove book from list:', error);
+      throw new Error('Failed to remove book from list');
+    }
+  }
+
+  /**
+   * Get books in a book list
+   */
+  async getBooksInList(bookListId: string): Promise<Book[]> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(bookListId);
+      if (!bookList) {
+        return [];
+      }
+      const books = await Promise.all(
+        bookList.bookIds.map(id => db.books.get(id))
+      );
+      // Filter out books that no longer exist
+      return books.filter((book): book is Book => book !== undefined);
+    } catch (error) {
+      console.error('Failed to get books in list:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if a book is in a book list
+   */
+  async isBookInList(bookListId: string, bookId: string): Promise<boolean> {
+    await this.ensureInit();
+    try {
+      const bookList = await db.bookLists.get(bookListId);
+      return bookList ? bookList.bookIds.includes(bookId) : false;
+    } catch (error) {
+      console.error('Failed to check book in list:', error);
+      return false;
+    }
   }
 }
 

@@ -15,6 +15,7 @@ export class BookList {
   private currentSortOrder: SortOrder = "desc";
   private bulkSelectMode: boolean = false;
   private viewMode: ViewMode = "grid";
+  private activeBookListId: string | null = null;
 
   constructor(
     containerId: string,
@@ -24,6 +25,10 @@ export class BookList {
     this.element = document.getElementById(containerId)!;
     this.onEdit = onEdit;
     this.onDelete = onDelete;
+  }
+
+  setActiveBookList(bookListId: string | null): void {
+    this.activeBookListId = bookListId;
   }
 
   setBulkSelectMode(
@@ -73,6 +78,14 @@ export class BookList {
 
   async render(): Promise<void> {
     let books = await storage.getBooks();
+
+    // Apply book list filter if active
+    if (this.activeBookListId) {
+      const bookList = await storage.getBookList(this.activeBookListId);
+      if (bookList) {
+        books = books.filter(book => bookList.bookIds.includes(book.id));
+      }
+    }
 
     // Apply filters and sorting
     books = searchBooks(books, this.currentFilters);
