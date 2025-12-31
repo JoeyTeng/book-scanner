@@ -16,6 +16,7 @@ export class BookList {
   private bulkSelectMode: boolean = false;
   private viewMode: ViewMode = "grid";
   private activeBookListId: string | null = null;
+  private searchScope: "current" | "all" = "all";
 
   constructor(
     containerId: string,
@@ -79,8 +80,8 @@ export class BookList {
   async render(): Promise<void> {
     let books = await storage.getBooks();
 
-    // Apply book list filter if active
-    if (this.activeBookListId) {
+    // Apply book list filter if active and scope is "current"
+    if (this.activeBookListId && this.searchScope === "current") {
       const bookList = await storage.getBookList(this.activeBookListId);
       if (bookList) {
         books = books.filter(book => bookList.bookIds.includes(book.id));
@@ -286,11 +287,13 @@ export class BookList {
   updateFilters(
     filters: SearchFilters,
     sortField: SortField,
-    sortOrder: SortOrder
+    sortOrder: SortOrder,
+    searchScope?: "current" | "all"
   ): void {
     this.currentFilters = filters;
     this.currentSortField = sortField;
     this.currentSortOrder = sortOrder;
+    this.searchScope = searchScope || "all";
     void this.render();
   }
 }

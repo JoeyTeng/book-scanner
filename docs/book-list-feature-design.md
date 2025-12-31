@@ -85,107 +85,136 @@ Added translations for:
 
 ---
 
-## Phase 2: Enhanced Operations (IN PROGRESS)
+## Phase 2: Enhanced Operations ✅ COMPLETED
 
-### 1. Bulk Edit: Book List Operations
+### Features Implemented
 
-**New section in Bulk Edit Modal**:
-```
-[✓] Change Reading Status
-[✓] Modify Categories  
-[✓] Book List Operations  ← NEW
-    ● Add to Book Lists ○ Remove from Book Lists
-    └─ [Book list selector with checkboxes]
-```
+### 1. Bulk Edit: Book List Operations ✅
+
+**New section in Bulk Edit Modal**: Added third checkbox section for book list operations
 
 #### Add to Book Lists Mode
-- Display all existing book lists
-- Multi-select checkboxes
-- Add selected books to selected lists
-- Skip if book already in list
+
+- Displays all existing book lists with checkboxes
+- Multi-select to add selected books to multiple lists
+- Automatically skips if book already in list
+- Success toast notification with count
 
 #### Remove from Book Lists Mode
-- Display **union** of all book lists that contain any of the selected books
+
+- Displays **union** of all book lists containing any selected book
 - Example:
   - Book A in ["Sci-Fi", "Recommended"]
   - Book B in ["Sci-Fi", "Must-Read"]
   - Book C in ["Recommended"]
   - Shows: ["Sci-Fi", "Recommended", "Must-Read"] (union)
-- Multi-select checkboxes
-- Remove books from selected lists (only removes if book is actually in that list)
+- Multi-select to remove books from selected lists
+- Only removes if book actually exists in that list
 
 #### Special Behavior
-- When in a specific book list view (not "All Books"):
-  - Default to "Remove" mode
-  - Pre-select current active book list
-  - User can still switch to "Add" mode
 
-**Files to modify**:
-- `bulk-edit-modal.ts`: Add UI and logic
-- `en.ts`, `zh-CN.ts`: Add translations
-- `components.css`: Styling (reuse radio-group styles)
+- When viewing a specific book list (not "All Books"):
+  - Defaults to "Remove" mode
+  - Pre-selects current active book list
+  - User can switch to "Add" mode if needed
 
-### 2. BookCard: Add to List Button
+**Files modified**:
 
-**Button behavior**:
+- `bulk-edit-modal.ts`: Added book list operations section with mode toggle
+- `en.ts`, `zh-CN.ts`: Added `bulkEdit.bookListOperation.*` translations
+- `components.css`: Added `.checkbox-list`, `.checkbox-item` styles
+
+### 2. BookCard: Add/Remove Button ✅
+
+**Button behavior implemented**:
 
 #### No Active Book List (showing "All Books")
+
 - Display: "➕" icon button
-- Click: Open book list selector popup
-- User selects one book list to add book to
+- Click: Opens book list selector modal
+- User selects destination book list
+- Already-in lists shown as disabled with badge
 - Toast notification on success
 
 #### Active Book List Selected
+
 - If book **is in** current list:
-  - Display: "✓ In List" or "➖ Remove" button
-  - Click: Remove book from current list
+  - Display: "➖" button with tooltip showing list name
+  - Click: Removes book from current list
   - Button updates immediately
-  
+
 - If book **not in** current list:
-  - Display: "➕ Add to List" button
-  - Click: Add book to current list
+  - Display: "➕" button with tooltip
+  - Click: Adds book to current list
   - Button updates immediately
 
-**Implementation needs**:
-- Pass `activeBookListId` from App → BookList → BookCard
-- Create simple book list selector modal (for "All Books" view)
-- Update button state after operation
-- Toast notifications for user feedback
+**Components created**:
 
-**Files to modify**:
-- `book-card.ts`: Add button and logic
-- `book-list.ts`: Pass activeBookListId to BookCard
-- Create `book-list-selector-modal.ts`: Simple selector popup
-- `en.ts`, `zh-CN.ts`: Add button labels
-- `components.css`: Button styling
+- `book-list-selector-modal.ts`: Simple selector popup (95 lines)
+  - Shows all book lists
+  - Checks membership with `isBookInList()`
+  - Disables and grays out lists already containing book
+  - Shows "Already in list" badge
 
-### 3. SearchBar: Search Scope Toggle
+**Files modified**:
 
-**UI addition**: Radio button group next to search input
+- `book-card.ts`: Made `render()` async, added `activeBookListId` parameter, three button states
+- `book-list.ts`: Updated to async `renderGrid()` with `Promise.all`
+- `en.ts`, `zh-CN.ts`: Added `bookCard.*` and `bookListSelector.*` translations
+- `components.css`: Added `.btn-icon.btn-small`, `.badge-in-list`, disabled button styles
+
+### 3. SearchBar: Search Scope Toggle ✅
+
+**UI implemented**: Dropdown menu integrated into search icon
 
 ```
-[Search input...] [🔍]
-○ Current Book List  ● All Books
+[🔍] ← Click to toggle
+[All] or [in list] label below icon
+
+Dropdown menu:
+- All Books
+- Current Book List
 ```
 
 **Behavior**:
-- "Current Book List" option disabled when showing "All Books"
-- When toggled, filter search results to:
-  - Current list only, OR
-  - All books in library
-- Scope preference could be saved to localStorage
 
-**Implementation needs**:
-- Add toggle UI in SearchBar
-- Modify search logic to respect scope
-- Pass activeBookListId to SearchBar
-- Update search results count label
+- Scope toggle only appears when a book list is active
+- Small label below search icon shows current scope:
+  - "All" / "全部" when searching all books
+  - "in list" / "书单" when searching current list only
+- Click icon to show dropdown with two options
+- When toggled, re-filters search results immediately
+- Switching book lists defaults to "current" scope
+- Search input and all filters preserved when switching scope
 
-**Files to modify**:
-- `search-bar.ts`: Add toggle UI and logic
-- `app.ts`: Pass activeBookListId to SearchBar
-- `en.ts`, `zh-CN.ts`: Add scope labels
-- `components.css`: Toggle styling
+**Implementation details**:
+
+- SearchBar tracks `activeBookListId` and `searchScope` state
+- SearchBar tracks `currentSortOrder` to persist sort across re-renders
+- `setActiveBookList()` defaults to "current" scope and triggers filter update
+- `triggerFilterChange()` method emits filter change with current scope
+- BookList applies book list filter only when `searchScope === "current"`
+- Saves and restores all filter values when switching scope or book list
+
+**Files modified**:
+
+- `search-bar.ts`: Added scope state, dropdown UI, event handlers, filter preservation
+- `app.ts`: Pass `activeBookListId` to SearchBar, get scope in filter callback
+- `book-list.ts`: Added `searchScope` parameter to `updateFilters()`, conditional filtering
+- `en.ts`, `zh-CN.ts`: Added `searchBar.scope.*` translations (all, inList, currentFull)
+- `layout.css`: Added `.search-icon-wrapper`, `.search-scope-label`, `.search-scope-dropdown` styles
+
+### Verification Points
+
+- ✅ Bulk edit: Add books to multiple lists
+- ✅ Bulk edit: Remove books from multiple lists
+- ✅ Bulk edit: Pre-selects current list in remove mode
+- ✅ BookCard: Shows context-aware button (➕/➖)
+- ✅ BookCard: Selector modal disables already-in lists
+- ✅ SearchBar: Scope toggle appears only when list is active
+- ✅ SearchBar: Defaults to "current" when switching to a list
+- ✅ SearchBar: Search text preserved when switching scope
+- ✅ SearchBar: All filters preserved when switching
 
 ---
 
@@ -257,7 +286,7 @@ Book Conflicts (3 books):
   - Replace: Delete existing, import new
   - Keep both: Auto-rename import (append number)
   - Skip: Don't import this list
-  
+
 - **Book duplicates** (matched by ISBN):
   - Skip: Don't import, keep existing book
   - Update: Merge data (prefer import for conflicts)
@@ -332,7 +361,7 @@ Book Conflicts (3 books):
 | Phase | Status | Completion Date |
 |-------|--------|----------------|
 | Phase 1: Core Functionality | ✅ Completed | 2025-12-30 |
-| Phase 2: Enhanced Operations | 🔄 In Progress | - |
+| Phase 2: Enhanced Operations | ✅ Completed | 2025-12-31 |
 | Phase 3: Import/Export | 📋 Planned | - |
 
 Last updated: 2025-12-31

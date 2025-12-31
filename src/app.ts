@@ -53,7 +53,8 @@ export class App {
     this.searchBar = new SearchBar(
       "search-bar",
       (filters, sortField, sortOrder) => {
-        this.bookList.updateFilters(filters, sortField, sortOrder);
+        const scope = this.searchBar.getSearchScope();
+        this.bookList.updateFilters(filters, sortField, sortOrder, scope);
       }
     );
 
@@ -63,6 +64,7 @@ export class App {
     // Set up book list change handler
     this.navbar.setBookListChangeHandler((bookListId) => {
       this.bookList.setActiveBookList(bookListId);
+      this.searchBar.setActiveBookList(bookListId);
       void this.bookList.render();
     });
 

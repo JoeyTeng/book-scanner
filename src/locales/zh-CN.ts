@@ -114,6 +114,9 @@ export const zhCN = {
   "searchBar.selectAll": "全选",
   "searchBar.deselectAll": "取消全选",
   "searchBar.selected": "已选择 {count} 项",
+  "searchBar.scope.all": "全部",
+  "searchBar.scope.inList": "书单",
+  "searchBar.scope.currentFull": "当前书单",
 
   // Bulk Edit Modal
   "bulkEdit.title": "批量编辑（{count} 本书{plural}）",

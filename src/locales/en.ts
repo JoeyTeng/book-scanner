@@ -120,6 +120,9 @@ export const en = {
   "searchBar.selectAll": "Select All",
   "searchBar.deselectAll": "Deselect All",
   "searchBar.selected": "{count} selected",
+  "searchBar.scope.all": "All",
+  "searchBar.scope.inList": "in list",
+  "searchBar.scope.currentFull": "Current Book List",
 
   // Bulk Edit Modal
   "bulkEdit.title": "Bulk Edit ({count} book{plural})",
