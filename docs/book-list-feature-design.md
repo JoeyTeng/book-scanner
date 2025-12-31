@@ -526,69 +526,306 @@ interface ExportedBook {
 
 ### Step 3: Import Book Lists (TODO)
 
-**Feature**: Import book lists from JSON, handle naming conflicts and duplicate books
+**Feature**: Import book lists from JSON with conflict preview and undo capability
 
-**Import flow**:
+**Core Design Philosophy** (inspired by Google Drive):
 
-1. User selects JSON file (via menu: "Import Book Lists")
-2. System validates and parses JSON
-3. Detects conflicts (if any):
-   - Name conflicts (list with same name exists)
-   - Book duplicates (match by ISBN or title+author)
-4. Show conflict resolution dialog (if needed)
-5. Execute import based on user choices
-6. Show import summary
+- **Optimistic operations**: Allow imports with minimal friction
+- **Non-destructive preview**: Show all conflicts before execution
+- **Undo capability**: Provide one-click rollback after import
+- **Clear separation**: Undo and dismiss buttons separated to prevent mis-clicks
+
+---
+
+#### Import Flow
+
+**Phase A: Pre-validation & Conflict Detection**
+
+1. User clicks "Import" button in Book List Manager Modal
+2. File picker opens, user selects JSON file
+3. System validates JSON format and version
+4. **Pre-scan all conflicts** (non-destructive):
+   - List name conflicts (same name exists)
+   - Book duplicates (ISBN match or title+author match)
+5. Display **Import Preview Dialog** with complete conflict list
+6. User can:
+   - Review all conflicts
+   - Adjust resolution strategy per conflict or globally
+   - Cancel (no changes made) or Confirm
+
+**Phase B: Execution**
+
+1. **⚠️ CRITICAL: Create snapshot of current state FIRST** (before any database writes)
+2. Execute import based on user's resolution choices
+3. Display **persistent undo toast** at top of page:
+
+   ```
+   ✅ Imported 3 book lists (15 books merged, 8 new books created)
+   [Undo Import]           [✕ Dismiss]
+   ```
+
+   - Toast persists until manually dismissed
+   - Undo and Dismiss buttons visually separated
+   - Clicking Undo restores snapshot and dismisses toast
 
 **Import format** (accepts Step 1 export format):
 
-- Parse `BookListExportFormat`
-- Generate new list IDs (ignore imported IDs)
-- Skip private fields if present in import data
+- Parse `BookListExportFormat` (version 2 or 3)
+- Generate new list IDs (ignore imported IDs for safety)
+- Ignore private fields if present in import data
 
-**Conflict Resolution Options**:
+---
+
+#### Conflict Resolution Options
 
 **List name conflicts**:
 
-- Replace: Delete existing, import new
-- Keep both: Auto-rename import (append " (2)", " (3)", etc.)
-- Skip: Don't import this list
+1. **Rename** (default): Auto-rename imported list (append " (2)", " (3)", etc.)
+2. **Replace**: Delete existing list, import new one
+3. **Skip**: Don't import this list
 
-**Book duplicates** (match by ISBN, or title+author if no ISBN):
+**Book duplicates** (match priority: ISBN > title+author):
 
-- Skip: Keep existing book, add to list
-- Update: Merge data (import data preferred)
-- Duplicate: Add as new book (generate new ID)
+1. **Merge** (default): Reuse existing book ID, add to lists, preserve existing comment
+2. **Create duplicate**: Add as new book with new ID
 
-**Default strategy** (if no conflicts):
+**Default strategy**:
 
-- New lists → Import directly with new IDs
-- New books → Add to database
-- Existing books → Reuse existing book IDs
+- List name conflict → **Rename** (non-destructive)
+- Book duplicate → **Merge** (avoid data bloat)
+
+---
+
+#### Undo Mechanism
+
+**Snapshot strategy**:
+
+Store minimal data for rollback:
+
+```typescript
+interface ImportSnapshot {
+  timestamp: number;
+  // ⚠️ CRITICAL: All arrays below capture state BEFORE import execution
+  addedListIds: string[];        // Will be created (empty before import)
+  addedBookIds: string[];        // Will be created (empty before import)
+  modifiedLists: Array<{         // Lists that will have books added
+    id: string;
+    booksBefore: BookInList[];   // Current books BEFORE import
+}
+```
+
+**Undo operation**:
+
+1. Delete all `addedListIds`
+2. Delete all `addedBookIds`
+3. Restore `modifiedLists` to previous state
+4. Clear active snapshot
+5. Refresh UI
+
+**Storage**:
+
+- Store snapshot in memory (single import session)
+- Clear snapshot on:
+  - User dismisses toast
+  - User performs another import
+  - Page reload (intentional - prevents stale snapshots)
+
+---
+
+#### Import Preview Dialog
+
+**Layout**:
+
+```
+Import Preview
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Summary:
+• 3 book lists to import
+• 23 books total (15 duplicates, 8 new)
+
+Conflicts detected:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 List Name Conflicts (2)
+  ✓ "Sci-Fi Classics" exists
+    → Will rename to "Sci-Fi Classics (2)"  [Change]
+
+  ✓ "2024 Reading List" exists
+    → Will rename to "2024 Reading List (2)"  [Change]
+
+📖 Book Duplicates (15)
+  ✓ "The Three-Body Problem" (ISBN: 9787536...)
+    → Will merge with existing book  [Change]
+
+  ✓ "Project Hail Mary" (Title+Author match)
+    → Will merge with existing book  [Change]
+
+  ... and 13 more  [Show All]
+
+[Apply Strategy to All] [Cancel] [Confirm Import]
+```
+
+**Future enhancement** (Phase 3.3):
+
+- Side-by-side diff view for each conflict
+- In-line comparison of book metadata
+- Field-level merge options
 
 **Implementation**:
 
 **New files**:
 
-- `src/modules/book-list-import.ts`: Import logic, conflict detection
-- `src/components/book-list-import-modal.ts`: Conflict resolution UI
+1. `src/modules/book-list-import.ts`: Core import logic
+   - `parseImportFile(file: File): Promise<BookListExportFormat>`
+   - `detectConflicts(data: BookListExportFormat): Promise<ConflictInfo>`
+   - `executeImport(data: BookListExportFormat, strategy: ImportStrategy): Promise<ImportResult>`
+   - `createSnapshot(): ImportSnapshot`
+   - `restoreSnapshot(snapshot: ImportSnapshot): Promise<void>`
+
+2. `src/components/book-list-import-preview-modal.ts`: Conflict preview UI
+   - Display summary and conflicts
+   - Allow per-conflict or global strategy selection
+   - Confirm/Cancel actions
+
+3. `src/components/undo-toast.ts`: Persistent dismissible toast
+   - Fixed position at top of page
+   - Manual dismiss only (no auto-hide)
+   - Separated Undo and Dismiss buttons
+   - Supports custom content and actions
 
 **Modified files**:
 
-- `src/components/navbar.ts`: Add "Import Book Lists" menu item
-- `src/locales/zh-CN.ts`, `en.ts`: Import translations
+- `src/components/book-list-manager-modal.ts`: Add "Import" button next to title
+- `src/app.ts`: Integrate undo toast container
+- `src/styles/components.css`: Toast styling
+- `src/locales/zh-CN.ts`, `en.ts`: Import & undo translations
+
+**Key Interfaces**:
+
+```typescript
+interface ConflictInfo {
+  listNameConflicts: Array<{
+    importedName: string;
+    existingId: string;
+    suggestedName: string;  // Auto-generated rename
+  }>;
+  bookConflicts: Array<{
+    importedBook: ExportedBook;
+    existingBook: Book;
+    matchType: 'isbn' | 'title-author';
+  }>;
+}
+
+interface ImportStrategy {
+  listNameConflict: 'rename' | 'replace' | 'skip';
+  bookDuplicate: 'merge' | 'duplicate';
+
+  // Per-conflict overrides
+  listOverrides?: Map<string, 'rename' | 'replace' | 'skip'>;
+  bookOverrides?: Map<string, 'merge' | 'duplicate'>;
+}
+
+interface ImportResult {
+  success: boolean;
+  imported: {
+    lists: number;
+    booksAdded: number;
+    booksMerged: number;
+  };
+  errors: string[];
+  snapshot: ImportSnapshot;  // For undo
+}
+
+interface ImportSnapshot {
+  timestamp: number;
+  addedListIds: string[];
+  addedBookIds: string[];
+  modifiedLists: Array<{
+    id: string;
+    booksBefore: BookInList[];
+  }>;
+}
+```
+
+**⚠️ CRITICAL EXECUTION ORDER**:
+
+```typescript
+// Correct sequence to ensure snapshot captures pre-import state:
+async function performImport(data: BookListExportFormat, strategy: ImportStrategy) {
+  // 1. Read-only analysis
+  const conflicts = await detectConflicts(data);
+
+  // 2. User reviews in preview modal (can cancel here)
+  const confirmed = await showPreviewModal(conflicts, strategy);
+  if (!confirmed) return;
+
+  // 3. Capture CURRENT state BEFORE any writes
+  const snapshot = await createSnapshot(data, strategy);
+
+  // 4. Execute import (writes to database)
+  const result = await executeImport(data, strategy);
+
+  // 5. Show undo toast with captured snapshot
+  showUndoToast(result, snapshot);
+}
+```
 
 **Verification Points**:
 
-- ✅ Can import lists without conflicts
-- ✅ Detects list name conflicts
-- ✅ Detects book duplicates (ISBN match)
-- ✅ Detects book duplicates (title+author match)
-- ✅ Conflict dialog shows all conflicts
-- ✅ Can resolve conflicts individually
-- ✅ "Apply to all" works correctly
-- ✅ Import summary shows results
-- ✅ Private fields not imported
-- ✅ UI refreshes after import
+- ✅ Can select and parse valid JSON file
+- ✅ Rejects invalid JSON with clear error message
+- ✅ Detects list name conflicts correctly
+- ✅ Detects book duplicates by ISBN
+- ✅ Detects book duplicates by title+author (when no ISBN)
+- ✅ Preview dialog shows all conflicts
+- ✅ Can cancel import without any changes
+- ✅ Default strategy (rename + merge) works correctly
+- ✅ Can change strategy for individual conflicts
+- ✅ Can apply strategy to all conflicts
+- ✅ Import executes and updates UI correctly
+- ✅ Undo toast appears after import
+- ✅ Undo toast persists until dismissed
+- ✅ Undo button and dismiss button are clearly separated
+- ✅ Undo restores exact previous state
+- ✅ Snapshot is created BEFORE import execution (correctness critical)
+- ✅ Private fields in import file are ignored
+- ✅ Import summary shows correct counts
+- ✅ Multiple imports clear previous snapshot
+
+---
+
+### Step 4: Advanced Conflict Resolution UI (Future)
+
+**Feature**: Side-by-side diff view for conflict resolution
+
+**Modes**:
+
+1. **In-line mode**: Single column with diff markers
+
+   ```
+   Title: The Three-Body Problem
+   - Author: Cixin Liu          (existing)
+   + Author: Liu Cixin          (imported)
+   ISBN: 9787536692930         (same)
+   ```
+
+2. **Side-by-side mode**: Two column comparison
+
+   ```
+   Existing              |  Imported
+   ━━━━━━━━━━━━━━━━━━━━━|━━━━━━━━━━━━━━━━━━━━
+   Title: ...            |  Title: ...
+   Author: Cixin Liu     |  Author: Liu Cixin
+   Rating: ★★★★★         |  Rating: (none)
+   Notes: Personal...    |  (private, not imported)
+   ```
+
+**Field-level resolution**:
+
+- Select which field to keep for merged books
+- Preview final result before confirming
+- Support for custom field mapping
+
+**Implementation**: Phase 3.3 (after basic import is stable)
 
 ---
 
@@ -604,14 +841,53 @@ interface ExportedBook {
 6. ✅ Add i18n translations
 7. ✅ Test all export scenarios
 
-**Priority 2: Import (Next)** ⏳ PLANNED
+**Priority 2: Basic Import with Undo (Next)** ⏳ PLANNED
 
-1. ⏳ Create `book-list-import.ts` (parsing + validation)
-2. ⏳ Implement conflict detection logic
-3. ⏳ Create `book-list-import-modal.ts` (UI)
-4. ⏳ Add import menu item to navbar
-5. ⏳ Test all import scenarios
-6. ⏳ Test conflict resolution paths
+1. ⏳ Create persistent dismissible toast component
+   - Fixed positioning at page top
+   - Manual dismiss only
+   - Separated action and dismiss buttons
+   - Reusable for other features
+
+2. ⏳ Create `book-list-import.ts` core module
+   - File parsing and validation
+   - Conflict detection (list names, book duplicates)
+   - **⚠️ Snapshot creation (MUST happen before any DB writes)**
+   - Import execution with default strategy
+   - Snapshot restoration
+
+3. ⏳ Create `book-list-import-preview-modal.ts`
+   - Display import summary
+   - Show detected conflicts with default resolutions
+   - Allow global strategy selection
+   - Cancel/Confirm actions
+
+4. ⏳ Integrate import into Book List Manager Modal
+   - Add "Import" button in modal header (next to title)
+   - File picker integration
+   - Error handling and user feedback
+
+5. ⏳ Add i18n translations
+   - Import UI strings
+   - Undo toast messages
+   - Conflict descriptions
+   - Error messages
+
+6. ⏳ Test import scenarios
+   - No conflicts (direct import)
+   - List name conflicts with auto-rename
+   - Book duplicates with merge
+   - Undo after import
+   - Multiple imports (snapshot clearing)
+   - Edge cases (empty lists, missing fields, invalid data)
+
+**Priority 3: Advanced Conflict Resolution** 📋 FUTURE
+
+1. 📋 Add per-conflict resolution UI
+2. 📋 Implement side-by-side diff view
+3. 📋 Implement in-line diff view
+4. 📋 Add field-level merge options
+5. 📋 Test complex conflict scenarios
 
 ---
 
@@ -672,5 +948,6 @@ interface ExportedBook {
 | Phase 2.5: Book List Comments | ✅ Completed | 2025-12-31 |
 | Phase 3.1: Export Book Lists | ✅ Completed | 2025-12-31 |
 | Phase 3.2: Import Book Lists | 📋 Planned | - |
+| Phase 3.3: Advanced Diff View | 📋 Future | - |
 
 Last updated: 2025-12-31
