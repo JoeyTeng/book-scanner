@@ -242,85 +242,33 @@ export class BookList {
   }
 
   private async renderBookListButton(bookId: string): Promise<string> {
-    // If no active book list, show add button
-    if (!this.activeBookListId) {
-      return `<button class="btn-icon btn-small btn-list-add" data-id="${bookId}" title="${i18n.t(
-        "bookCard.addToBookList"
-      )}">➕</button>`;
-    }
+    // Check if book is in any book list
+    const allLists = await storage.getBookLists();
+    const isInAnyList = allLists.some((list) =>
+      list.books.some((item) => item.bookId === bookId)
+    );
 
-    // Check if book is in current list
-    const isInList = await storage.isBookInList(this.activeBookListId, bookId);
+    // Use different icon based on whether book is in any list
+    const icon = isInAnyList ? "⭐" : "☆";
+    const buttonClass = isInAnyList
+      ? "btn-manage-book-lists in-lists"
+      : "btn-manage-book-lists";
 
-    if (isInList) {
-      const bookList = await storage.getBookList(this.activeBookListId);
-      const listName = bookList?.name || "";
-      return `
-        <button class="btn-icon btn-small btn-list-remove" data-id="${bookId}" title="${i18n.t(
-          "bookCard.removeFromList",
-          { name: this.escapeHtml(listName) }
-        )}">➖</button>
-        <button class="btn-icon btn-small btn-list-edit-comment" data-id="${bookId}" data-list-id="${this.activeBookListId}" title="${i18n.t("bookCard.editComment")}">💬</button>
-      `;
-    } else {
-      const bookList = await storage.getBookList(this.activeBookListId);
-      const listName = bookList?.name || "";
-      return `<button class="btn-icon btn-small btn-list-add-to-current" data-id="${bookId}" title="${i18n.t(
-        "bookCard.addToList",
-        { name: this.escapeHtml(listName) }
-      )}">➕</button>`;
-    }
+    return `<button class="btn-small btn-icon ${buttonClass}" data-id="${bookId}" title="${i18n.t(
+      "bookCard.manageBookLists"
+    )}">${icon}</button>`;
   }
 
   private attachListEventListeners(): void {
-    // Book list buttons - Add to list (opens selector)
-    this.element.querySelectorAll(".btn-list-add").forEach((btn) => {
+    // Manage book lists button
+    this.element.querySelectorAll(".btn-manage-book-lists").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const bookId = (btn as HTMLElement).dataset.id!;
-        const { BookListSelectorModal } = await import(
-          "./book-list-selector-modal"
+        const { BookListManagementModal } = await import(
+          "./book-list-management-modal"
         );
-        const modal = new BookListSelectorModal();
-        modal.show(bookId, async (selectedListId) => {
-          await storage.addBookToList(selectedListId, bookId);
-          void this.render();
-        });
-      });
-    });
-
-    // Book list buttons - Add to current list
-    this.element.querySelectorAll(".btn-list-add-to-current").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        if (this.activeBookListId) {
-          await storage.addBookToList(this.activeBookListId, bookId);
-          void this.render();
-        }
-      });
-    });
-
-    // Book list buttons - Remove from current list
-    this.element.querySelectorAll(".btn-list-remove").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        if (this.activeBookListId) {
-          await storage.removeBookFromList(this.activeBookListId, bookId);
-          void this.render();
-        }
-      });
-    });
-
-    // Book list buttons - Edit comment
-    this.element.querySelectorAll(".btn-list-edit-comment").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        const listId = (btn as HTMLElement).dataset.listId!;
-        const currentComment = await storage.getBookComment(listId, bookId);
-
-        const { BookCommentEditModal } = await import("./book-comment-edit-modal");
-        const modal = new BookCommentEditModal();
-        await modal.show(bookId, listId, currentComment, async (newComment) => {
-          await storage.updateBookComment(listId, bookId, newComment);
+        const modal = new BookListManagementModal();
+        await modal.show(bookId, () => {
           void this.render();
         });
       });
