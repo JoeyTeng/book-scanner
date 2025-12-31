@@ -118,9 +118,15 @@ export const zhCN = {
   // Bulk Edit Modal
   "bulkEdit.title": "批量编辑（{count} 本书{plural}）",
   "bulkEdit.changeStatus": "更改阅读状态",
-  "bulkEdit.changeCategory": "更改分类",  "bulkEdit.operation.add": "添加分类",
+  "bulkEdit.changeCategory": "更改分类",
+  "bulkEdit.changeBookList": "书单操作",
+  "bulkEdit.operation.add": "添加分类",
   "bulkEdit.operation.remove": "移除分类",
-  "bulkEdit.operation.replace": "替换所有分类",  "bulkEdit.button.cancel": "取消",
+  "bulkEdit.operation.replace": "替换所有分类",
+  "bulkEdit.bookListOperation.add": "添加到书单",
+  "bulkEdit.bookListOperation.remove": "从书单移除",
+  "bulkEdit.noBookLists": "此操作没有可用的书单",
+  "bulkEdit.button.cancel": "取消",
   "bulkEdit.button.apply": "应用更改",
   "bulkEdit.success": "成功更新 {count} 本书{plural}",
 
@@ -233,7 +239,7 @@ export const zhCN = {
   "alert.selectOneBook": "请至少选择一本书进行编辑。",
   "alert.selectOneChange": "请至少选择一项更改以应用。",
   "alert.selectOneCategory": "请至少选择一个分类。",
-
+  "alert.selectOneBookList": "请至少选择一个书单。",
   // Category Manager
   "categoryManager.title": "管理分类",
   "categoryManager.add": "添加",
@@ -246,7 +252,8 @@ export const zhCN = {
   "categoryManager.booksCount_plural": "{count} 本书",
   "categoryManager.lastUsed": "{time}",
   "categoryManager.deleteConfirm": '删除"{name}"？',
-  "categoryManager.deleteWarning": "该分类被 {count} 本书使用。删除后将从所有书籍中移除该分类。",
+  "categoryManager.deleteWarning":
+    "该分类被 {count} 本书使用。删除后将从所有书籍中移除该分类。",
   "categoryManager.emptyList": "暂无分类。在上方添加一个吧！",
   "categoryManager.justNow": "刚刚",
   "categoryManager.minutesAgo": "{count} 分钟前",

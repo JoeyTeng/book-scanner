@@ -125,9 +125,13 @@ export const en = {
   "bulkEdit.title": "Bulk Edit ({count} book{plural})",
   "bulkEdit.changeStatus": "Change Reading Status",
   "bulkEdit.changeCategory": "Change Category",
+  "bulkEdit.changeBookList": "Book List Operations",
   "bulkEdit.operation.add": "Add categories",
   "bulkEdit.operation.remove": "Remove categories",
   "bulkEdit.operation.replace": "Replace all categories",
+  "bulkEdit.bookListOperation.add": "Add to book lists",
+  "bulkEdit.bookListOperation.remove": "Remove from book lists",
+  "bulkEdit.noBookLists": "No book lists available for this operation",
   "bulkEdit.button.cancel": "Cancel",
   "bulkEdit.button.apply": "Apply Changes",
   "bulkEdit.success": "Successfully updated {count} book{plural}",
@@ -246,6 +250,7 @@ export const en = {
   "alert.selectOneBook": "Please select at least one book to edit.",
   "alert.selectOneChange": "Please select at least one change to apply.",
   "alert.selectOneCategory": "Please select at least one category.",
+  "alert.selectOneBookList": "Please select at least one book list.",
 
   // Category Manager
   "categoryManager.title": "Manage Categories",

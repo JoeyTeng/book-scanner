@@ -151,6 +151,42 @@
   color: var(--color-text-secondary);
 }
 
+/* Checkbox List */
+.checkbox-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+}
+
+.checkbox-item:hover {
+  background: var(--color-bg-secondary);
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-right: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.checkbox-item span {
+  flex: 1;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
 /* Collapsible Form Sections */
 .form-section {
   border: 1px solid var(--color-border);

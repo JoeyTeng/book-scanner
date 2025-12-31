@@ -274,7 +274,8 @@ export class App {
     } else {
       // If in bulk edit mode, either exit or open modal
       if (this.selectedBookIds.length > 0) {
-        this.bulkEditModal.show(this.selectedBookIds);
+        const activeBookListId = this.navbar.getActiveBookListId();
+        this.bulkEditModal.show(this.selectedBookIds, activeBookListId);
       } else {
         this.exitBulkEditMode();
       }
