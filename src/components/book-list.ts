@@ -84,7 +84,7 @@ export class BookList {
     if (this.activeBookListId && this.searchScope === "current") {
       const bookList = await storage.getBookList(this.activeBookListId);
       if (bookList) {
-        books = books.filter(book => bookList.bookIds.includes(book.id));
+        books = books.filter((book) => bookList.bookIds.includes(book.id));
       }
     }
 
@@ -108,13 +108,19 @@ export class BookList {
     if (this.viewMode === "grid") {
       await this.renderGrid(books);
     } else {
-      this.renderList(books);
+      await this.renderList(books);
     }
   }
 
   private async renderGrid(books: Book[]): Promise<void> {
     const cardsHtmlPromises = books.map((book) =>
-      BookCard.render(book, this.onEdit, this.onDelete, this.bulkSelectMode, this.activeBookListId)
+      BookCard.render(
+        book,
+        this.onEdit,
+        this.onDelete,
+        this.bulkSelectMode,
+        this.activeBookListId
+      )
     );
     const cardsHtml = (await Promise.all(cardsHtmlPromises)).join("");
 
@@ -135,8 +141,10 @@ export class BookList {
     );
   }
 
-  private renderList(books: Book[]): void {
-    const rowsHtml = books.map((book) => this.renderListRow(book)).join("");
+  private async renderList(books: Book[]): Promise<void> {
+    const rowsHtmlPromises = books.map((book) => this.renderListRow(book));
+    const rowsHtmlArray = await Promise.all(rowsHtmlPromises);
+    const rowsHtml = rowsHtmlArray.join("");
 
     this.element.innerHTML = `
       <div class="book-list-view">
@@ -163,7 +171,7 @@ export class BookList {
     this.attachListEventListeners();
   }
 
-  private renderListRow(book: Book): string {
+  private async renderListRow(book: Book): Promise<string> {
     const statusColor = this.getStatusColor(book.status);
     const statusLabel = this.getStatusLabel(book.status);
 
@@ -217,6 +225,7 @@ export class BookList {
             .join(" ")}
         </td>
         <td class="col-actions">
+          ${await this.renderBookListButton(book.id)}
           <button class="btn-small btn-edit" data-id="${book.id}">Edit</button>
           <button class="btn-small btn-delete" data-id="${
             book.id
@@ -226,7 +235,70 @@ export class BookList {
     `;
   }
 
+  private async renderBookListButton(bookId: string): Promise<string> {
+    // If no active book list, show add button
+    if (!this.activeBookListId) {
+      return `<button class="btn-icon btn-small btn-list-add" data-id="${bookId}" title="${i18n.t(
+        "bookCard.addToBookList"
+      )}">➕</button>`;
+    }
+
+    // Check if book is in current list
+    const isInList = await storage.isBookInList(this.activeBookListId, bookId);
+
+    if (isInList) {
+      const bookList = await storage.getBookList(this.activeBookListId);
+      const listName = bookList?.name || "";
+      return `<button class="btn-icon btn-small btn-list-remove" data-id="${bookId}" title="${i18n.t(
+        "bookCard.removeFromList"
+      )}: ${this.escapeHtml(listName)}">➖</button>`;
+    } else {
+      const bookList = await storage.getBookList(this.activeBookListId);
+      const listName = bookList?.name || "";
+      return `<button class="btn-icon btn-small btn-list-add-to-current" data-id="${bookId}" title="${i18n.t(
+        "bookCard.addToList"
+      )}: ${this.escapeHtml(listName)}">➕</button>`;
+    }
+  }
+
   private attachListEventListeners(): void {
+    // Book list buttons - Add to list (opens selector)
+    this.element.querySelectorAll(".btn-list-add").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        const { BookListSelectorModal } = await import(
+          "./book-list-selector-modal"
+        );
+        const modal = new BookListSelectorModal();
+        modal.show(bookId, async (selectedListId) => {
+          await storage.addBookToList(selectedListId, bookId);
+          void this.render();
+        });
+      });
+    });
+
+    // Book list buttons - Add to current list
+    this.element.querySelectorAll(".btn-list-add-to-current").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        if (this.activeBookListId) {
+          await storage.addBookToList(this.activeBookListId, bookId);
+          void this.render();
+        }
+      });
+    });
+
+    // Book list buttons - Remove from current list
+    this.element.querySelectorAll(".btn-list-remove").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        if (this.activeBookListId) {
+          await storage.removeBookFromList(this.activeBookListId, bookId);
+          void this.render();
+        }
+      });
+    });
+
     // Edit buttons
     this.element.querySelectorAll(".btn-edit").forEach((btn) => {
       btn.addEventListener("click", async () => {
