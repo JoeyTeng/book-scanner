@@ -1,5 +1,6 @@
 import { i18n } from '../modules/i18n';
 import type { ConflictInfo, ImportStrategy } from '../modules/book-list-import';
+import { DiffViewer, type FieldDiff } from './diff-viewer';
 
 /**
  * Import Preview Modal
@@ -11,6 +12,7 @@ export class ImportPreviewModal {
   private strategy: ImportStrategy;
   private onConfirm: (strategy: ImportStrategy) => void;
   private onCancel: () => void;
+  private expandedConflicts: Set<number> = new Set(); // Track expanded book conflicts by index
 
   constructor(
     conflicts: ConflictInfo,
@@ -59,7 +61,10 @@ export class ImportPreviewModal {
         </div>
         <div class="modal-footer">
           <button class="btn-secondary btn-cancel">${i18n.t('common.cancel')}</button>
-          <button class="btn-primary btn-confirm">${i18n.t('import.preview.confirmImport')}</button>
+          <div class="footer-right">
+            <span class="unresolved-warning" style="display: none;"></span>
+            <button class="btn-primary btn-confirm">${i18n.t('import.preview.confirmImport')}</button>
+          </div>
         </div>
       </div>
     `;
@@ -142,6 +147,9 @@ export class ImportPreviewModal {
               "import.preview.fieldMerge"
             )}:</label>
             <select id="field-merge-select" class="strategy-select" disabled>
+              <option value="detailed">${i18n.t(
+                "import.strategy.field.detailed"
+              )}</option>
               <option value="non-empty" selected>${i18n.t(
                 "import.strategy.field.nonEmpty"
               )}</option>
@@ -170,6 +178,46 @@ export class ImportPreviewModal {
         ${this.renderListNameConflicts()}
         ${this.renderBookConflicts()}
       `;
+
+      // Re-attach conflict toggle event listeners after re-render
+      this.attachConflictToggleListeners();
+
+      // Re-initialize all expanded conflicts
+      this.expandedConflicts.forEach((index) => {
+        this.initializeExpandedConflict(index);
+      });
+
+      // Update confirm button state
+      this.updateConfirmButtonState();
+    }
+  }
+
+  private attachConflictToggleListeners(): void {
+    this.element.querySelectorAll('[data-toggle-conflict]').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        const index = parseInt((e.currentTarget as HTMLElement).dataset.toggleConflict || '0');
+        this.toggleConflict(index);
+      });
+    });
+  }
+
+  private updateConfirmButtonState(): void {
+    const confirmBtn = this.element.querySelector('.btn-confirm') as HTMLButtonElement;
+    const warningSpan = this.element.querySelector('.unresolved-warning') as HTMLElement;
+
+    if (!confirmBtn || !warningSpan) return;
+
+    const unresolvedCount = this.countUnresolvedConflicts();
+    const hasUnresolved = unresolvedCount > 0;
+    const isDetailedMode = this.strategy.defaultFieldMerge === "detailed" && this.strategy.defaultBookAction === "merge";
+
+    if (isDetailedMode && hasUnresolved) {
+      confirmBtn.disabled = true;
+      warningSpan.textContent = i18n.t("import.preview.hasUnresolved", { count: unresolvedCount });
+      warningSpan.style.display = "inline-block";
+    } else {
+      confirmBtn.disabled = false;
+      warningSpan.style.display = "none";
     }
   }
 
@@ -257,14 +305,35 @@ export class ImportPreviewModal {
     `;
   }
 
+  private hasFieldConflicts(conflict: any): boolean {
+    const { existingBook, importedBook } = conflict;
+    return (
+      ((existingBook.isbn || importedBook.isbn) && existingBook.isbn !== importedBook.isbn) ||
+      ((existingBook.publisher || importedBook.publisher) && existingBook.publisher !== importedBook.publisher) ||
+      ((existingBook.publishDate || importedBook.publishDate) && existingBook.publishDate !== importedBook.publishDate) ||
+      ((existingBook.cover || importedBook.coverUrl) && !!existingBook.cover !== !!importedBook.coverUrl)
+    );
+  }
+
   private renderBookConflicts(): string {
     if (this.conflicts.bookConflicts.length === 0) {
       return '';
     }
 
-    const conflicts = this.conflicts.bookConflicts
-      .slice(0, 3) // Show first 3
-      .map(conflict => {
+    // Sort conflicts: books with actual field conflicts first
+    const sortedConflicts = this.conflicts.bookConflicts
+      .map((conflict, originalIndex) => ({ conflict, originalIndex }))
+      .sort((a, b) => {
+        const aHasConflict = this.hasFieldConflicts(a.conflict);
+        const bHasConflict = this.hasFieldConflicts(b.conflict);
+        if (aHasConflict && !bHasConflict) return -1;
+        if (!aHasConflict && bHasConflict) return 1;
+        return 0;
+      });
+
+    const conflicts = sortedConflicts
+      .slice(0, 10) // Show first 10 (increased for expandable items)
+      .map(({ conflict, originalIndex: index }) => {
         const matchInfo = conflict.matchType === 'isbn'
           ? `ISBN: ${conflict.importedBook.isbn}`
           : i18n.t('import.preview.titleAuthorMatch');
@@ -284,21 +353,52 @@ export class ImportPreviewModal {
             break;
         }
 
+        const hasRealConflict = this.hasFieldConflicts(conflict);
+        const isExpanded = this.expandedConflicts.has(index);
+        const expandIcon = isExpanded ? '▼' : '▶';
+
+        // Determine conflict status icon based on resolution state
+        let conflictStatusIcon = '';
+        if (hasRealConflict) {
+          const unresolvedInBook = this.countUnresolvedInBook(conflict);
+          const isDetailedMode = this.strategy.defaultFieldMerge === "detailed";
+
+          if (isDetailedMode && unresolvedInBook > 0) {
+            conflictStatusIcon = "⚠️ "; // Has unresolved conflicts
+          } else if (isDetailedMode && unresolvedInBook === 0) {
+            conflictStatusIcon = "✅ "; // All conflicts resolved
+          } else {
+            conflictStatusIcon = ""; // Non-detailed mode, no icon needed
+          }
+        } else {
+          conflictStatusIcon = "✅ "; // No real conflicts
+        }
+
+        const actionHint = isExpanded
+          ? i18n.t("import.preview.hideDetails")
+          : i18n.t("import.preview.viewDetails");
+
         return `
-          <li class="conflict-item">
-            <div class="conflict-info">
-              <span class="conflict-name">"${this.escapeHtml(conflict.importedBook.title)}"</span>
-              <span class="conflict-detail">${matchInfo}</span>
+          <li class="conflict-item ${isExpanded ? 'expanded' : ''} ${hasRealConflict ? '' : 'no-conflict'}" data-conflict-index="${index}">
+            <div class="conflict-header" data-toggle-conflict="${index}">
+              <span class="conflict-expand-icon">${expandIcon}</span>
+              <span class="conflict-status-icon">${conflictStatusIcon}</span>
+              <div class="conflict-info">
+                <span class="conflict-name">"${this.escapeHtml(conflict.importedBook.title)}"</span>
+                <span class="conflict-detail">${matchInfo}</span>
+              </div>
+              <div class="conflict-resolution">
+                → ${resolutionText}
+              </div>
+              <div class="conflict-action-hint">${actionHint}</div>
             </div>
-            <div class="conflict-resolution">
-              → ${resolutionText}
-            </div>
+            ${isExpanded ? this.renderConflictDetails(index) : ''}
           </li>
         `;
       })
       .join('');
 
-    const remaining = this.conflicts.bookConflicts.length - 3;
+    const remaining = this.conflicts.bookConflicts.length - 10;
     const remainingText =
       remaining > 0
         ? `<li class="conflict-more">... ${i18n.t("import.preview.andMore", {
@@ -317,6 +417,158 @@ export class ImportPreviewModal {
     `;
   }
 
+  private renderConflictDetails(index: number): string {
+    const conflict = this.conflicts.bookConflicts[index];
+    const showStrategies = this.strategy.defaultBookAction === "merge";
+    const isDetailedMode = this.strategy.defaultFieldMerge === "detailed";
+
+    // Prepare field data
+    const fields: Array<{key: string, label: string, local: string, imported: string, hasConflict: boolean}> = [
+      {
+        key: "isbn",
+        label: "ISBN",
+        local: conflict.existingBook.isbn || "",
+        imported: conflict.importedBook.isbn || "",
+        hasConflict: !!(conflict.existingBook.isbn || conflict.importedBook.isbn) && (conflict.existingBook.isbn !== conflict.importedBook.isbn),
+      },
+      {
+        key: "publisher",
+        label: i18n.t("bookForm.label.publisher"),
+        local: conflict.existingBook.publisher || "",
+        imported: conflict.importedBook.publisher || "",
+        hasConflict: !!(conflict.existingBook.publisher || conflict.importedBook.publisher) && (conflict.existingBook.publisher !== conflict.importedBook.publisher),
+      },
+      {
+        key: "publishDate",
+        label: i18n.t("bookForm.label.publishDate"),
+        local: conflict.existingBook.publishDate || "",
+        imported: conflict.importedBook.publishDate || "",
+        hasConflict: !!(conflict.existingBook.publishDate || conflict.importedBook.publishDate) && (conflict.existingBook.publishDate !== conflict.importedBook.publishDate),
+      },
+      {
+        key: "cover",
+        label: i18n.t("bookForm.label.coverUrl"),
+        local: conflict.existingBook.cover ? "✓ " + i18n.t("import.preview.hasCover") : "",
+        imported: conflict.importedBook.coverUrl ? "✓ " + i18n.t("import.preview.hasCover") : "",
+        hasConflict: !!conflict.existingBook.cover !== !!conflict.importedBook.coverUrl,
+      },
+    ];
+
+    // Get book resolution for field strategies
+    const bookKey = conflict.importedBook.isbn || `${conflict.importedBook.title}|${conflict.importedBook.author}`;
+    const bookResolution = this.strategy.bookResolutions?.get(bookKey);
+
+    if (isDetailedMode && showStrategies) {
+      // Detailed mode: show diff viewer and per-field strategy selectors
+      const fieldsHtml = fields
+        .map((field) => {
+          const hasConflict = field.hasConflict;
+          const fieldStrategy = bookResolution?.fieldStrategies?.[field.key as keyof typeof bookResolution.fieldStrategies] || "unresolved";
+          const isUnresolved = fieldStrategy === "unresolved";
+
+          return `
+        <div class="diff-field-with-strategy ${hasConflict ? "has-conflict" : ""} ${isUnresolved && hasConflict ? "unresolved-conflict" : ""}">
+          <div class="diff-field-header">
+            <span class="diff-field-label">${field.label}${isUnresolved && hasConflict ? ' <span class="unresolved-badge">!</span>' : ''}</span>
+            ${
+              hasConflict
+                ? `
+              <select class="field-strategy-select-inline" data-conflict-index="${index}" data-field="${field.key}">
+                <option value="unresolved" ${isUnresolved ? "selected" : ""}>${i18n.t("import.strategy.field.unresolved")}</option>
+                <option value="non-empty" ${fieldStrategy === "non-empty" ? "selected" : ""}>${i18n.t("import.strategy.field.nonEmpty")}</option>
+                <option value="local" ${fieldStrategy === "local" ? "selected" : ""}>${i18n.t("import.strategy.field.local")}</option>
+                <option value="import" ${fieldStrategy === "import" ? "selected" : ""}>${i18n.t("import.strategy.field.import")}</option>
+              </select>
+            `
+                : ""
+            }
+          </div>
+          <div class="diff-field-content">
+            ${hasConflict && isUnresolved ? '<div class="diff-viewer-container" data-field="' + field.key + '"></div>' : this.renderMergeResult(field, fieldStrategy)}
+          </div>
+        </div>
+      `;
+        })
+        .join("");
+
+      return `
+      <div class="conflict-details" data-conflict-index="${index}">
+        <div class="conflict-fields-list">
+          ${fieldsHtml}
+        </div>
+      </div>
+    `;
+    } else {
+      // Non-detailed mode: show merge result preview
+      const globalStrategy = this.strategy.defaultFieldMerge;
+
+      // Map strategy value to i18n key
+      const strategyI18nMap: Record<string, string> = {
+        detailed: "import.strategy.field.detailed",
+        "non-empty": "import.strategy.field.nonEmpty",
+        local: "import.strategy.field.local",
+        import: "import.strategy.field.import",
+      };
+      const strategyLabel = i18n.t(
+        strategyI18nMap[globalStrategy] || "import.strategy.field.nonEmpty"
+      );
+
+      const fieldsHtml = fields
+        .map((field) => {
+          const hasConflict = field.hasConflict;
+
+          return `
+        <div class="diff-field-with-strategy ${
+          hasConflict ? "has-conflict-resolved" : ""
+        }">
+          <div class="diff-field-header">
+            <span class="diff-field-label">${field.label}</span>
+            <span class="diff-field-strategy-label">${i18n.t(
+              "import.preview.strategy"
+            )}: ${strategyLabel}</span>
+          </div>
+          <div class="diff-field-content">
+            ${this.renderMergeResult(field, globalStrategy)}
+          </div>
+        </div>
+      `;
+        })
+        .join("");
+
+      return `
+      <div class="conflict-details" data-conflict-index="${index}">
+        <div class="conflict-fields-list">
+          ${fieldsHtml}
+        </div>
+      </div>
+    `;
+    }
+  }
+
+  private renderMergeResult(field: {local: string, imported: string, hasConflict: boolean}, strategy: string): string {
+    if (!field.hasConflict) {
+      const value = field.local || field.imported;
+      return `<div class="merge-result-preview">${value || '<span class="empty-field-value">' + i18n.t("import.preview.fieldEmpty") + '</span>'}</div>`;
+    }
+
+    let result = "";
+    switch (strategy) {
+      case "non-empty":
+        result = field.local || field.imported;
+        break;
+      case "local":
+        result = field.local;
+        break;
+      case "import":
+        result = field.imported;
+        break;
+      default:
+        result = "";
+    }
+
+    return `<div class="merge-result-preview">${result || '<span class="empty-field-value">' + i18n.t("import.preview.fieldEmpty") + '</span>'}</div>`;
+  }
+
   private attachEventListeners(): void {
     const closeBtn = this.element.querySelector(".btn-close");
     const cancelBtn = this.element.querySelector(".btn-cancel");
@@ -324,7 +576,13 @@ export class ImportPreviewModal {
 
     closeBtn?.addEventListener("click", () => this.close());
     cancelBtn?.addEventListener("click", () => this.close());
-    confirmBtn?.addEventListener("click", () => this.confirm());
+    confirmBtn?.addEventListener("click", () => {
+      if (this.validateResolutions()) {
+        this.confirm();
+      } else {
+        alert(i18n.t("import.preview.hasUnresolved").replace("{count}", String(this.countUnresolvedConflicts())));
+      }
+    });
 
     // Strategy selectors
     const listActionSelect = this.element.querySelector(
@@ -391,6 +649,7 @@ export class ImportPreviewModal {
     // Enable/disable field merge selector based on book action
     bookActionSelect?.addEventListener("change", (e) => {
       const action = (e.target as HTMLSelectElement).value;
+      this.strategy.defaultBookAction = action as any;
       if (fieldMergeSelect) {
         fieldMergeSelect.disabled = action !== "merge";
         const hintSpan =
@@ -402,6 +661,8 @@ export class ImportPreviewModal {
               : "";
         }
       }
+      // Update conflicts preview and button state
+      this.updateConflictPreview();
     });
 
     commentMergeSelect?.addEventListener("change", (e) => {
@@ -412,6 +673,49 @@ export class ImportPreviewModal {
     fieldMergeSelect?.addEventListener("change", (e) => {
       this.strategy.defaultFieldMerge = (e.target as HTMLSelectElement)
         .value as any;
+      // Re-render to update conflict details based on new strategy
+      this.updateConflictPreview();
+    });
+
+    // Conflict expand/collapse toggles (initial binding)
+    this.attachConflictToggleListeners();
+
+    // Initial button state update
+    this.updateConfirmButtonState();
+
+    // Field strategy selectors
+    this.element.querySelectorAll('.field-strategy-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const conflictIndex = parseInt(target.dataset.conflictIndex || '0');
+        const field = target.dataset.field as any;
+        const value = target.value as any;
+
+        // Initialize bookResolutions if not exists
+        if (!this.strategy.bookResolutions) {
+          this.strategy.bookResolutions = new Map();
+        }
+
+        const conflict = this.conflicts.bookConflicts[conflictIndex];
+        const key = `${conflict.existingBook.id}`;
+
+        // Get or create resolution for this book
+        let resolution = this.strategy.bookResolutions.get(key);
+        if (!resolution) {
+          resolution = {
+            action: this.strategy.defaultBookAction,
+            fieldMergeStrategy: this.strategy.defaultFieldMerge,
+            fieldStrategies: {}
+          };
+          this.strategy.bookResolutions.set(key, resolution);
+        }
+
+        // Update field strategy
+        if (!resolution.fieldStrategies) {
+          resolution.fieldStrategies = {};
+        }
+        (resolution.fieldStrategies as any)[field] = value;
+      });
     });
 
     // Do NOT close on overlay click (desktop protection)
@@ -421,11 +725,238 @@ export class ImportPreviewModal {
     document.addEventListener("keydown", this.handleEscape);
   }
 
+  private toggleConflict(index: number): void {
+    if (this.expandedConflicts.has(index)) {
+      this.expandedConflicts.delete(index);
+    } else {
+      this.expandedConflicts.add(index);
+    }
+
+    // Re-render conflicts section
+    this.updateConflictPreview();
+  }
+
+  private initializeExpandedConflict(index: number): void {
+    const isDetailedMode = this.strategy.defaultFieldMerge === "detailed";
+
+    if (isDetailedMode) {
+      const conflict = this.conflicts.bookConflicts[index];
+
+      // Prepare field diffs
+      const fields: FieldDiff[] = [
+        {
+          label: "ISBN",
+          local: conflict.existingBook.isbn || "",
+          imported: conflict.importedBook.isbn || "",
+          hasConflict:
+            !!(conflict.existingBook.isbn || conflict.importedBook.isbn) &&
+            conflict.existingBook.isbn !== conflict.importedBook.isbn,
+        },
+        {
+          label: i18n.t("bookForm.label.publisher"),
+          local: conflict.existingBook.publisher || "",
+          imported: conflict.importedBook.publisher || "",
+          hasConflict:
+            !!(
+              conflict.existingBook.publisher ||
+              conflict.importedBook.publisher
+            ) &&
+            conflict.existingBook.publisher !==
+              conflict.importedBook.publisher,
+        },
+        {
+          label: i18n.t("bookForm.label.publishDate"),
+          local: conflict.existingBook.publishDate || "",
+          imported: conflict.importedBook.publishDate || "",
+          hasConflict:
+            !!(
+              conflict.existingBook.publishDate ||
+              conflict.importedBook.publishDate
+            ) &&
+            conflict.existingBook.publishDate !==
+              conflict.importedBook.publishDate,
+        },
+        {
+          label: i18n.t("bookForm.label.coverUrl"),
+          local: conflict.existingBook.cover
+            ? "✓ " + i18n.t("import.preview.hasCover")
+            : "",
+          imported: conflict.importedBook.coverUrl
+            ? "✓ " + i18n.t("import.preview.hasCover")
+            : "",
+          hasConflict:
+            !!conflict.existingBook.cover !==
+            !!conflict.importedBook.coverUrl,
+        },
+      ];
+
+      const fieldKeyMap: Record<string, string> = {
+        ISBN: "isbn",
+        [i18n.t("bookForm.label.publisher")]: "publisher",
+        [i18n.t("bookForm.label.publishDate")]: "publishDate",
+        [i18n.t("bookForm.label.coverUrl")]: "cover",
+      };
+
+      // Get book resolution to check which fields are unresolved
+      const bookKey = conflict.importedBook.isbn || `${conflict.importedBook.title}|${conflict.importedBook.author}`;
+      const bookResolution = this.strategy.bookResolutions?.get(bookKey);
+
+      // Initialize DiffViewer for each unresolved conflict field
+      fields.forEach((field) => {
+        if (!field.hasConflict) return;
+
+        const fieldKey = fieldKeyMap[field.label];
+        const fieldStrategy = bookResolution?.fieldStrategies?.[fieldKey as keyof typeof bookResolution.fieldStrategies] || "unresolved";
+
+        // Only initialize DiffViewer for unresolved fields
+        if (fieldStrategy === "unresolved") {
+          const container = this.element.querySelector(
+            `.conflict-details[data-conflict-index="${index}"] .diff-viewer-container[data-field="${fieldKey}"]`
+          ) as HTMLElement;
+
+          if (container) {
+            container.innerHTML = "";
+            new DiffViewer(container, {
+              mode: "inline",
+              fields: [field],
+            });
+          }
+        }
+      });
+    }
+
+    // Attach field strategy listeners
+    this.element
+      .querySelectorAll(
+        `.field-strategy-select-inline[data-conflict-index="${index}"]`
+      )
+      .forEach((select) => {
+        select.addEventListener("change", (e) => {
+          const target = e.target as HTMLSelectElement;
+          const field = target.dataset.field as any;
+          const value = target.value as any;
+
+          if (!this.strategy.bookResolutions) {
+            this.strategy.bookResolutions = new Map();
+          }
+
+          const conflict = this.conflicts.bookConflicts[index];
+          // Use same key format as executeImport: ISBN or title|author
+          const key =
+            conflict.importedBook.isbn ||
+            `${conflict.importedBook.title}|${conflict.importedBook.author}`;
+
+          let resolution = this.strategy.bookResolutions.get(key);
+          if (!resolution) {
+            resolution = {
+              action: this.strategy.defaultBookAction,
+              fieldMergeStrategy: this.strategy.defaultFieldMerge,
+              fieldStrategies: {},
+            };
+            this.strategy.bookResolutions.set(key, resolution);
+          }
+
+          if (!resolution.fieldStrategies) {
+            resolution.fieldStrategies = {};
+          }
+          (resolution.fieldStrategies as any)[field] = value;
+
+          // Re-render this conflict to update diff/preview based on strategy
+          this.updateConflictPreview();
+        });
+      });
+  }
+
   private handleEscape = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
       this.close();
     }
   };
+
+  private validateResolutions(): boolean {
+    // If not in detailed mode or not merging, no validation needed
+    if (this.strategy.defaultFieldMerge !== "detailed" || this.strategy.defaultBookAction !== "merge") {
+      return true;
+    }
+
+    return this.countUnresolvedConflicts() === 0;
+  }
+
+  private countUnresolvedInBook(conflict: any): number {
+    let count = 0;
+    const bookKey = conflict.importedBook.isbn || `${conflict.importedBook.title}|${conflict.importedBook.author}`;
+    const bookResolution = this.strategy.bookResolutions?.get(bookKey);
+
+    const fields = [
+      { key: "isbn", local: conflict.existingBook.isbn, imported: conflict.importedBook.isbn },
+      { key: "publisher", local: conflict.existingBook.publisher, imported: conflict.importedBook.publisher },
+      { key: "publishDate", local: conflict.existingBook.publishDate, imported: conflict.importedBook.publishDate },
+      { key: "cover", local: conflict.existingBook.cover, imported: conflict.importedBook.coverUrl },
+    ];
+
+    fields.forEach((field) => {
+      const hasConflict = (field.local || field.imported) && field.local !== field.imported;
+      if (hasConflict) {
+        const strategy = bookResolution?.fieldStrategies?.[field.key as keyof typeof bookResolution.fieldStrategies];
+        if (!strategy || strategy === "unresolved") {
+          count++;
+        }
+      }
+    });
+
+    return count;
+  }
+
+  private countUnresolvedConflicts(): number {
+    let count = 0;
+
+    this.conflicts.bookConflicts.forEach((conflict) => {
+      const bookKey =
+        conflict.importedBook.isbn ||
+        `${conflict.importedBook.title}|${conflict.importedBook.author}`;
+      const bookResolution = this.strategy.bookResolutions?.get(bookKey);
+
+      // Check each field for conflicts
+      const fields = [
+        {
+          key: "isbn",
+          local: conflict.existingBook.isbn,
+          imported: conflict.importedBook.isbn,
+        },
+        {
+          key: "publisher",
+          local: conflict.existingBook.publisher,
+          imported: conflict.importedBook.publisher,
+        },
+        {
+          key: "publishDate",
+          local: conflict.existingBook.publishDate,
+          imported: conflict.importedBook.publishDate,
+        },
+        {
+          key: "cover",
+          local: conflict.existingBook.cover,
+          imported: conflict.importedBook.coverUrl,
+        },
+      ];
+
+      fields.forEach((field) => {
+        const hasConflict =
+          (field.local || field.imported) && field.local !== field.imported;
+        if (hasConflict) {
+          const strategy =
+            bookResolution?.fieldStrategies?.[
+              field.key as keyof typeof bookResolution.fieldStrategies
+            ];
+          if (!strategy || strategy === "unresolved") {
+            count++;
+          }
+        }
+      });
+    });
+
+    return count;
+  }
 
   private confirm(): void {
     this.onConfirm(this.strategy);

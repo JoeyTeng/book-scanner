@@ -39,8 +39,16 @@ export interface ListConflictResolution {
  */
 export interface BookConflictResolution {
   action: "merge" | "skip" | "duplicate";
-  // Field merge strategy (only applies when action="merge")
-  fieldMergeStrategy?: "non-empty" | "local" | "import";
+  // Global field merge strategy (applies to all fields when no per-field strategy specified)
+  fieldMergeStrategy?: "detailed" | "non-empty" | "local" | "import";
+  // Per-field merge strategies (only applies when action="merge")
+  // If specified, overrides fieldMergeStrategy for that field
+  fieldStrategies?: {
+    isbn?: "unresolved" | "local" | "import" | "non-empty";
+    publisher?: "unresolved" | "local" | "import" | "non-empty";
+    publishDate?: "unresolved" | "local" | "import" | "non-empty";
+    cover?: "unresolved" | "local" | "import" | "non-empty";
+  };
 }
 
 export interface ImportStrategy {
@@ -48,7 +56,7 @@ export interface ImportStrategy {
   defaultListAction: "rename" | "merge" | "replace" | "skip";
   defaultBookAction: "merge" | "skip" | "duplicate";
   defaultCommentMerge: "local" | "import" | "both";
-  defaultFieldMerge: "non-empty" | "local" | "import";
+  defaultFieldMerge: "detailed" | "non-empty" | "local" | "import";
 
   // Per-conflict overrides (key: list name for lists, bookKey for books)
   listResolutions?: Map<string, ListConflictResolution>;
@@ -364,8 +372,9 @@ export async function executeImport(
           // Merge: update existing book with imported data
           bookId = existingBook.id;
 
-          const fieldStrategy =
+          const globalFieldStrategy =
             bookResolution?.fieldMergeStrategy || strategy.defaultFieldMerge;
+          const fieldStrategies = bookResolution?.fieldStrategies;
 
           // Save original metadata before updating
           snapshot.modifiedBooks.push({
@@ -378,27 +387,27 @@ export async function executeImport(
             },
           });
 
-          // Apply field-level merge
+          // Apply field-level merge (per-field strategy overrides global)
           const mergedBook: Partial<Book> = {
             isbn: mergeField(
               existingBook.isbn,
               importedBook.isbn || "",
-              fieldStrategy
+              fieldStrategies?.isbn || globalFieldStrategy
             ),
             publisher: mergeField(
               existingBook.publisher,
               importedBook.publisher || "",
-              fieldStrategy
+              fieldStrategies?.publisher || globalFieldStrategy
             ),
             publishDate: mergeField(
               existingBook.publishDate,
               importedBook.publishDate || "",
-              fieldStrategy
+              fieldStrategies?.publishDate || globalFieldStrategy
             ),
             cover: mergeField(
               existingBook.cover,
               importedBook.coverUrl || "",
-              fieldStrategy
+              fieldStrategies?.cover || globalFieldStrategy
             ),
           };
 
@@ -568,9 +577,12 @@ function mergeComments(
 function mergeField<T>(
   localValue: T,
   importedValue: T,
-  strategy: "non-empty" | "local" | "import"
+  strategy: "detailed" | "unresolved" | "non-empty" | "local" | "import"
 ): T {
-  switch (strategy) {
+  // If strategy is "detailed" or "unresolved", use "non-empty" as fallback
+  const effectiveStrategy = (strategy === "detailed" || strategy === "unresolved") ? "non-empty" : strategy;
+
+  switch (effectiveStrategy) {
     case "local":
       return localValue;
     case "import":
