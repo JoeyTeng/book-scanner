@@ -99,7 +99,7 @@ export const zhCN = {
   "bookForm.bookLists.notInLists": "可添加到",
   "bookForm.bookLists.empty": "此书尚未添加到任何书单",
   "bookForm.bookLists.addTo": "添加到书单...",
-  "bookForm.bookLists.removeConfirm": "确定要将此书从\"{name}\"中移除吗？",
+  "bookForm.bookLists.removeConfirm": '确定要将此书从"{name}"中移除吗？',
   "bookForm.bookLists.comment": "评语",
   "bookForm.bookLists.noComment": "暂无评语",
   "bookForm.bookLists.editComment": "编辑评语",
@@ -227,6 +227,8 @@ export const zhCN = {
   "common.save": "保存",
   "common.delete": "删除",
   "common.edit": "编辑",
+  "common.undo": "撤回",
+  "common.dismiss": "关闭",
   "common.done": "完成",
   "common.add": "添加",
   "common.search": "搜索",
@@ -323,6 +325,31 @@ export const zhCN = {
   "bookListManager.batchDeleteSuccess": "批量删除成功",
   "bookListManager.exportSuccess": "导出成功",
   "bookListManager.exportError": "导出失败",
+  "bookListManager.import": "导入",
+
+  // Import Preview
+  "import.preview.title": "导入预览",
+  "import.preview.summary": "摘要",
+  "import.preview.totalLists": "将导入 {count} 个书单",
+  "import.preview.totalBooks":
+    "共 {total} 本书（{merged} 本合并，{new} 本新增）",
+  "import.preview.noConflicts": "无冲突，可以直接导入",
+  "import.preview.conflictsDetected": "检测到冲突",
+  "import.preview.listNameConflicts": "书单名称冲突（{count}）",
+  "import.preview.bookConflicts": "书籍重复（{count}）",
+  "import.preview.listExists": "同名书单已存在",
+  "import.preview.willRename": '将重命名为 "{name}"',
+  "import.preview.titleAuthorMatch": "标题+作者匹配",
+  "import.preview.willMerge": "将合并到现有书籍",
+  "import.preview.andMore": "及其他 {count} 项",
+  "import.preview.confirmImport": "确认导入",
+  "import.selectFile": "选择导入文件",
+  "import.invalidFile": "无效的导入文件",
+  "import.parseError": "解析文件失败",
+  "import.success":
+    "导入成功！共导入 {lists} 个书单（{merged} 本合并，{added} 本新增）",
+  "import.undoMessage":
+    "已导入 {lists} 个书单（{merged} 本合并，{added} 本新增）。撤回将恢复到导入前状态。",
 
   // Book Comment Edit
   "bookCommentEdit.title": "编辑书单评语",

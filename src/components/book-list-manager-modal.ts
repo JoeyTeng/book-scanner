@@ -26,6 +26,9 @@ export class BookListManagerModal {
       <div class="modal-content category-manager-modal">
         <div class="modal-header">
           <h2>${i18n.t("bookListManager.title")}</h2>
+          <button class="btn-import" id="btn-import-booklists">
+            ${i18n.t("bookListManager.import")}
+          </button>
           <button class="btn-close" id="btn-close-modal">&times;</button>
         </div>
         <div class="modal-body">
@@ -220,6 +223,11 @@ export class BookListManagerModal {
     this.modalElement?.querySelector('#btn-delete-selected')?.addEventListener('click', async () => {
       await this.handleBatchDelete();
     });
+
+    // Import button
+    this.modalElement?.querySelector('#btn-import-booklists')?.addEventListener('click', async () => {
+      await this.handleImport();
+    });
   }
 
   private async handleAdd(): Promise<void> {
@@ -361,6 +369,104 @@ export class BookListManagerModal {
       console.error('Batch delete failed:', error);
       alert(i18n.t('error.bookListDelete'));
     }
+  }
+
+  private async handleImport(): Promise<void> {
+    // Create file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        // Import modules dynamically
+        const {
+          parseImportFile,
+          detectConflicts,
+          createSnapshot,
+          executeImport,
+          restoreSnapshot,
+        } = await import("../modules/book-list-import");
+        const { ImportPreviewModal } = await import("./import-preview-modal");
+        const { UndoToast } = await import("./undo-toast");
+
+        // Parse and validate file
+        const data = await parseImportFile(file);
+
+        // Detect conflicts
+        const conflicts = await detectConflicts(data);
+
+        // Show preview modal
+        const previewModal = new ImportPreviewModal(
+          conflicts,
+          data.lists.length,
+          data.lists.reduce((sum, list) => sum + list.books.length, 0),
+          async (strategy) => {
+            // User confirmed import
+            try {
+              // ⚠️ CRITICAL: Create snapshot BEFORE any database writes
+              const snapshot = await createSnapshot(data, strategy);
+
+              // Execute import
+              const result = await executeImport(data, strategy, snapshot);
+
+              if (!result.success) {
+                alert(
+                  i18n.t("import.parseError") + ": " + result.errors.join(", ")
+                );
+                return;
+              }
+
+              // Refresh UI
+              await this.renderBookLists();
+              if (this.onBookListsChanged) {
+                this.onBookListsChanged();
+              }
+
+              // Show undo toast
+              const message = i18n.t("import.undoMessage", {
+                lists: result.imported.lists,
+                merged: result.imported.booksMerged,
+                added: result.imported.booksAdded,
+              });
+
+              const toast = new UndoToast(message, async () => {
+                // Undo import
+                await restoreSnapshot(result.snapshot);
+                await this.renderBookLists();
+                if (this.onBookListsChanged) {
+                  this.onBookListsChanged();
+                }
+              });
+              toast.show();
+            } catch (error) {
+              console.error("Import failed:", error);
+              alert(
+                i18n.t("import.parseError") +
+                  ": " +
+                  (error instanceof Error ? error.message : "Unknown error")
+              );
+            }
+          },
+          () => {
+            // User cancelled
+          }
+        );
+        previewModal.show();
+      } catch (error) {
+        console.error("Import file parsing failed:", error);
+        alert(
+          i18n.t("import.invalidFile") +
+            ": " +
+            (error instanceof Error ? error.message : "Unknown error")
+        );
+      }
+    };
+
+    fileInput.click();
   }
 
   private updateBatchActionsToolbar(): void {
