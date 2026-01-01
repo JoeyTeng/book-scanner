@@ -512,5 +512,346 @@ localeCompare(b.name, 'zh-CN', {
 
 ---
 
-**Last Updated**: 2025-12-30
+## Import Snapshot & Undo Mechanism
+
+### Challenge
+书单导入功能需要支持撤回操作，要求能够精确恢复到导入前的状态，包括：
+- 删除新创建的书单和书籍
+- 恢复被替换的书单
+- 恢复被修改的书籍元数据
+- 恢复被合并书单的书籍列表
+- **关键：保持所有时间戳不变（书单在列表中的顺序不应改变）**
+
+### Initial Approach (Flawed)
+最初使用增量重建策略：
+
+```typescript
+// ❌ Anti-pattern: Incremental rebuild with high-level APIs
+async restoreModifiedList(listId: string, originalBooks: BookInList[]) {
+  // Step 1: Remove current books
+  for (const book of currentBooks) {
+    await storage.removeBookFromList(listId, book.id);
+  }
+
+  // Step 2: Add back original books
+  for (const book of originalBooks) {
+    await storage.addBookToList(listId, book.id);  // ❌ Updates updatedAt!
+    if (book.comment) {
+      await storage.updateBookComment(...);         // ❌ Updates updatedAt!
+    }
+  }
+
+  // Step 3: Manually fix timestamp (band-aid)
+  list.updatedAt = originalTimestamp;
+  await db.bookLists.put(list);
+}
+```
+
+**问题**：
+1. 使用业务层 API（`addBookToList` 等）会触发自动时间戳更新
+2. 需要手动在最后恢复时间戳（复杂且容易遗漏）
+3. 多次数据库操作，性能差且不够原子化
+4. 代码冗长（~50 行）且易出错
+
+### Evolution: Why Not Direct Rollback?
+用户提问：为什么不直接回滚数据？IndexedDB 支持事务为什么还要一步步重建？
+
+**答案**：完全可以！这是设计演进中的技术债：
+- 最初过度依赖高层 API，想保持"业务逻辑一致性"
+- 但撤回本质是**数据恢复**，不应触发业务逻辑
+- IndexedDB/Dexie.js 虽然不支持 MVCC，但可以通过应用层快照实现精确恢复
+
+### Final Solution: Direct Object Restoration
+
+```typescript
+export interface ImportSnapshot {
+  modifiedLists: Array<{
+    id: string;
+    fullDataBefore: BookList; // 保存完整对象，而非部分字段
+  }>;
+  replacedLists: Array<{
+    id: string;
+    fullData: BookList; // 同样保存完整对象
+  }>;
+}
+
+async function restoreSnapshot(snapshot: ImportSnapshot) {
+  // ✅ 直接用原始数据覆盖，一行搞定
+  for (const modified of snapshot.modifiedLists) {
+    await db.bookLists.put(modified.fullDataBefore);
+  }
+
+  for (const replaced of snapshot.replacedLists) {
+    await db.bookLists.put(replaced.fullData);
+  }
+}
+```
+
+**优势**：
+1. 代码从 ~50 行减少到 ~5 行
+2. 时间戳自动保留，无需手动恢复
+3. 原子操作，一次 `put` 完成
+4. 避免触发业务逻辑（如自动更新 `updatedAt`）
+5. 更容易理解和维护
+
+### Key Insight
+在撤回/恢复场景中：
+- **高层 API**（`addBookToList`）→ 适合业务操作，会更新时间戳
+- **底层 API**（`db.put`）→ 适合数据恢复，精确覆盖所有字段
+
+选择正确的抽象层次至关重要。
+
+### Implementation Notes
+- `createSnapshot` 在导入前保存完整状态（深拷贝）
+- `executeImport` 执行导入时填充 snapshot（记录新增 ID）
+- `restoreSnapshot` 直接用保存的数据覆盖（不经过业务层）
+- 删除了不必要的 `createBookList(customId)` 参数
+
+---
+
+## DiffViewer Component & Incremental DOM Updates
+
+### Challenge: Preserving Interactive State During Re-renders
+
+DiffViewer 是一个复杂的 Git 风格 diff 组件，包含：
+
+- Myers 算法实现的字词级差异比较
+- LCS（最长公共子序列）字符匹配
+- 可切换的并排/内联视图模式
+- 交互式字段策略选择器
+
+在 ImportPreviewModal 中集成 DiffViewer 时遇到关键问题：用户改变字段策略后，其他字段的 diff view 消失。
+
+### Root Cause Analysis
+
+```typescript
+// Problem flow:
+// 1. User changes field strategy (e.g., publisher: "unresolved" → "non-empty")
+fieldStrategySelect.addEventListener('change', (e) => {
+  // Update strategy in memory
+  resolution.fieldStrategies.publisher = 'non-empty';
+
+  // 2. Call updateConflictPreview() to show merge result
+  this.updateConflictPreview(); // ❌ Destroys entire HTML
+});
+
+// 3. updateConflictPreview() regenerates all HTML
+private updateConflictPreview(): void {
+  conflictsContainer.innerHTML = `
+    <!-- All conflicts regenerated from scratch -->
+  `;
+  // ❌ DiffViewer instances destroyed
+  // ❌ Event listeners lost
+  // ❌ Only toggle buttons re-attached
+}
+```
+
+**问题本质**：
+
+- HTML 完全重建摧毁了所有 DOM 元素
+- DiffViewer 组件实例丢失
+- 事件监听器被清除
+- 只重新绑定了折叠/展开按钮，没有重新初始化 DiffViewer
+
+### Solution: Lifecycle-Aware Component Initialization
+
+**核心思路**：将 DiffViewer 初始化逻辑提取为独立方法，在两个时机调用：
+
+1. 用户手动展开冲突项时（`toggleConflict()`）
+2. HTML 重新渲染后恢复已展开项时（`updateConflictPreview()`）
+
+```typescript
+// Step 1: Extract initialization logic
+private initializeExpandedConflict(index: number): void {
+  const isDetailedMode = this.strategy.defaultFieldMerge === "detailed";
+
+  if (isDetailedMode) {
+    const conflict = this.conflicts.bookConflicts[index];
+
+    // Prepare field diffs
+    const fields: FieldDiff[] = [/* ... */];
+
+    // Get book resolution to check field strategies
+    const bookKey = conflict.importedBook.isbn ||
+      `${conflict.importedBook.title}|${conflict.importedBook.author}`;
+    const bookResolution = this.strategy.bookResolutions?.get(bookKey);
+
+    // Initialize DiffViewer ONLY for unresolved fields
+    fields.forEach((field) => {
+      if (!field.hasConflict) return;
+
+      const fieldKey = fieldKeyMap[field.label];
+      const fieldStrategy = bookResolution?.fieldStrategies?.[fieldKey] || "unresolved";
+
+      if (fieldStrategy === "unresolved") {
+        const container = this.element.querySelector(
+          `.conflict-details[data-conflict-index="${index}"] .diff-viewer-container[data-field="${fieldKey}"]`
+        );
+
+        if (container) {
+          container.innerHTML = "";
+          new DiffViewer(container, {
+            mode: "inline",
+            fields: [field],
+          });
+        }
+      }
+    });
+  }
+
+  // Attach field strategy change listeners
+  this.element.querySelectorAll(
+    `.field-strategy-select-inline[data-conflict-index="${index}"]`
+  ).forEach((select) => {
+    select.addEventListener("change", (e) => {
+      // Update strategy and re-render
+      this.updateConflictPreview();
+    });
+  });
+}
+
+// Step 2: Call from toggleConflict (manual expand)
+private toggleConflict(index: number): void {
+  if (this.expandedConflicts.has(index)) {
+    this.expandedConflicts.delete(index);
+  } else {
+    this.expandedConflicts.add(index);
+  }
+
+  this.updateConflictPreview();
+}
+
+// Step 3: Call for all expanded items after HTML rebuild
+private updateConflictPreview(): void {
+  // Regenerate HTML
+  conflictsContainer.innerHTML = this.renderBookConflicts();
+
+  // Re-attach toggle listeners
+  this.attachConflictToggleListeners();
+
+  // ✅ Re-initialize all expanded conflicts
+  this.expandedConflicts.forEach(index => {
+    this.initializeExpandedConflict(index);
+  });
+
+  // Update button state
+  this.updateConfirmButtonState();
+}
+```
+
+### Key Design Decisions
+
+#### 1. Conditional DiffViewer Initialization
+
+```typescript
+// Only create DiffViewer for unresolved fields
+if (fieldStrategy === "unresolved") {
+  new DiffViewer(container, { /* ... */ });
+}
+```
+
+**Reasoning**:
+
+- 已解决字段显示合并预览（静态 HTML）
+- 未解决字段显示交互式 diff（需要 DiffViewer）
+- 避免不必要的组件创建
+
+#### 2. Two-Phase Rendering Strategy
+
+```typescript
+// Phase 1: HTML structure generation (pure function)
+private renderConflictDetails(index: number): string {
+  // Returns HTML string with placeholders
+  return `
+    <div class="diff-viewer-container" data-field="${fieldKey}"></div>
+  `;
+}
+
+// Phase 2: Component hydration (side effects)
+private initializeExpandedConflict(index: number): void {
+  // Find placeholders and inject components
+  const container = this.element.querySelector('.diff-viewer-container');
+  new DiffViewer(container, { /* ... */ });
+}
+```
+
+**优势**:
+
+- 关注点分离：HTML 生成 vs 组件初始化
+- 可测试性：纯函数易于测试
+- 性能：仅在需要时创建组件
+
+#### 3. State Tracking with Set
+
+```typescript
+private expandedConflicts: Set<number> = new Set();
+```
+
+**选择 Set 而非 Array 的原因**:
+
+- O(1) 查找复杂度（`has()`）
+- 自动去重
+- 语义清晰（"集合"）
+
+### Comparison with React/Vue
+
+| Aspect | Vanilla JS (This Project) | React | Vue |
+|--------|---------------------------|-------|-----|
+| Re-render trigger | Manual (`updateConflictPreview()`) | State change | Reactive data |
+| Component lifecycle | Manual tracking (`initializeExpandedConflict`) | useEffect / componentDidMount | onMounted |
+| State preservation | Explicit re-initialization | Virtual DOM diffing | Virtual DOM diffing |
+| Event listeners | Manual re-attach | Synthetic events (delegated) | @click directives |
+| Complexity | Higher (manual management) | Lower (automatic) | Lower (automatic) |
+
+**Trade-offs**:
+
+- **Vanilla JS**: 更多控制，更多责任
+- **Framework**: 自动化程度高，但黑盒行为难调试
+
+### Performance Considerations
+
+```typescript
+// Before optimization:
+for (const index of expandedConflicts) {
+  this.initializeExpandedConflict(index); // Sequential
+}
+
+// After optimization:
+// Already efficient - DiffViewer creation is fast
+// No need for Promise.all() or web workers
+```
+
+对于典型场景（< 10 个展开项），顺序初始化已足够快（< 100ms）。
+
+### Testing Strategy
+
+**Manual testing checklist**:
+
+1. Expand book A → 看到 diff view
+2. Change field strategy in book A → diff view 更新
+3. Expand book B → 看到 diff view
+4. Change field strategy in book A → book B 的 diff view 依然存在 ✅
+
+**Automated testing** (if implemented):
+
+```typescript
+test('DiffViewer persists after strategy change', async () => {
+  const modal = new ImportPreviewModal(conflicts, strategy, ...);
+
+  // Expand conflict
+  modal.toggleConflict(0);
+  expect(getDiffViewerCount()).toBe(2); // 2 fields with conflicts
+
+  // Change strategy
+  changeFieldStrategy(0, 'publisher', 'local');
+  await nextTick();
+
+  // Verify persistence
+  expect(getDiffViewerCount()).toBe(1); // 1 field still unresolved
+});
+```
+
+---
+
+**Last Updated**: 2026-01-01
 **Author**: JoeyTeng with Claude Sonnet 4.5

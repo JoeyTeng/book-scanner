@@ -180,6 +180,13 @@ export class BookForm {
               <div id="category-tag-input-container"></div>
             </div>
 
+            <!-- Book Lists Collection Button -->
+            <div class="form-group">
+              <button type="button" class="btn btn-secondary btn-full btn-collection" id="btn-manage-book-lists">
+                ⭐ ${i18n.t('bookForm.bookLists.manage')} <span id="book-lists-count" class="badge"></span>
+              </button>
+            </div>
+
             <!-- Collapsible: Additional Info -->
             <details class="form-section">
               <summary>${i18n.t('bookForm.additionalInfo')}</summary>
@@ -221,14 +228,20 @@ export class BookForm {
               <summary>${i18n.t('bookForm.label.recommendation')} & ${i18n.t('bookForm.label.notes')}</summary>
               <div class="form-section-content">
                 <div class="form-group">
-                  <label>${i18n.t('bookForm.label.recommendation')} <small>${i18n.t('bookForm.recommendation.note')}</small></label>
+                  <label>
+                    ${i18n.t('bookForm.label.recommendation')} <small>${i18n.t('bookForm.recommendation.note')}</small>
+                  </label>
+                  <small class="privacy-hint">${i18n.t('bookForm.recommendation.privacy')}</small>
                   <textarea id="input-recommendation" class="textarea-full" rows="3">${
                     initialData.recommendation || ""
                   }</textarea>
                 </div>
 
                 <div class="form-group">
-                  <label>${i18n.t('bookForm.label.notes')}</label>
+                  <label>
+                    ${i18n.t('bookForm.label.notes')}
+                  </label>
+                  <small class="privacy-hint">${i18n.t('bookForm.notes.privacy')}</small>
                   <textarea id="input-notes" class="textarea-full" rows="4">${
                     initialData.notes || ""
                   }</textarea>
@@ -678,6 +691,22 @@ export class BookForm {
         this.hide();
       }
     });
+
+    // Manage book lists button
+    this.modalElement?.querySelector('#btn-manage-book-lists')?.addEventListener('click', async () => {
+      if (!this.book) return;
+
+      const { BookListManagementModal } = await import('./book-list-management-modal');
+      const modal = new BookListManagementModal();
+      await modal.show(this.book.id, async () => {
+        await this.updateBookListsCount();
+      });
+    });
+
+    // Update book lists count
+    if (this.book) {
+      void this.updateBookListsCount();
+    }
   }
 
   private async handleSubmit(): Promise<void> {
@@ -994,6 +1023,32 @@ export class BookForm {
     });
 
     alert('Fields updated! Click "Update" to save changes.');
+  }
+
+  private async updateBookListsCount(): Promise<void> {
+    if (!this.book) return;
+
+    const countBadge = this.modalElement?.querySelector('#book-lists-count');
+    if (!countBadge) return;
+
+    // Get all book lists
+    const allLists = await storage.getBookLists();
+
+    // Count lists containing this book
+    let count = 0;
+    for (const list of allLists) {
+      if (list.books.some(item => item.bookId === this.book!.id)) {
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      countBadge.textContent = count.toString();
+      countBadge.classList.add('visible');
+    } else {
+      countBadge.textContent = '';
+      countBadge.classList.remove('visible');
+    }
   }
 
   hide(): void {

@@ -15,6 +15,8 @@ export class BookList {
   private currentSortOrder: SortOrder = "desc";
   private bulkSelectMode: boolean = false;
   private viewMode: ViewMode = "grid";
+  private activeBookListId: string | null = null;
+  private searchScope: "current" | "all" = "all";
 
   constructor(
     containerId: string,
@@ -24,6 +26,10 @@ export class BookList {
     this.element = document.getElementById(containerId)!;
     this.onEdit = onEdit;
     this.onDelete = onDelete;
+  }
+
+  setActiveBookList(bookListId: string | null): void {
+    this.activeBookListId = bookListId;
   }
 
   setBulkSelectMode(
@@ -72,7 +78,16 @@ export class BookList {
   }
 
   async render(): Promise<void> {
-    let books = await storage.getBooks();
+    let books: Array<Book & { comment?: string }> = [];
+
+    // Apply book list filter if active and scope is "current"
+    if (this.activeBookListId && this.searchScope === "current") {
+      // Get books with comments from the active book list
+      books = await storage.getBooksInList(this.activeBookListId);
+    } else {
+      // Get all books (no comments)
+      books = await storage.getBooks();
+    }
 
     // Apply filters and sorting
     books = searchBooks(books, this.currentFilters);
@@ -92,18 +107,23 @@ export class BookList {
     }
 
     if (this.viewMode === "grid") {
-      this.renderGrid(books);
+      await this.renderGrid(books);
     } else {
-      this.renderList(books);
+      await this.renderList(books);
     }
   }
 
-  private renderGrid(books: Book[]): void {
-    const cardsHtml = books
-      .map((book) =>
-        BookCard.render(book, this.onEdit, this.onDelete, this.bulkSelectMode)
+  private async renderGrid(books: Book[]): Promise<void> {
+    const cardsHtmlPromises = books.map((book) =>
+      BookCard.render(
+        book,
+        this.onEdit,
+        this.onDelete,
+        this.bulkSelectMode,
+        this.activeBookListId
       )
-      .join("");
+    );
+    const cardsHtml = (await Promise.all(cardsHtmlPromises)).join("");
 
     this.element.innerHTML = `
       <div class="book-grid">
@@ -116,12 +136,16 @@ export class BookList {
       this.element,
       this.onEdit,
       this.onDelete,
-      this.onBulkSelectChange
+      this.onBulkSelectChange,
+      this.activeBookListId,
+      () => void this.render()
     );
   }
 
-  private renderList(books: Book[]): void {
-    const rowsHtml = books.map((book) => this.renderListRow(book)).join("");
+  private async renderList(books: Book[]): Promise<void> {
+    const rowsHtmlPromises = books.map((book) => this.renderListRow(book));
+    const rowsHtmlArray = await Promise.all(rowsHtmlPromises);
+    const rowsHtml = rowsHtmlArray.join("");
 
     this.element.innerHTML = `
       <div class="book-list-view">
@@ -148,7 +172,7 @@ export class BookList {
     this.attachListEventListeners();
   }
 
-  private renderListRow(book: Book): string {
+  private async renderListRow(book: Book & { comment?: string }): Promise<string> {
     const statusColor = this.getStatusColor(book.status);
     const statusLabel = this.getStatusLabel(book.status);
 
@@ -176,6 +200,11 @@ export class BookList {
           <div class="title-cell">
             <strong>${this.escapeHtml(book.title)}</strong>
             ${
+              book.comment && this.activeBookListId
+                ? `<div class="comment-preview">💬 ${this.escapeHtml(book.comment)}</div>`
+                : ""
+            }
+            ${
               book.notes
                 ? `<div class="notes-preview">${this.escapeHtml(
                     book.notes.substring(0, 80)
@@ -202,6 +231,7 @@ export class BookList {
             .join(" ")}
         </td>
         <td class="col-actions">
+          ${await this.renderBookListButton(book.id)}
           <button class="btn-small btn-edit" data-id="${book.id}">Edit</button>
           <button class="btn-small btn-delete" data-id="${
             book.id
@@ -211,7 +241,39 @@ export class BookList {
     `;
   }
 
+  private async renderBookListButton(bookId: string): Promise<string> {
+    // Check if book is in any book list
+    const allLists = await storage.getBookLists();
+    const isInAnyList = allLists.some((list) =>
+      list.books.some((item) => item.bookId === bookId)
+    );
+
+    // Use different icon based on whether book is in any list
+    const icon = isInAnyList ? "⭐" : "☆";
+    const buttonClass = isInAnyList
+      ? "btn-manage-book-lists in-lists"
+      : "btn-manage-book-lists";
+
+    return `<button class="btn-small btn-icon ${buttonClass}" data-id="${bookId}" title="${i18n.t(
+      "bookCard.manageBookLists"
+    )}">${icon}</button>`;
+  }
+
   private attachListEventListeners(): void {
+    // Manage book lists button
+    this.element.querySelectorAll(".btn-manage-book-lists").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const bookId = (btn as HTMLElement).dataset.id!;
+        const { BookListManagementModal } = await import(
+          "./book-list-management-modal"
+        );
+        const modal = new BookListManagementModal();
+        await modal.show(bookId, () => {
+          void this.render();
+        });
+      });
+    });
+
     // Edit buttons
     this.element.querySelectorAll(".btn-edit").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -272,11 +334,13 @@ export class BookList {
   updateFilters(
     filters: SearchFilters,
     sortField: SortField,
-    sortOrder: SortOrder
+    sortOrder: SortOrder,
+    searchScope?: "current" | "all"
   ): void {
     this.currentFilters = filters;
     this.currentSortField = sortField;
     this.currentSortOrder = sortOrder;
+    this.searchScope = searchScope || "all";
     void this.render();
   }
 }

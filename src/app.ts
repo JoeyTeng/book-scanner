@@ -10,6 +10,7 @@ import { storage } from './modules/storage';
 import { searchBookByTitle } from "./modules/api/aggregator";
 
 export class App {
+  private navbar!: Navbar;
   private bookList!: BookList;
   private searchBar!: SearchBar;
   private scannerModal!: ScannerModal;
@@ -22,7 +23,7 @@ export class App {
 
   async init(): Promise<void> {
     // Initialize components
-    const navbar = new Navbar("navbar", async () => {
+    this.navbar = new Navbar("navbar", async () => {
       await this.searchBar.refresh();
       void this.bookList.render();
     });
@@ -52,12 +53,20 @@ export class App {
     this.searchBar = new SearchBar(
       "search-bar",
       (filters, sortField, sortOrder) => {
-        this.bookList.updateFilters(filters, sortField, sortOrder);
+        const scope = this.searchBar.getSearchScope();
+        this.bookList.updateFilters(filters, sortField, sortOrder, scope);
       }
     );
 
     // Wait for navbar and search bar to initialize
-    await Promise.all([navbar.waitForInit(), this.searchBar.waitForInit()]);
+    await Promise.all([this.navbar.waitForInit(), this.searchBar.waitForInit()]);
+
+    // Set up book list change handler
+    this.navbar.setBookListChangeHandler((bookListId) => {
+      this.bookList.setActiveBookList(bookListId);
+      this.searchBar.setActiveBookList(bookListId);
+      void this.bookList.render();
+    });
 
     // Set up bulk edit handler
     this.searchBar.setBulkEditClickHandler(() => {
@@ -267,7 +276,8 @@ export class App {
     } else {
       // If in bulk edit mode, either exit or open modal
       if (this.selectedBookIds.length > 0) {
-        this.bulkEditModal.show(this.selectedBookIds);
+        const activeBookListId = this.navbar.getActiveBookListId();
+        this.bulkEditModal.show(this.selectedBookIds, activeBookListId);
       } else {
         this.exitBulkEditMode();
       }

@@ -47,6 +47,35 @@ export interface ExportData {
   categories: CategoryMetadata[];
 }
 
+export interface BookInList {
+  bookId: string;
+  comment?: string;
+  addedAt: number;
+}
+
+export interface BookList {
+  id: string;
+  name: string;
+  description?: string;
+  books: BookInList[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface BookListExport {
+  bookList: BookList;
+  books: Book[];
+  exportedAt: number;
+  version: string;
+}
+
+export interface BookListImportResult {
+  success: number;
+  skipped: number;
+  replaced: number;
+  errors: string[];
+}
+
 export interface BookDataSource {
   title?: string;
   author?: string;

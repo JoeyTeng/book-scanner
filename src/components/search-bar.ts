@@ -12,8 +12,11 @@ export class SearchBar {
   private onBulkEditClick?: () => void;
   private onViewModeChange?: (mode: ViewMode) => void;
   private onSelectAllClick?: () => void;
+  private activeBookListId: string | null = null;
+  private searchScope: "current" | "all" = "all";
   private initPromise: Promise<void>;
   private allSelected: boolean = false;
+  private currentSortOrder: SortOrder = "desc";
 
   constructor(
     containerId: string,
@@ -47,6 +50,69 @@ export class SearchBar {
 
   setSelectAllClickHandler(handler: () => void): void {
     this.onSelectAllClick = handler;
+  }
+
+  setActiveBookList(id: string | null): void {
+    if (this.activeBookListId !== id) {
+      // Save current filter values before changing book list
+      const searchInput = this.element.querySelector("#search-input") as HTMLInputElement;
+      const categorySelect = this.element.querySelector("#filter-category") as HTMLSelectElement;
+      const statusSelect = this.element.querySelector("#filter-status") as HTMLSelectElement;
+      const sortFieldSelect = this.element.querySelector("#sort-field") as HTMLSelectElement;
+
+      const currentValues = {
+        search: searchInput?.value || "",
+        category: categorySelect?.value || "all",
+        status: statusSelect?.value || "all",
+        sortField: sortFieldSelect?.value || "addedAt",
+      };
+
+      this.activeBookListId = id;
+      // When switching to a book list, default to "current" scope
+      // When switching to "All Books", default to "all" scope
+      this.searchScope = id ? "current" : "all";
+      // Re-render to show/hide scope toggle
+      this.render().then(() => {
+        // Restore filter values
+        const newSearchInput = this.element.querySelector("#search-input") as HTMLInputElement;
+        const newCategorySelect = this.element.querySelector("#filter-category") as HTMLSelectElement;
+        const newStatusSelect = this.element.querySelector("#filter-status") as HTMLSelectElement;
+        const newSortFieldSelect = this.element.querySelector("#sort-field") as HTMLSelectElement;
+
+        if (newSearchInput) newSearchInput.value = currentValues.search;
+        if (newCategorySelect) newCategorySelect.value = currentValues.category;
+        if (newStatusSelect) newStatusSelect.value = currentValues.status;
+        if (newSortFieldSelect) newSortFieldSelect.value = currentValues.sortField;
+
+        this.attachEventListeners();
+        // Trigger filter change to apply the new scope
+        this.triggerFilterChange();
+      });
+    }
+  }
+
+  private triggerFilterChange(): void {
+    const searchInput = document.getElementById("search-input") as HTMLInputElement;
+    const categorySelect = document.getElementById("filter-category") as HTMLSelectElement;
+    const statusSelect = document.getElementById("filter-status") as HTMLSelectElement;
+    const sortFieldSelect = document.getElementById("sort-field") as HTMLSelectElement;
+
+    if (searchInput && categorySelect && statusSelect && sortFieldSelect) {
+      const filters: SearchFilters = {
+        query: searchInput.value,
+        category:
+          categorySelect.value === "all" ? undefined : categorySelect.value,
+        status: statusSelect.value as any,
+      };
+
+      const sortField = sortFieldSelect.value as SortField;
+
+      this.onFilterChange(filters, sortField, this.currentSortOrder);
+    }
+  }
+
+  getSearchScope(): "current" | "all" {
+    return this.searchScope;
   }
 
   updateBulkEditButton(mode: boolean, selectedCount: number = 0, totalCount: number = 0): void {
@@ -140,16 +206,35 @@ export class SearchBar {
   private async render(): Promise<void> {
     const categories = await storage.getCategories();
 
+    const scopeLabel = this.activeBookListId
+      ? this.searchScope === "current"
+        ? i18n.t("searchBar.scope.inList")
+        : i18n.t("searchBar.scope.all")
+      : "";
+
     this.element.innerHTML = `
       <div class="search-bar">
         <div class="search-input-wrapper">
-          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
+          <div class="search-icon-wrapper" id="search-scope-btn">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            ${scopeLabel ? `<span class="search-scope-label">${scopeLabel}</span>` : ""}
+          </div>
           <input type="text" id="search-input" class="search-input" placeholder="${i18n.t(
             "searchBar.placeholder"
           )}">
+          ${this.activeBookListId ? `
+          <div class="search-scope-dropdown" id="search-scope-dropdown">
+            <div class="search-scope-option ${this.searchScope === "all" ? "active" : ""}" data-scope="all">
+              ${i18n.t("searchBar.scope.all")}
+            </div>
+            <div class="search-scope-option ${this.searchScope === "current" ? "active" : ""}" data-scope="current">
+              ${i18n.t("searchBar.scope.currentFull")}
+            </div>
+          </div>
+          ` : ""}
         </div>
 
         <div class="filters">
@@ -247,7 +332,12 @@ export class SearchBar {
       "view-list"
     ) as HTMLButtonElement;
 
-    let currentOrder: SortOrder = "desc";
+    // Search scope dropdown elements
+    const scopeBtn = document.getElementById("search-scope-btn");
+    const scopeDropdown = document.getElementById("search-scope-dropdown");
+    const scopeOptions = document.querySelectorAll(".search-scope-option");
+
+    let currentOrder: SortOrder = this.currentSortOrder;
 
     const emitChange = () => {
       const filters: SearchFilters = {
@@ -269,6 +359,7 @@ export class SearchBar {
 
     sortOrderBtn.addEventListener("click", () => {
       currentOrder = currentOrder === "asc" ? "desc" : "asc";
+      this.currentSortOrder = currentOrder;
 
       // Update button icon
       sortOrderBtn.innerHTML =
@@ -307,5 +398,54 @@ export class SearchBar {
         this.onViewModeChange("list");
       }
     });
+
+    // Scope dropdown event listeners
+    if (scopeBtn && scopeDropdown) {
+      scopeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        scopeDropdown.classList.toggle("active");
+      });
+
+      scopeOptions.forEach((option) => {
+        option.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const newScope = (option as HTMLElement).dataset.scope as "current" | "all";
+          if (newScope && newScope !== this.searchScope) {
+            // Save current filter values before scope change
+            const currentValues = {
+              search: searchInput.value,
+              category: categorySelect.value,
+              status: statusSelect.value,
+              sortField: sortFieldSelect.value,
+            };
+
+            this.searchScope = newScope;
+            scopeDropdown.classList.remove("active");
+            // Re-render to update UI without re-attaching all listeners
+            this.render().then(() => {
+              // Restore filter values after re-render
+              const newSearchInput = this.element.querySelector("#search-input") as HTMLInputElement;
+              const newCategorySelect = this.element.querySelector("#filter-category") as HTMLSelectElement;
+              const newStatusSelect = this.element.querySelector("#filter-status") as HTMLSelectElement;
+              const newSortFieldSelect = this.element.querySelector("#sort-field") as HTMLSelectElement;
+
+              if (newSearchInput) newSearchInput.value = currentValues.search;
+              if (newCategorySelect) newCategorySelect.value = currentValues.category;
+              if (newStatusSelect) newStatusSelect.value = currentValues.status;
+              if (newSortFieldSelect) newSortFieldSelect.value = currentValues.sortField;
+
+              this.attachEventListeners();
+              emitChange();
+            });
+          }
+        });
+      });
+
+      // Close dropdown when clicking outside
+      const closeDropdown = () => {
+        scopeDropdown.classList.remove("active");
+      };
+      document.addEventListener("click", closeDropdown);
+    }
   }
 }
