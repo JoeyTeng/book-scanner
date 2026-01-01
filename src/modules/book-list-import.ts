@@ -1,6 +1,7 @@
 import { storage } from './storage';
-import type { Book, BookList, BookInList } from '../types';
-import type { BookListExportFormat, ExportedBook } from './book-list-export';
+import { db } from "./db";
+import type { Book, BookList } from "../types";
+import type { BookListExportFormat, ExportedBook } from "./book-list-export";
 
 /**
  * Conflict detection and resolution for book list imports
@@ -21,7 +22,7 @@ export interface ListNameConflict {
 export interface BookConflict {
   importedBook: ExportedBook;
   existingBook: Book;
-  matchType: 'isbn' | 'title-author';
+  matchType: "isbn" | "title-author";
 }
 
 /**
@@ -72,7 +73,17 @@ export interface ImportSnapshot {
   modifiedLists: Array<{
     // Lists modified during import
     id: string;
-    booksBefore: BookInList[]; // Books in list before import
+    fullDataBefore: BookList; // Complete list data before modification
+  }>;
+  replacedLists: Array<{
+    // Lists that were replaced (deleted then recreated)
+    id: string;
+    fullData: BookList; // Complete list data before deletion
+  }>;
+  modifiedBooks: Array<{
+    // Books whose metadata was updated
+    id: string;
+    metadataBefore: Partial<Book>; // Original metadata fields
   }>;
 }
 
@@ -203,6 +214,8 @@ export async function createSnapshot(
     addedListIds: [],
     addedBookIds: [],
     modifiedLists: [],
+    replacedLists: [],
+    modifiedBooks: [],
   };
 
   // Track which lists will be created (for later undo)
@@ -226,7 +239,7 @@ export async function createSnapshot(
   for (const list of existingLists) {
     snapshot.modifiedLists.push({
       id: list.id,
-      booksBefore: [...list.books], // Deep copy current state
+      fullDataBefore: { ...list, books: [...list.books] }, // Deep copy complete list
     });
   }
 
@@ -261,7 +274,6 @@ export async function executeImport(
 
   try {
     for (const importedList of data.lists) {
-
       // Determine list resolution
       const existing = existingLists.find((l) => l.name === importedList.name);
       const listResolution = strategy.listResolutions?.get(importedList.name);
@@ -275,6 +287,12 @@ export async function executeImport(
       let listName = importedList.name;
 
       if (action === "replace" && existing) {
+        // Save original list data before deletion
+        snapshot.replacedLists.push({
+          id: existing.id,
+          fullData: { ...existing }, // Deep copy
+        });
+
         // Delete existing and create new
         await storage.deleteBookList(existing.id);
         listId = (
@@ -348,6 +366,17 @@ export async function executeImport(
 
           const fieldStrategy =
             bookResolution?.fieldMergeStrategy || strategy.defaultFieldMerge;
+
+          // Save original metadata before updating
+          snapshot.modifiedBooks.push({
+            id: existingBook.id,
+            metadataBefore: {
+              isbn: existingBook.isbn,
+              publisher: existingBook.publisher,
+              publishDate: existingBook.publishDate,
+              cover: existingBook.cover,
+            },
+          });
 
           // Apply field-level merge
           const mergedBook: Partial<Book> = {
@@ -456,37 +485,35 @@ export async function executeImport(
  * Restore previous state from snapshot
  */
 export async function restoreSnapshot(snapshot: ImportSnapshot): Promise<void> {
-  // Delete all added books
+  // 1. Delete all added books
   for (const bookId of snapshot.addedBookIds) {
     await storage.deleteBook(bookId);
   }
 
-  // Delete all added lists
+  // 2. Delete all added lists (including those created by "replace" action)
   for (const listId of snapshot.addedListIds) {
     await storage.deleteBookList(listId);
   }
 
-  // Restore modified lists to previous state
+  // 3. Restore replaced lists (direct overwrite with original data)
+  for (const replaced of snapshot.replacedLists) {
+    console.log(
+      `[Undo] Restoring replaced list "${replaced.fullData.name}" with original ID`
+    );
+    await db.bookLists.put(replaced.fullData);
+  }
+
+  // 4. Restore modified books' original metadata
+  for (const modified of snapshot.modifiedBooks) {
+    await storage.updateBook(modified.id, modified.metadataBefore);
+  }
+
+  // 5. Restore modified lists to previous state (direct overwrite)
   for (const modified of snapshot.modifiedLists) {
-    const list = await storage.getBookList(modified.id);
-    if (!list) continue;
-
-    // Remove all books and restore original books
-    const currentBooks = list.books.map((b) => b.bookId);
-    for (const bookId of currentBooks) {
-      await storage.removeBookFromList(modified.id, bookId);
-    }
-
-    for (const bookInList of modified.booksBefore) {
-      await storage.addBookToList(modified.id, bookInList.bookId);
-      if (bookInList.comment) {
-        await storage.updateBookComment(
-          modified.id,
-          bookInList.bookId,
-          bookInList.comment
-        );
-      }
-    }
+    console.log(
+      `[Undo] Restoring merged list "${modified.fullDataBefore.name}" to previous state`
+    );
+    await db.bookLists.put(modified.fullDataBefore);
   }
 }
 

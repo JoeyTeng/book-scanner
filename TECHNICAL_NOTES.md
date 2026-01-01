@@ -512,5 +512,102 @@ localeCompare(b.name, 'zh-CN', {
 
 ---
 
-**Last Updated**: 2025-12-30
+## Import Snapshot & Undo Mechanism
+
+### Challenge
+书单导入功能需要支持撤回操作，要求能够精确恢复到导入前的状态，包括：
+- 删除新创建的书单和书籍
+- 恢复被替换的书单
+- 恢复被修改的书籍元数据
+- 恢复被合并书单的书籍列表
+- **关键：保持所有时间戳不变（书单在列表中的顺序不应改变）**
+
+### Initial Approach (Flawed)
+最初使用增量重建策略：
+
+```typescript
+// ❌ Anti-pattern: Incremental rebuild with high-level APIs
+async restoreModifiedList(listId: string, originalBooks: BookInList[]) {
+  // Step 1: Remove current books
+  for (const book of currentBooks) {
+    await storage.removeBookFromList(listId, book.id);
+  }
+
+  // Step 2: Add back original books
+  for (const book of originalBooks) {
+    await storage.addBookToList(listId, book.id);  // ❌ Updates updatedAt!
+    if (book.comment) {
+      await storage.updateBookComment(...);         // ❌ Updates updatedAt!
+    }
+  }
+
+  // Step 3: Manually fix timestamp (band-aid)
+  list.updatedAt = originalTimestamp;
+  await db.bookLists.put(list);
+}
+```
+
+**问题**：
+1. 使用业务层 API（`addBookToList` 等）会触发自动时间戳更新
+2. 需要手动在最后恢复时间戳（复杂且容易遗漏）
+3. 多次数据库操作，性能差且不够原子化
+4. 代码冗长（~50 行）且易出错
+
+### Evolution: Why Not Direct Rollback?
+用户提问：为什么不直接回滚数据？IndexedDB 支持事务为什么还要一步步重建？
+
+**答案**：完全可以！这是设计演进中的技术债：
+- 最初过度依赖高层 API，想保持"业务逻辑一致性"
+- 但撤回本质是**数据恢复**，不应触发业务逻辑
+- IndexedDB/Dexie.js 虽然不支持 MVCC，但可以通过应用层快照实现精确恢复
+
+### Final Solution: Direct Object Restoration
+
+```typescript
+export interface ImportSnapshot {
+  modifiedLists: Array<{
+    id: string;
+    fullDataBefore: BookList; // 保存完整对象，而非部分字段
+  }>;
+  replacedLists: Array<{
+    id: string;
+    fullData: BookList; // 同样保存完整对象
+  }>;
+}
+
+async function restoreSnapshot(snapshot: ImportSnapshot) {
+  // ✅ 直接用原始数据覆盖，一行搞定
+  for (const modified of snapshot.modifiedLists) {
+    await db.bookLists.put(modified.fullDataBefore);
+  }
+
+  for (const replaced of snapshot.replacedLists) {
+    await db.bookLists.put(replaced.fullData);
+  }
+}
+```
+
+**优势**：
+1. 代码从 ~50 行减少到 ~5 行
+2. 时间戳自动保留，无需手动恢复
+3. 原子操作，一次 `put` 完成
+4. 避免触发业务逻辑（如自动更新 `updatedAt`）
+5. 更容易理解和维护
+
+### Key Insight
+在撤回/恢复场景中：
+- **高层 API**（`addBookToList`）→ 适合业务操作，会更新时间戳
+- **底层 API**（`db.put`）→ 适合数据恢复，精确覆盖所有字段
+
+选择正确的抽象层次至关重要。
+
+### Implementation Notes
+- `createSnapshot` 在导入前保存完整状态（深拷贝）
+- `executeImport` 执行导入时填充 snapshot（记录新增 ID）
+- `restoreSnapshot` 直接用保存的数据覆盖（不经过业务层）
+- 删除了不必要的 `createBookList(customId)` 参数
+
+---
+
+**Last Updated**: 2026-01-01
 **Author**: JoeyTeng with Claude Sonnet 4.5
