@@ -21,8 +21,10 @@ export class ImportPreviewModal {
   ) {
     this.conflicts = conflicts;
     this.strategy = {
-      listNameConflict: 'rename',
-      bookDuplicate: 'merge'
+      defaultListAction: 'rename',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'both',
+      defaultFieldMerge: 'non-empty'
     };
     this.onConfirm = onConfirm;
     this.onCancel = onCancel;
