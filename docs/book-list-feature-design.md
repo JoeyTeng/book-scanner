@@ -793,7 +793,193 @@ async function performImport(data: BookListExportFormat, strategy: ImportStrateg
 
 ---
 
-### Step 4: Advanced Conflict Resolution UI (Future)
+### Step 3: Advanced Conflict Resolution UI 🔄 IN PROGRESS
+
+**Feature**: Field-level conflict resolution with detailed diff view
+
+**Design Philosophy**: Progressive disclosure
+- Default behavior unchanged (rename + merge + non-empty first)
+- Advanced options collapsible for expert users
+- Clear consequences for every action
+- Prevent accidental data loss
+
+**Implementation Strategy**: Phased approach
+
+#### Phase 3.3.1: Enhanced Resolution Options (Current)
+
+**Book List Conflicts** - Extended actions:
+- `rename`: Auto-generate unique name (e.g., "待读 (2)")
+- `merge`: Merge books into existing list + handle comment conflicts
+- `replace`: Delete existing list and create new one
+- `skip`: Ignore this imported list
+
+**Comment Merge Strategy** (when list action = "merge"):
+- `local`: Keep existing comments, discard imported
+- `import`: Replace with imported comments, discard existing
+- `both`: Concatenate: `existing + "\n\n" + imported`
+
+**Book Conflicts** - Extended actions:
+- `merge`: Merge metadata into existing book (with field-level strategy)
+- `skip`: Only update list membership and comments, ignore book metadata
+- `duplicate`: Create new book with different ID (force keep both)
+
+**Field-Level Merge Strategy** (when book action = "merge"):
+- `non-empty`: Use non-empty value (imported if local is empty, local if imported is empty)
+- `local`: Always prefer local book data
+- `import`: Always prefer imported data
+
+**Data Structure**:
+
+```typescript
+// Enhanced strategy with field-level control
+interface ImportStrategy {
+  // Global defaults
+  defaultListAction: 'rename' | 'merge' | 'replace' | 'skip';
+  defaultBookAction: 'merge' | 'skip' | 'duplicate';
+  defaultCommentMerge: 'local' | 'import' | 'both';
+  defaultFieldMerge: 'non-empty' | 'local' | 'import';
+
+  // Per-conflict overrides
+  listResolutions: Map<string, ListConflictResolution>;  // key: list name
+  bookResolutions: Map<string, BookConflictResolution>;  // key: bookKey
+}
+
+interface ListConflictResolution {
+  action: 'rename' | 'merge' | 'replace' | 'skip';
+  commentMergeStrategy?: 'local' | 'import' | 'both';  // Only for action="merge"
+}
+
+interface BookConflictResolution {
+  action: 'merge' | 'skip' | 'duplicate';
+  fieldMergeStrategy?: 'non-empty' | 'local' | 'import';  // Only for action="merge"
+}
+```
+
+**UI Layout** (Enhanced Preview Modal):
+
+```
+┌─────────────────────────────────────────────────┐
+│ [×] 导入预览与冲突解决                             │
+├─────────────────────────────────────────────────┤
+│ 📊 摘要                                           │
+│ • 将导入 3 个书单                                 │
+│ • 共 23 本书（15 本合并，8 本新增）                │
+│                                                  │
+│ ⚠️ 发现 5 个冲突需要处理                          │
+├─────────────────────────────────────────────────┤
+│ 🔧 默认策略                                       │
+│ • 书单名称冲突: [重命名 ▼]                        │
+│ • 书籍重复: [合并 ▼]                              │
+│ • 评语冲突: [同时保留 ▼]                          │
+│ • 字段合并: [非空优先 ▼]                          │
+│                                                  │
+│ [▼ 展开高级选项]                                  │
+├─────────────────────────────────────────────────┤
+│ 📋 冲突详情（可折叠）                              │
+│                                                  │
+│ [>] 书单冲突：「待读」                             │
+│     本地已存在同名书单                             │
+│     操作：重命名 → 「待读 (2)」 [更改 ▼]          │
+│     可选：合并、替换、跳过                         │
+│                                                  │
+│ [v] 书籍冲突：Early Netherlandish Painting        │
+│     匹配方式：标题+作者完全相同                     │
+│     操作：合并到现有书籍 [更改 ▼]                  │
+│     可选：跳过（仅更新书单）、创建新书              │
+│                                                  │
+│     评语处理：                                     │
+│     • 本地：(空)                                  │
+│     • 导入："A masterpiece of art history"        │
+│     → 策略：导入优先（因本地为空）[更改 ▼]         │
+│                                                  │
+│     元数据对比：                                   │
+│     • ISBN: 本地(空) vs 导入(978-0674181...)     │
+│       → 策略：非空优先 → 使用导入值 [更改 ▼]       │
+│     • 出版社: 本地(空) vs 导入(Harvard...)        │
+│       → 策略：非空优先 → 使用导入值                │
+│     • 出版年份: 本地(1953) vs 导入(1953)          │
+│       → 无冲突，值相同                            │
+│                                                  │
+│     [查看所有字段] / [收起详情]                    │
+│                                                  │
+│ ... 更多冲突                                      │
+├─────────────────────────────────────────────────┤
+│            [取消] [确认并导入]                     │
+└─────────────────────────────────────────────────┘
+```
+
+**User Interaction Protection**:
+
+1. **Desktop**: Disable background click to close modal
+   - Overlay click is ignored
+   - Must use explicit close/cancel button
+   - ESC key triggers confirmation dialog
+
+2. **Mobile**: Full-screen mode
+   - `position: fixed; inset: 0;`
+   - No overlay needed
+   - Back button triggers confirmation dialog
+
+3. **Exit Confirmation Dialog**:
+   ```
+   ┌────────────────────────────────┐
+   │ 放弃导入？                      │
+   ├────────────────────────────────┤
+   │ 你配置的冲突解决方案将丢失       │
+   │                                │
+   │ • 返回继续编辑                  │
+   │ • 保存并导入                    │
+   │ • 放弃并关闭                    │
+   └────────────────────────────────┘
+   ```
+
+**Implementation Files**:
+
+**Modified**:
+- `src/modules/book-list-import.ts`
+  - Extend `ImportStrategy` interface
+  - Update `executeImport()` to handle new strategies
+  - Add field-level merge helpers:
+    - `mergeBookField(local, imported, strategy)`
+    - `mergeComments(local, imported, strategy)`
+
+- `src/components/import-preview-modal.ts`
+  - Add collapsible conflict sections
+  - Add per-conflict strategy selectors
+  - Add field comparison display
+  - Disable background click
+  - Add exit confirmation
+
+**New**:
+- `src/components/confirmation-dialog.ts`
+  - Reusable 3-option confirmation dialog
+  - Used for exit confirmation and other scenarios
+
+- `src/styles/components.css`
+  - Conflict section collapse animation
+  - Field comparison table styles
+  - Mobile full-screen layout
+
+**Verification Points**:
+
+- ✅ Default behavior unchanged (backward compatible)
+- ✅ Can expand/collapse advanced options
+- ✅ Can change list conflict action (rename/merge/replace/skip)
+- ✅ Merge list correctly handles comment conflicts (local/import/both)
+- ✅ Can change book conflict action (merge/skip/duplicate)
+- ✅ Field-level merge strategy works (non-empty/local/import)
+- ✅ Background click does not close modal (desktop)
+- ✅ Modal is full-screen on mobile
+- ✅ Exit confirmation shows when user tries to close
+- ✅ "返回继续编辑" returns to modal
+- ✅ "保存并导入" executes import with current strategy
+- ✅ "放弃并关闭" discards changes and closes
+- ✅ Field comparison shows differences clearly
+- ✅ Empty vs non-empty fields highlighted differently
+
+---
+
+#### Phase 3.3.2: Side-by-Side Diff View (Future Enhancement)
 
 **Feature**: Side-by-side diff view for conflict resolution
 
@@ -841,53 +1027,60 @@ async function performImport(data: BookListExportFormat, strategy: ImportStrateg
 6. ✅ Add i18n translations
 7. ✅ Test all export scenarios
 
-**Priority 2: Basic Import with Undo (Next)** ⏳ PLANNED
+**Priority 2: Basic Import with Undo** ✅ COMPLETED
 
-1. ⏳ Create persistent dismissible toast component
-   - Fixed positioning at page top
-   - Manual dismiss only
-   - Separated action and dismiss buttons
+1. ✅ Create persistent dismissible toast component
+2. ✅ Create `book-list-import.ts` core module
+3. ✅ Create `import-preview-modal.ts`
+4. ✅ Integrate import into Book List Manager Modal
+5. ✅ Add i18n translations
+6. ✅ Test import scenarios (no conflicts, list conflicts, book duplicates, undo)
+
+**Priority 3: Advanced Conflict Resolution** 🔄 IN PROGRESS
+
+**Phase 3.3.1: Enhanced Resolution Options** (Current Sprint)
+
+1. ⏳ Extend ImportStrategy interfaces
+   - Add list action: merge (with comment merge strategy)
+   - Add book action: skip, duplicate
+   - Add field-level merge strategy
+
+2. ⏳ Update executeImport logic
+   - Implement list merge with comment handling
+   - Implement book skip (update list membership only)
+   - Implement book duplicate (force new ID)
+   - Add field-level merge helpers
+
+3. ⏳ Enhance ImportPreviewModal UI
+   - Add collapsible conflict sections
+   - Add per-conflict strategy selectors
+   - Add field comparison display
+   - Disable background click to close
+   - Add mobile full-screen support
+
+4. ⏳ Create ConfirmationDialog component
+   - 3-option dialog for exit confirmation
    - Reusable for other features
 
-2. ⏳ Create `book-list-import.ts` core module
-   - File parsing and validation
-   - Conflict detection (list names, book duplicates)
-   - **⚠️ Snapshot creation (MUST happen before any DB writes)**
-   - Import execution with default strategy
-   - Snapshot restoration
+5. ⏳ Update i18n translations
+   - New strategy options
+   - Confirmation dialog strings
+   - Field comparison labels
 
-3. ⏳ Create `book-list-import-preview-modal.ts`
-   - Display import summary
-   - Show detected conflicts with default resolutions
-   - Allow global strategy selection
-   - Cancel/Confirm actions
+6. ⏳ Test enhanced scenarios
+   - List merge with comment conflicts
+   - Book skip (list update only)
+   - Book duplicate (force new ID)
+   - Field-level merge strategies
+   - Exit confirmation flow
 
-4. ⏳ Integrate import into Book List Manager Modal
-   - Add "Import" button in modal header (next to title)
-   - File picker integration
-   - Error handling and user feedback
+**Phase 3.3.2: Side-by-Side Diff View** 📋 FUTURE
 
-5. ⏳ Add i18n translations
-   - Import UI strings
-   - Undo toast messages
-   - Conflict descriptions
-   - Error messages
-
-6. ⏳ Test import scenarios
-   - No conflicts (direct import)
-   - List name conflicts with auto-rename
-   - Book duplicates with merge
-   - Undo after import
-   - Multiple imports (snapshot clearing)
-   - Edge cases (empty lists, missing fields, invalid data)
-
-**Priority 3: Advanced Conflict Resolution** 📋 FUTURE
-
-1. 📋 Add per-conflict resolution UI
-2. 📋 Implement side-by-side diff view
-3. 📋 Implement in-line diff view
-4. 📋 Add field-level merge options
-5. 📋 Test complex conflict scenarios
+1. 📋 Implement BookDiffView component
+2. 📋 Add side-by-side comparison layout
+3. 📋 Add in-line diff markers
+4. 📋 Interactive field selection
+5. 📋 Preview merged result
 
 ---
 
@@ -947,7 +1140,7 @@ async function performImport(data: BookListExportFormat, strategy: ImportStrateg
 | Phase 2: Enhanced Operations | ✅ Completed | 2025-12-31 |
 | Phase 2.5: Book List Comments | ✅ Completed | 2025-12-31 |
 | Phase 3.1: Export Book Lists | ✅ Completed | 2025-12-31 |
-| Phase 3.2: Import Book Lists | 📋 Planned | - |
-| Phase 3.3: Advanced Diff View | 📋 Future | - |
+| Phase 3.2: Import Book Lists | ✅ Completed | 2026-01-01 |
+| Phase 3.3: Advanced Conflict Resolution | 🔄 In Progress | - |
 
-Last updated: 2025-12-31
+Last updated: 2026-01-01
