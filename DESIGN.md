@@ -1486,7 +1486,390 @@ private async init() {
 
 ## 未来规划
 
-### Phase 7: 云端同步（设计中）
+### Phase 8: 书单功能 (2025-12-30 至 2026-01-01) ✅
+
+**核心目标：**
+- 支持多个书单（类似书架或阅读列表）
+- 书籍可以同时属于多个书单
+- 导入/导出书单以便分享和备份
+- 智能冲突解决机制
+
+**问题背景：**
+
+用户希望将藏书分类管理：
+- 不同主题的阅读列表（如"科技书单"、"小说精选"）
+- 不同状态的书籍（如"待读"、"已读"、"收藏"）
+- 与朋友分享推荐书单
+
+传统的单一书库无法满足这种灵活性需求。
+
+**设计决策：**
+
+1. **引用式架构 vs 数据复制**
+   - 选择：引用式（BookList 只存 bookIds，不复制书籍数据）
+   - 理由：
+     - 避免数据冗余和同步问题
+     - 书籍元数据只需维护一份
+     - 删除书籍时自动从所有书单移除
+   - 权衡：查询时需要 JOIN 操作（可接受）
+
+2. **导入/导出格式**
+   - 选择：JSON 格式，包含完整书籍元数据
+   - 结构：
+     ```json
+     {
+       "version": 1,
+       "bookList": {...},
+       "books": [{...}, {...}]
+     }
+     ```
+   - 理由：
+     - 自包含（无需依赖外部数据源）
+     - 可读性强（便于调试和分享）
+     - 支持跨设备迁移
+
+3. **导入冲突解决策略**
+   - 挑战：导入书单时可能与现有书籍冲突
+   - 三种冲突场景：
+     1. ISBN 相同，元数据不同
+     2. 书单名称冲突
+     3. 同一本书在多个书单中
+   - 解决方案：**三层渐进式策略**
+     - **Phase 3.1**: 基础导出功能
+     - **Phase 3.2**: 冲突预览与撤回机制
+     - **Phase 3.3**: 高级冲突解决（字段级精细控制 + Git-style diff）
+
+**三阶段实施计划：**
+
+#### Phase 1: Core Functionality ✅
+实现时间：2025-12-30
+
+**功能：**
+- 数据模型：BookList interface，索引优化
+- CRUD 操作：创建、编辑、删除书单
+- Book List Manager Modal：集中管理界面
+- Navbar 集成：书单选择器下拉菜单
+- 过滤系统：按书单筛选书籍
+- 批量操作：批量添加/移除书籍到书单
+- BookCard 集成：单本书籍添加/移除按钮
+
+**数据结构：**
+```typescript
+interface BookList {
+  id: string;              // UUID
+  name: string;
+  description?: string;
+  bookIds: string[];       // 引用，不复制数据
+  createdAt: number;
+  updatedAt: number;
+}
+```
+
+**技术亮点：**
+- IndexedDB 版本升级（v1 → v2）
+- 书单选择器与主过滤系统深度集成
+- 删除书籍时自动从所有书单移除
+
+#### Phase 2: Enhanced Operations ✅
+实现时间：2025-12-30
+
+**功能：**
+- Bulk Edit 扩展：批量添加/移除到多个书单
+- BookCard 增强：下拉菜单显示所属书单，快速切换
+- Google Maps 风格 UI：Collection sidebar
+  - 悬浮侧边栏，不遮挡主内容
+  - 拖拽调整宽度
+  - 折叠/展开状态持久化
+  - 书单快速切换与统计
+  - 实时统计显示（书籍数量、上次更新）
+
+**UI 创新：**
+```
+┌─────────────────────────────────────┬─────────┐
+│  Book List (150 books)             │ [Menu] │
+│  ───────────────────────────────    │         │
+│  📚 All Books (150)                │ 🗂️      │
+│  ──────────────────────────         │ 书单     │
+│  📖 Tech Reads (25) ⋮              │ Mgmt    │
+│  📚 Fiction (40) ⋮                 │         │
+│  ...                                │         │
+└─────────────────────────────────────┴─────────┘
+        ↑ 可拖拽调整宽度                ↑ 折叠按钮
+```
+
+**性能优化：**
+- 批量操作使用 `bulkAdd()` 单次数据库事务
+- Collection sidebar 延迟渲染（首次点击时初始化）
+
+#### Phase 3.1: Export ✅
+实现时间：2025-12-31
+
+**功能：**
+- 导出书单为 JSON 文件
+- 包含完整书籍元数据（避免依赖本地数据）
+- 版本控制（`version: 1` 字段，未来扩展）
+- BookListManager 集成导出按钮
+
+**导出格式：**
+```json
+{
+  "version": 1,
+  "exportedAt": 1704067200000,
+  "bookList": {
+    "name": "Tech Reads",
+    "description": "...",
+    ...
+  },
+  "books": [
+    {
+      "id": "uuid-xxx",
+      "title": "...",
+      ...
+    }
+  ]
+}
+```
+
+#### Phase 3.2: Import with Conflict Preview & Undo ✅
+实现时间：2025-12-31 至 2026-01-01
+
+**核心挑战：数据冲突处理**
+
+导入书单时可能遇到：
+1. **ISBN 冲突**：相同 ISBN，但元数据不同（标题、作者、出版社等）
+2. **书单名称冲突**：导入书单名称与现有书单重复
+
+**解决方案：三步走策略**
+
+**Step 1: 预检测与预览**
+- 扫描待导入书籍，识别冲突
+- 生成 `ConflictReport`：
+  ```typescript
+  interface ConflictReport {
+    bookConflicts: Array<{
+      importBook: Book;
+      existingBook: Book;
+      conflicts: string[];  // ["title", "author"]
+    }>;
+    bookListConflict: {
+      importedName: string;
+      existingLists: BookList[];
+    };
+  }
+  ```
+- ImportPreviewModal 显示冲突详情
+
+**Step 2: 用户决策**
+- 为每个冲突选择解决策略：
+  - `keep`：保留现有数据
+  - `replace`：使用导入数据覆盖
+  - `skip`：跳过该书籍
+- 书单名称冲突：
+  - `rename`：重命名导入书单
+  - `merge`：合并到现有书单
+  - `replace`：替换现有书单
+
+**Step 3: 执行与快照**
+- 创建 `ImportSnapshot`（保存原始状态，支持撤回）
+- 执行导入操作
+- 失败时自动回滚
+
+**撤回机制设计：**
+
+```typescript
+interface ImportSnapshot {
+  modifiedLists: Array<{
+    id: string;
+    fullDataBefore: BookList;  // 完整对象，非部分字段
+  }>;
+  replacedLists: Array<{
+    id: string;
+    fullData: BookList;
+  }>;
+  createdBookIds: string[];
+  createdListId: string;
+}
+
+// 撤回：直接用原始数据覆盖，避免高层 API 触发时间戳更新
+async function restoreSnapshot(snapshot: ImportSnapshot) {
+  for (const modified of snapshot.modifiedLists) {
+    await db.bookLists.put(modified.fullDataBefore);
+  }
+  // ...
+}
+```
+
+**关键技术点：**
+- 使用底层 `db.put()` 而非高层 API（保留时间戳）
+- 保存完整对象而非部分字段（精确恢复）
+- 原子操作：快照创建、执行、恢复全程事务化
+
+**UI/UX 优化：**
+- 冲突项折叠展开（节省空间）
+- 字段差异高亮显示（红色删除线 vs 绿色加粗）
+- 批量选择策略（对所有冲突应用相同策略）
+- "撤回上次导入"按钮（Session Storage 保存快照）
+
+#### Phase 3.3: Advanced Conflict Resolution ✅
+实现时间：2026-01-01
+
+**核心挑战：字段级精细控制**
+
+Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
+- 保留现有书名，但更新作者信息
+- 使用导入的出版社，但保留自定义分类
+- 混合合并多个字段
+
+**解决方案：两层渐进式策略**
+
+**Phase 3.3.1: Enhanced Resolution Options ✅**
+
+1. **字段级策略选择**
+   ```typescript
+   interface Resolution {
+     strategy: 'keep' | 'replace' | 'detailed';
+     fieldStrategies: {
+       [field: string]: 'keep' | 'replace' | 'unresolved';
+     };
+   }
+   ```
+
+2. **三种解决模式**
+   - `keep`：保留所有现有字段
+   - `replace`：使用所有导入字段
+   - `detailed`：**字段级精细控制**（新增）
+     - 每个字段独立选择 keep/replace
+     - 支持"保留未解决"状态（稍后手动编辑）
+
+3. **智能默认策略**
+   ```typescript
+   const strategies = {
+     title: 'keep',          // 书名通常更准确
+     author: 'keep',         // 作者信息更完整
+     publisher: 'non-empty', // 优先非空值
+     publishDate: 'newer',   // 优先更新日期
+     isbn: 'keep',           // ISBN 不应改变
+     categories: 'merge',    // 合并分类列表
+     status: 'keep',         // 保留用户设置
+     rating: 'higher',       // 优先更高评分
+   };
+   ```
+
+**Phase 3.3.2: Side-by-Side Diff View ✅**
+
+**问题：** 文本差异难以识别（尤其是长字段）
+
+**解决方案：Git-style Diff Viewer**
+
+1. **DiffViewer 组件** (447 lines)
+   - Myers 算法实现字词级差异
+   - LCS（最长公共子序列）字符级匹配
+   - 两种视图模式：
+     - Inline View（默认）：`- 删除` / `+ 添加`
+     - Side-by-Side View：左右对比
+
+   ```typescript
+   class DiffViewer {
+     constructor(
+       container: HTMLElement,
+       options: {
+         leftText: string;
+         rightText: string;
+         leftLabel?: string;
+         rightLabel?: string;
+       }
+     );
+   }
+   ```
+
+2. **详细选择模式**
+   - 折叠/展开每个冲突书籍
+   - 每个字段显示：
+     - 冲突提示：`⚠️ Conflict`
+     - 当前值 vs 导入值对比
+     - 策略选择器（keep/replace/unresolved）
+     - **DiffViewer**：仅对 unresolved 字段显示
+
+3. **视觉设计**
+   ```
+   📖 Book Title Conflict
+   ├─ Title:        [Keep ▼]
+   │  Current:  "深入理解计算机系统"
+   │  Import:   "深入理解计算机系统（原书第3版）"
+   │
+   ├─ Publisher:    [Unresolved ▼]
+   │  ┌─────────────────────────────────────┐
+   │  │ 🔍 Diff View                [⊟][⊞] │
+   │  │ ─────────────────────────────────── │
+   │  │ - 机械工业出版社                     │
+   │  │ + 人民邮电出版社                     │
+   │  └─────────────────────────────────────┘
+   │
+   └─ Author:       [Replace ▼]
+      Current:  "Randal E. Bryant"
+      Import:   "Randal E. Bryant, David R. O'Hallaron"
+   ```
+
+4. **交互优化**
+   - 切换策略时，DiffViewer 自动显示/隐藏
+   - 支持批量应用策略（"对所有字段应用 keep"）
+   - Confirm 按钮实时更新（所有冲突解决后启用）
+
+**技术挑战与解决：**
+
+**Challenge 1: DiffViewer 组件生命周期**
+- 问题：用户改变字段策略后，其他字段的 diff view 消失
+- 根因：`updateConflictPreview()` 重建 HTML 摧毁了所有 DOM 元素
+- 解决：提取 `initializeExpandedConflict()` 方法
+  - 在 `toggleConflict()` 手动展开时调用
+  - 在 `updateConflictPreview()` HTML 重建后为所有已展开项调用
+  - 使用 `expandedConflicts: Set<number>` 追踪状态
+
+**Challenge 2: i18n 键一致性**
+- 问题：翻译键在多处使用不一致（`book.*` vs `bookForm.label.*`）
+- 解决：统一使用 `bookForm.label.*` 命名空间
+  - 在 `renderConflictDetails()` 中修正
+  - 在 `initializeExpandedConflict()` 中修正
+
+**Challenge 3: 策略值映射**
+- 问题：HTML `data-strategy="non-empty"` 与 i18n 键 `nonEmpty` 不匹配
+- 解决：创建显式映射表 `strategyI18nMap`
+  ```typescript
+  const strategyI18nMap = {
+    'keep': 'keep',
+    'replace': 'replace',
+    'non-empty': 'nonEmpty',
+    'newer': 'newer',
+    // ...
+  };
+  ```
+
+**性能优化：**
+- DiffViewer 仅在 `unresolved` 状态创建（避免不必要实例）
+- 字段策略变更仅更新受影响区域（不重建整个 modal）
+- Myers 算法优化（Early termination，空间优化）
+
+**代码质量：**
+- DiffViewer 独立组件（447 lines，单一职责）
+- 两阶段渲染：HTML 生成（纯函数） + 组件 hydration（副作用）
+- TypeScript strict mode（完整类型安全）
+
+**最终成果：**
+- ✅ 支持 9 种智能合并策略
+- ✅ Git-style diff 可视化
+- ✅ 字段级精细控制
+- ✅ 完美的生命周期管理（无焦点丢失、无重复绑定）
+- ✅ 详尽的 i18n 支持（英文 + 中文）
+
+**文档完整性：**
+- 设计文档：`docs/book-list-feature-design.md` (1199 lines)
+- 技术笔记：`TECHNICAL_NOTES.md` 新增章节（300+ lines）
+  - Import Snapshot & Undo Mechanism
+  - DiffViewer Component & Incremental DOM Updates
+
+---
+
+### Phase 9: 云端同步（规划中）
 
 **需求：**
 - 多设备访问
@@ -1516,9 +1899,8 @@ private async init() {
 - 不增加服务器成本
 - 备份可靠（Google 基础设施）
 
-### Phase 8: 高级功能
+### Phase 10: 高级功能（待规划）
 
-- [ ] 图书标签系统
 - [ ] 阅读进度追踪
 - [ ] 评分和笔记
 - [ ] 好友书单分享
@@ -1529,13 +1911,14 @@ private async init() {
 
 ## 总结
 
-Book Scanner 项目通过 6 个阶段的迭代，从一个简单的条形码扫描工具，演变为功能完整的 PWA 藏书管理应用。
+Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫描工具，演变为功能完整的 PWA 藏书管理应用。
 
 **核心价值主张：**
 1. **快速录入：** 3 种方式（条形码/OCR/搜索）+ AI 辅助
 2. **离线优先：** PWA + IndexedDB + Service Worker
 3. **零门槛：** 无需付费 API，Manual LLM mode
-4. **用户数据掌控：** 本地存储，可导出，无供应商锁定
+4. **灵活组织：** 书单系统支持多维度分类和分享
+5. **用户数据掌控：** 本地存储，可导出，无供应商锁定
 
 **技术亮点：**
 - Vanilla TypeScript（零依赖，高性能）
@@ -1543,11 +1926,38 @@ Book Scanner 项目通过 6 个阶段的迭代，从一个简单的条形码扫�
 - Service Worker（离线缓存策略）
 - LLM 分层设计（Text/Vision/Manual）
 - Promise-based 初始化链（无竞态条件）
+- 引用式书单架构（避免数据冗余）
+- 智能冲突解决（字段级精细控制 + Git-style diff）
+- Myers 算法 diff 实现（字词级差异可视化）
 
 **项目统计：**
-- 代码行数：~3000 LOC
-- 组件数量：15 个
+- 代码行数：~5000 LOC（包含 DiffViewer 447 lines）
+- 组件数量：20+ 个
+- 数据表：3 个（books, bookLists, settings, imageCache）
 - 技术债务：低（TypeScript strict mode + 清晰架构）
+- 文档完整性：高（DESIGN.md 2900+ lines, book-list-feature-design.md 1199 lines, TECHNICAL_NOTES.md 800+ lines）
+
+**演进历程总结：**
+
+| Phase | 时间 | 核心功能 | 技术突破 |
+|-------|------|---------|---------|
+| Phase 1 | 初始 | 条形码扫描 + ISBN 查询 | MVP 验证 |
+| Phase 2 | 早期 | 移动端优化 | iPhone 对焦、视口适配 |
+| Phase 3 | 早期 | 多入口（OCR/标题搜索） | API 聚合层 |
+| Phase 4 | 早期 | AI 能力集成 | LLM Text/Vision 分层 |
+| Phase 5 | 早期 | 批量管理与视图优化 | 元数据刷新、列表视图 |
+| Phase 6 | 中期 | PWA 改造 | IndexedDB 迁移、Service Worker |
+| Phase 7 | 2025-12-29 | Category 管理增强 | Tag Input、智能排序、事件委托 |
+| Phase 8 | 2025-12-30 至 2026-01-01 | 书单功能（三阶段） | 引用架构、冲突解决、Git-style diff |
+
+**当前版本特性：**
+- ✅ 多种书籍录入方式（条形码、OCR、标题搜索、Smart Paste）
+- ✅ 完整的分类管理（Category + Book List 双维度）
+- ✅ 书单导入/导出（带智能冲突解决）
+- ✅ 批量操作（编辑、添加到书单）
+- ✅ PWA 离线支持（可安装为独立应用）
+- ✅ 国际化支持（中英文）
+- ✅ 响应式设计（移动端和桌面端优化）
 - 浏览器兼容：Chrome/Edge/Safari（iOS 13.4+）
 
 **适用场景：**
@@ -2513,7 +2923,7 @@ async deleteCategory(name: string): Promise<void> {
 
 ---
 
-**文档版本：** v2.2
-**最后更新：** 2025-12-29
+**文档版本：** v2.3
+**最后更新：** 2026-01-01
 **部署地址：** <https://booka.mahane.me/>
 **维护者：** JoeyTeng

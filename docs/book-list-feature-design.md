@@ -524,7 +524,7 @@ interface ExportedBook {
 
 ---
 
-### Step 3: Import Book Lists (TODO)
+### Step 3: Import Book Lists ✅ COMPLETED
 
 **Feature**: Import book lists from JSON with conflict preview and undo capability
 
@@ -793,7 +793,7 @@ async function performImport(data: BookListExportFormat, strategy: ImportStrateg
 
 ---
 
-### Step 3: Advanced Conflict Resolution UI 🔄 IN PROGRESS
+### Step 3: Advanced Conflict Resolution UI ✅ COMPLETED
 
 **Feature**: Field-level conflict resolution with detailed diff view
 
@@ -1036,51 +1036,102 @@ interface BookConflictResolution {
 5. ✅ Add i18n translations
 6. ✅ Test import scenarios (no conflicts, list conflicts, book duplicates, undo)
 
-**Priority 3: Advanced Conflict Resolution** 🔄 IN PROGRESS
+**Priority 3: Advanced Conflict Resolution** ✅ COMPLETED
 
-**Phase 3.3.1: Enhanced Resolution Options** (Current Sprint)
+**Phase 3.3.1: Enhanced Resolution Options** ✅ COMPLETED
 
-1. ⏳ Extend ImportStrategy interfaces
+1. ✅ Extend ImportStrategy interfaces
    - Add list action: merge (with comment merge strategy)
    - Add book action: skip, duplicate
    - Add field-level merge strategy
 
-2. ⏳ Update executeImport logic
+2. ✅ Update executeImport logic
    - Implement list merge with comment handling
    - Implement book skip (update list membership only)
    - Implement book duplicate (force new ID)
    - Add field-level merge helpers
 
-3. ⏳ Enhance ImportPreviewModal UI
+3. ✅ Enhance ImportPreviewModal UI
    - Add collapsible conflict sections
    - Add per-conflict strategy selectors
    - Add field comparison display
    - Disable background click to close
    - Add mobile full-screen support
 
-4. ⏳ Create ConfirmationDialog component
-   - 3-option dialog for exit confirmation
-   - Reusable for other features
-
-5. ⏳ Update i18n translations
+4. ✅ Update i18n translations
    - New strategy options
-   - Confirmation dialog strings
    - Field comparison labels
 
-6. ⏳ Test enhanced scenarios
+5. ✅ Test enhanced scenarios
    - List merge with comment conflicts
    - Book skip (list update only)
    - Book duplicate (force new ID)
    - Field-level merge strategies
-   - Exit confirmation flow
 
-**Phase 3.3.2: Side-by-Side Diff View** 📋 FUTURE
+**Phase 3.3.2: Detailed Conflict Resolution with Diff Viewer** ✅ COMPLETED
 
-1. 📋 Implement BookDiffView component
-2. 📋 Add side-by-side comparison layout
-3. 📋 Add in-line diff markers
-4. 📋 Interactive field selection
-5. 📋 Preview merged result
+1. ✅ Create DiffViewer component
+   - Myers diff algorithm for word-level comparison
+   - LCS-based character matching for precise highlighting
+   - Side-by-side and inline view modes
+   - Mobile-responsive design
+
+2. ✅ Implement "detailed selection" mode
+   - Added "unresolved" field strategy (forces explicit user decision)
+   - Per-field strategy selectors inline with field labels
+   - Dynamic diff viewer for unresolved conflicts
+   - Merge result preview for resolved conflicts
+
+3. ✅ Add validation system
+   - Count unresolved conflicts in real-time
+   - Disable import button when conflicts exist
+   - Red warning text showing unresolved count
+   - Per-book and global conflict counters
+
+4. ✅ Enhance UX with visual feedback
+   - Expandable/collapsible conflict items (multi-item support)
+   - Dynamic emoji badges (⚠️ unresolved / ✅ resolved)
+   - Red "!" badge on unresolved fields
+   - Empty value styling (gray italic, no false conflicts)
+   - No-conflict items sorted to bottom with green background
+
+5. ✅ Fix critical bugs
+   - Diff view persistence when changing strategies (re-initialize on HTML re-render)
+   - i18n key corrections (bookForm.label.* for field labels)
+   - Strategy label mapping (non-empty → nonEmpty)
+   - BookKey format consistency (ISBN or "title|author")
+
+6. ✅ Technical improvements
+   - Extracted `initializeExpandedConflict()` method for DiffViewer lifecycle
+   - Proper event listener management (re-attach on content updates)
+   - Comprehensive CSS styling (286+ lines for diff and conflict UI)
+   - 20+ new i18n translation keys
+
+**Implementation Summary**:
+- **New files**: `diff-viewer.ts` (447 lines)
+- **Modified**: `import-preview-modal.ts` (+540 lines → 971 total)
+- **Modified**: `book-list-import.ts` (updated types and merge logic)
+- **Modified**: `components.css` (+286 lines → 2658 total)
+- **Commits**:
+  - `a2f2300`: Extended ImportStrategy with field-level control
+  - `12910f2`: Phase 3.3.1 advanced resolution options
+  - `9a4786d`: Phase 3.3.2 detailed selection mode with diff viewer
+
+**Verification Points**:
+- ✅ Can expand multiple books, verify diff views persist after strategy changes
+- ✅ Switch between detailed/non-detailed modes works correctly
+- ✅ Button disables with unresolved conflicts, shows red warning
+- ✅ Emoji badges update dynamically based on resolution state
+- ✅ Empty values handled correctly (no false conflicts, styled display)
+- ✅ All UI elements properly internationalized (en/zh-CN)
+- ✅ Field strategy selectors positioned inline, work correctly
+- ✅ Merge result preview accurate for all strategies
+
+**Early Design Iterations** (弯路记录):
+- Initial approach tried re-binding event listeners on every HTML update → caused diff views to disappear
+- Solution: Extracted initialization into separate method, called for all expanded items after re-render
+- Field label i18n: Initially used `book.*` keys, corrected to `bookForm.label.*` keys
+- Strategy label mapping: Missed hyphen-to-camelCase conversion (non-empty → nonEmpty)
 
 ---
 
@@ -1141,6 +1192,7 @@ interface BookConflictResolution {
 | Phase 2.5: Book List Comments | ✅ Completed | 2025-12-31 |
 | Phase 3.1: Export Book Lists | ✅ Completed | 2025-12-31 |
 | Phase 3.2: Import Book Lists | ✅ Completed | 2026-01-01 |
-| Phase 3.3: Advanced Conflict Resolution | 🔄 In Progress | - |
+| Phase 3.3.1: Advanced Conflict Resolution | ✅ Completed | 2026-01-01 |
+| Phase 3.3.2: Detailed Selection & Diff Viewer | ✅ Completed | 2026-01-01 |
 
 Last updated: 2026-01-01
