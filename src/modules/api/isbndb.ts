@@ -1,6 +1,24 @@
 import { storage } from '../storage';
 import type { BookDataSource } from '../../types';
 
+interface ISBNdbResponse {
+  book?: ISBNdbBook;
+}
+
+interface ISBNdbListResponse {
+  books?: ISBNdbBook[];
+}
+
+interface ISBNdbBook {
+  title?: string;
+  isbn13?: string;
+  isbn?: string;
+  authors?: string[] | string;
+  publisher?: string;
+  date_published?: string;
+  image?: string;
+}
+
 /**
  * Search ISBNdb by ISBN
  * Requires API key from https://isbndb.com
@@ -19,7 +37,7 @@ export async function getISBNdbBookByISBN(isbn: string): Promise<BookDataSource 
 
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = (await response.json()) as ISBNdbResponse;
     const book = data.book;
 
     if (!book) return null;
@@ -48,7 +66,7 @@ export async function searchISBNdbByTitle(title: string): Promise<BookDataSource
 
     if (!response.ok) return [];
 
-    const data = await response.json();
+    const data = (await response.json()) as ISBNdbListResponse;
     const books = data.books || [];
 
     return books
@@ -63,7 +81,7 @@ export async function searchISBNdbByTitle(title: string): Promise<BookDataSource
 /**
  * Parse ISBNdb book to BookDataSource
  */
-function parseISBNdbBook(book: any): BookDataSource | null {
+function parseISBNdbBook(book: ISBNdbBook): BookDataSource | null {
   if (!book.title) return null;
 
   return {

@@ -1,5 +1,19 @@
 import type { BookDataSource } from '../../types';
 
+interface InternetArchiveResponse {
+  response?: {
+    docs?: InternetArchiveDoc[];
+  };
+}
+
+interface InternetArchiveDoc {
+  identifier?: string;
+  title?: string;
+  creator?: string | string[];
+  publisher?: string;
+  date?: string;
+}
+
 /**
  * Search Internet Archive by ISBN
  */
@@ -10,7 +24,7 @@ export async function getInternetArchiveBookByISBN(isbn: string): Promise<BookDa
 
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = (await response.json()) as InternetArchiveResponse;
     const docs = data.response?.docs;
 
     if (!docs || docs.length === 0) return null;
@@ -32,7 +46,7 @@ export async function searchInternetArchiveByTitle(title: string): Promise<BookD
 
     if (!response.ok) return [];
 
-    const data = await response.json();
+    const data = (await response.json()) as InternetArchiveResponse;
     const docs = data.response?.docs || [];
 
     return docs
@@ -47,7 +61,7 @@ export async function searchInternetArchiveByTitle(title: string): Promise<BookD
 /**
  * Parse Internet Archive document to BookDataSource
  */
-function parseInternetArchiveDoc(doc: any): BookDataSource | null {
+function parseInternetArchiveDoc(doc: InternetArchiveDoc): BookDataSource | null {
   if (!doc.title) return null;
 
   return {
