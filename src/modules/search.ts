@@ -37,8 +37,8 @@ export function searchBooks(books: Book[], filters: SearchFilters): Book[] {
  */
 export function sortBooks(books: Book[], field: SortField, order: SortOrder): Book[] {
   const sorted = [...books].sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
+    let aValue: string | number = '';
+    let bValue: string | number = '';
 
     switch (field) {
       case 'addedAt':
