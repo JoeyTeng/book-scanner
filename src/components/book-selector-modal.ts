@@ -106,7 +106,7 @@ export class BookSelectorModal {
     this.close();
   }
 
-  async open(results: BookDataSource[], onSelect: (result: BookDataSource) => void): Promise<void> {
+  open(results: BookDataSource[], onSelect: (result: BookDataSource) => void): Promise<void> {
     this.results = results;
     this.onSelect = onSelect;
 
@@ -129,6 +129,8 @@ export class BookSelectorModal {
       emptyEl.style.display = 'none';
       this.renderResults();
     }
+
+    return Promise.resolve();
   }
 
   showLoading(): void {

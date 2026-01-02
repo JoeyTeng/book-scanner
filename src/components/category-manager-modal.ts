@@ -69,7 +69,7 @@ export class CategoryManagerModal {
     }
   }
 
-  private async render(): Promise<void> {
+  private render(): Promise<void> {
     this.modalElement = document.createElement('div');
     this.modalElement.className = 'modal';
     this.modalElement.innerHTML = `
@@ -133,6 +133,8 @@ export class CategoryManagerModal {
     this.updateFilteredCategories();
     this.renderCategoryList();
     this.attachEventListeners(); // Only call once during initialization
+
+    return Promise.resolve();
   }
 
   private attachEventListeners(): void {
