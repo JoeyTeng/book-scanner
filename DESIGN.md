@@ -5,6 +5,7 @@
 Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫描、OCR 识别和智能推荐等多种方式，帮助用户快速建立和管理个人藏书数据库。
 
 **核心价值：**
+
 - 📱 **多端访问**：桌面和移动设备统一体验，支持安装为独立应用
 - 🔌 **离线优先**：无网络环境下仍可访问和管理所有数据
 - 💾 **大容量存储**：支持存储大量图书和封面图片（50MB-GB）
@@ -12,6 +13,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 - 🎯 **快速录入**：条形码扫描、OCR 识别、智能粘贴多种方式
 
 **目标用户：**
+
 - 个人藏书管理者（家庭图书馆）
 - 书籍收藏爱好者
 - 需要快速录入书目的用户（移动和固定场景）
@@ -23,17 +25,20 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **Commit:** `feat: 1st attempt with Claude Sonnet 4.5`
 
 **功能范围：**
+
 - 基础条形码扫描（移动设备摄像头）
 - ISBN 查询（ISBNdb API）
 - 简单的书籍列表展示
 - localStorage 存储
 
 **技术选型：**
+
 - Vanilla TypeScript (无框架依赖，快速原型)
 - Vite 构建工具
 - localStorage 作为数据存储
 
 **关键学习：**
+
 - 条形码扫描在移动设备上的挑战
 - API 调用的错误处理需求
 - 用户数据持久化的重要性
@@ -41,6 +46,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 ### Phase 2: 移动体验优化 (0d445ca - cf54001)
 
 **关键 Commits：**
+
 - `fix: auto-fill scanned ISBN and improve mobile viewport`
 - `feat: improve camera focus for barcode scanning on iPhone`
 - `fix: simplify camera constraints to fix startup failure`
@@ -63,6 +69,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    - 原则：核心功能在所有设备上可用
 
 **设计决策：**
+
 - 相机功能采用渐进增强（Progressive Enhancement）
 - 设备兼容性 > 完美体验
 - 提供降级方案（手动输入 ISBN）
@@ -70,6 +77,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 ### Phase 3: 多入口增强 (e1329bc - 2dfba02)
 
 **关键 Commits：**
+
 - `feat: add OCR recognition for Xiaohongshu screenshots`
 - `feat: add book title search with multi-result selection`
 - `feat: integrate multiple book data APIs and add WeChat Read link`
@@ -77,40 +85,47 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **新增入口：**
 
 1. **OCR 识别**（场景 A）
-   ```
+
+   ```text
    用户拍摄书籍照片 / 小红书截图
    → OCR 提取文字
    → 解析书名和推荐语
    → 预填表单
    ```
+
    - 目标：快速记录书单推荐
    - 挑战：复杂背景下的文字识别
    - 优化：针对小红书格式的专门解析
 
 2. **标题搜索**（场景 B）
-   ```
+
+   ```text
    用户输入书名
    → 调用多个 API 搜索
    → 展示多个结果
    → 用户选择正确版本
    → 预填详细信息
    ```
+
    - 目标：无条形码情况下快速录入
    - 挑战：同名书籍的版本识别
    - 解决：展示封面和出版信息供用户选择
 
 3. **外部链接集成**
-   ```
+
+   ```text
    书籍详情 → 快速跳转到：
    - 当当网（购买）
    - 京东（购买）
    - 微信读书（电子书）
    - 豆瓣（评价）
    ```
+
    - 目标：无缝衔接购买和阅读
    - 实现：URL template + ISBN/书名参数
 
 **架构影响：**
+
 - 引入多 API 聚合层（ISBNdb, 豆瓣, 自建）
 - 统一的 `BookDataSource` 接口
 - 错误处理：单个 API 失败不影响其他来源
@@ -118,6 +133,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 ### Phase 4: AI 能力集成 (6d96f1b - a010d9a)
 
 **关键 Commits：**
+
 - `feat: Add LLM-powered Smart Paste as optional enhancement`
 - `feat: Add LLM Vision to OCR and split Text/Vision API for cost savings`
 - `feat: add manual LLM mode for users without API keys`
@@ -126,7 +142,8 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **AI 功能设计：**
 
 1. **Smart Paste（智能粘贴）**
-   ```
+
+   ```text
    用户粘贴任意文本：
    "《人类简史》尤瓦尔·赫拉利著，推荐理由：视角独特"
 
@@ -139,23 +156,27 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 
    → 自动填充表单
    ```
+
    - 价值：极大降低录入成本
    - 实现：OpenAI GPT-4 / Claude with prompt engineering
    - 成本控制：Text-only model（便宜 10 倍）
 
 2. **LLM Vision for OCR**
-   ```
+
+   ```text
    照片 → LLM Vision API：
    - 直接识别书名、作者
    - 理解推荐语境（比 OCR 更智能）
    - 处理手写、倾斜、反光等复杂场景
    ```
+
    - 问题：Vision API 昂贵（每次调用 $0.01+）
    - 解决：分离 Text/Vision 两种模式，用户自选
    - 策略：默认 OCR (免费)，可选升级 Vision (精准)
 
 3. **无 API Key 模式**
-   ```
+
+   ```text
    用户场景：想用 AI 但没有 API Key
 
    解决方案：
@@ -164,6 +185,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    3. 复制返回结果粘贴回来
    4. 应用自动解析并填充
    ```
+
    - 设计哲学：不因付费门槛阻止用户使用核心功能
    - 用户体验：多 2 步操作，但无成本
    - 可扩展性：未来可接入免费 LLM
@@ -171,7 +193,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **关键决策：**
 
 | 决策点 | 选项 A | 选项 B | 最终选择 | 理由 |
-|--------|--------|--------|----------|------|
+| -------- | -------- | -------- | ---------- | ------ |
 | LLM 调用方式 | 强制 API Key | Manual mode | Both | 降低使用门槛 |
 | OCR vs Vision | 只用 Vision | 分离两种模式 | 分离 | 成本控制 |
 | ISBN 必填 | 是 | 否 | 否 | 支持更多书籍类型（古籍、手稿等） |
@@ -179,6 +201,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 ### Phase 5: 批量管理与视图优化 (e9c7a33 - e2ccbf0)
 
 **关键 Commits：**
+
 - `feat: add metadata refresh and improve book form editing`
 - `feat: add bulk edit for books (status and categories)`
 - `feat: add list view mode with table layout`
@@ -186,7 +209,8 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **功能增强：**
 
 1. **元数据刷新**
-   ```
+
+   ```text
    场景：API 数据不准确或缺失部分字段
 
    功能：
@@ -194,11 +218,13 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    - 重新调用 API 获取最新数据
    - 保留用户手动编辑的字段（不覆盖）
    ```
+
    - 设计：智能合并策略（API 数据补充，不覆盖已编辑字段）
    - 用户控制：显式按钮触发，非自动刷新
 
 2. **批量编辑**
-   ```
+
+   ```text
    场景：整理大量书籍的分类和状态
 
    流程：
@@ -207,11 +233,13 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    3. 统一修改分类/状态
    4. 批量保存
    ```
+
    - 实现：独立的 BulkEditModal 组件
    - UX：清晰的视觉反馈（选中数量、操作按钮）
 
 3. **列表视图模式**
-   ```
+
+   ```text
    卡片视图 (默认)：
    - 大封面图
    - 适合浏览和欣赏
@@ -221,10 +249,12 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    - 显示更多字段
    - 适合管理和筛选
    ```
+
    - 实现：CSS Grid + 响应式布局
    - 持久化：用户偏好保存到 localStorage
 
 **数据管理理念：**
+
 - 用户数据完全可控（可编辑、可刷新、可批量操作）
 - 多种视图满足不同场景需求
 - 操作可撤销（未实现，但架构支持）
@@ -234,6 +264,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **Commit:** `feat: migrate to PWA with IndexedDB storage`
 
 **动机：**
+
 1. **存储限制：** localStorage 10MB 不足，用户报告存储满错误
 2. **图片缓存：** 无法存储 Blob，每次都需重新下载封面
 3. **离线支持：** 希望在无网络时仍可查看和管理书籍
@@ -242,6 +273,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **重大重构：**
 
 1. **IndexedDB 迁移**
+
    ```typescript
    // Before: localStorage
    localStorage.setItem('books', JSON.stringify(books));
@@ -250,11 +282,13 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    await db.books.put(book);
    await db.imageCache.put({ url, blob, cachedAt });
    ```
+
    - 优势：50MB-GB 存储，支持 Blob，更好的性能
    - 挑战：所有存储调用变为 async/await
    - 工作量：修改 7 个文件，18 处 TypeScript 错误
 
 2. **Service Worker**
+
    ```javascript
    // Cache strategy
    self.addEventListener('fetch', (event) => {
@@ -267,11 +301,13 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
      }
    });
    ```
+
    - 静态资源：优先缓存（快速启动）
    - 外部图片：优先网络（保证最新）
    - 离线回退：显示缓存版本
 
 3. **PWA Manifest**
+
    ```json
    {
      "name": "Book Scanner",
@@ -284,12 +320,14 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
      ]
    }
    ```
+
    - 图标：8 种尺寸（72-512px）
    - 主题色：统一品牌视觉
    - 启动画面：自动生成
 
 4. **异步初始化架构**
-   ```
+
+   ```text
    main.ts
    ├─ await storage.waitForInit()
    │   └─ Migrate from localStorage
@@ -300,6 +338,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
        ├─ await components.waitForInit() (parallel)
        └─ await bookList.render()
    ```
+
    - 挑战：避免竞态条件和循环依赖
    - 解决：Promise-based initialization chain
    - 模式：每个模块 expose `waitForInit()` 方法
@@ -307,6 +346,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 **遇到的坑与解决：**
 
 1. **循环依赖死锁**
+
    ```typescript
    // Problem
    storage.init() {
@@ -322,14 +362,17 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    ```
 
 2. **空白页面问题**
+
    - 原因：组件渲染时 storage 尚未初始化完成
    - 解决：严格的初始化顺序，await 所有依赖
 
 3. **18 个 TypeScript 错误**
+
    - 原因：忘记在 async storage 调用前加 `await`
    - 工具：系统性检查所有 `storage.*()` 调用
 
 **成果：**
+
 - ✅ 存储容量从 10MB → 50MB+
 - ✅ 离线完全可用
 - ✅ 安装为独立应用
@@ -340,7 +383,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 
 ### 整体架构图
 
-```
+```text
 ┌───────────────────────────────────────────────────────┐
 │                   Presentation Layer                   │
 │  ┌─────────┬──────────┬──────────┬─────────────────┐  │
@@ -379,7 +422,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 
 ### 数据流图（3 种入口场景）
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    User Interactions                     │
 └───┬─────────────────────┬──────────────────────┬────────┘
@@ -434,10 +477,10 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 ### 技术栈演进
 
 | 层级 | 技术选型 | 版本 | 演进历史 | 选择理由 |
-|------|---------|------|---------|---------|
+| ------ | --------- | ------ | --------- | --------- |
 | 前端框架 | Vanilla TypeScript | 5.x | 一直保持 | 轻量级，零依赖，快速加载 |
 | 构建工具 | Vite | 6.x | 一直保持 | HMR 快，配置简单 |
-| 存储 | ~~localStorage~~ → IndexedDB | - | Phase 6 迁移 | 容量限制（10MB → 50MB+）|
+| 存储 | ~~localStorage~~ → IndexedDB | - | Phase 6 迁移 | 容量限制（10MB → 50MB+） |
 | DB 封装 | Dexie.js | 4.0.0 | Phase 6 引入 | 简化 IndexedDB API，TypeScript 友好 |
 | PWA | Service Worker + Manifest | - | Phase 6 引入 | 离线支持和应用安装 |
 | LLM | OpenAI GPT-4, Claude | - | Phase 4 引入 | 智能元数据提取 |
@@ -449,7 +492,7 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 
 项目演进过程中，识别出用户的三种主要使用场景，分别优化了对应的入口：
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                 Scenario A: OCR Recognition                  │
 ├─────────────────────────────────────────────────────────────┤
@@ -504,10 +547,12 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 ### 2. 存储层 (Storage Layer)
 
 **演进历史：**
+
 - v1.0: localStorage (简单，但容量限制 10MB)
 - v2.0: IndexedDB with Dexie.js (Phase 6 重大重构)
 
 **设计目标：**
+
 - 统一的数据访问接口（不暴露底层实现）
 - 透明迁移（用户无感知）
 - 大容量存储（支持大量图书和封面缓存）
@@ -565,6 +610,7 @@ interface Book {
 **关键设计模式：**
 
 1. **异步初始化 Guard Pattern**
+
    ```typescript
    class Storage {
      private initialized = false;
@@ -587,10 +633,12 @@ interface Book {
      }
    }
    ```
+
    - 保证：任何操作前 DB 已初始化完成
    - 性能：已初始化后，guard 是 no-op（`initialized` flag）
 
 2. **避免循环依赖的初始化策略**
+
    ```typescript
    // ❌ Bad: Causes deadlock
    private async init(): Promise<void> {
@@ -607,6 +655,7 @@ interface Book {
    ```
 
 3. **透明迁移策略**
+
    ```typescript
    async function migrateFromLocalStorage() {
      const oldData = localStorage.getItem('books');
@@ -621,6 +670,7 @@ interface Book {
      localStorage.removeItem('books');
    }
    ```
+
    - 幂等性：检查 localStorage 是否存在数据
    - 批量迁移：使用 Promise.all 并行写入
    - 用户无感知：首次启动自动完成
@@ -628,6 +678,7 @@ interface Book {
 ### 3. Service Worker 缓存策略
 
 **设计目标：**
+
 - 静态资源离线可用（快速启动）
 - 外部图片智能缓存（节省流量）
 - 版本化缓存管理（自动清理旧版本）
@@ -696,7 +747,7 @@ self.addEventListener('fetch', (event) => {
 **为什么这样设计？**
 
 | 资源类型 | 策略 | 理由 | Trade-off |
-|---------|------|------|----------|
+| --------- | ------ | ------ | ---------- |
 | HTML/CSS/JS | Cache-first | 版本化构建，内容不变<br>离线优先，快速启动 | 需要版本号管理<br>热更新需刷新 |
 | 封面图片 | Network-first | 图片可能更新<br>优先最新版本 | 首次加载稍慢<br>需要网络 |
 | API 请求 | Network-only | 实时数据<br>不应缓存 | 离线不可用<br>(但数据已存 IndexedDB) |
@@ -706,6 +757,7 @@ self.addEventListener('fetch', (event) => {
 **问题背景：**
 
 Phase 6 迁移到 IndexedDB 后，所有存储操作变为异步：
+
 - 组件构造时需要从 DB 读取数据（异步）
 - 渲染依赖数据加载完成
 - 多个组件并行初始化，存在依赖关系
@@ -713,7 +765,7 @@ Phase 6 迁移到 IndexedDB 后，所有存储操作变为异步：
 
 **解决方案：Promise-based Initialization Chain**
 
-```
+```text
 Application Startup Flow:
 ────────────────────────────────────────────────────────
 
@@ -810,6 +862,7 @@ class App {
 ```
 
 **优势：**
+
 - ✅ 清晰的依赖关系（顺序明确）
 - ✅ 并行初始化独立组件（性能）
 - ✅ 统一的错误处理（try-catch at top level）
@@ -821,7 +874,7 @@ class App {
 
 不强制用户提供 API Key，提供三种模式：
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │           LLM Integration Modes                   │
 ├──────────────────────────────────────────────────┤
@@ -879,7 +932,7 @@ interface VisionLLMService {
 **Cost-Saving Strategy:**
 
 | Feature | Default Mode | Upgrade Option | Cost Ratio |
-|---------|-------------|----------------|------------|
+| --------- | ------------- | ---------------- | ------------ |
 | Smart Paste | Text-only | - | 1x (cheap) |
 | OCR (printed text) | Free OCR.space | Text LLM | 1x |
 | OCR (complex scenes) | Free OCR.space | Vision LLM | 10-50x |
@@ -920,31 +973,37 @@ form.fill(result);
 ```
 
 **为什么提供 Manual Mode？**
+
 - 不是每个用户都有/愿意付费 API
 - LLM 能力快速演进，未来可能有免费选项
 - 教育意义：用户理解 LLM 如何工作
 - 可扩展：未来可接入本地 LLM（Ollama, LM Studio）
-   - HTML, CSS, JS 优先从缓存加载
-   - 快速启动，离线可用
 
-2. **Network-first for images**
-   - 封面图片可能更新，优先获取最新版本
-   - 失败时回退到缓存
+1. **Cache-first for static assets**
 
-3. **版本管理**
+- HTML, CSS, JS 优先从缓存加载
+- 快速启动，离线可用
+
+1. **Network-first for images**
+
+- 封面图片可能更新，优先获取最新版本
+- 失败时回退到缓存
+
+1. **版本管理**
    - Cache name 包含版本号: `book-scanner-v1`
    - 新版本自动清理旧缓存
 
 ### 3. 初始化流程设计
 
 **问题背景：**
+
 - 多个异步初始化需要顺序执行
 - 组件渲染依赖数据初始化完成
 - 避免竞态条件和死锁
 
 **解决方案：严格的初始化链**
 
-```
+```text
 main.ts: initApp()
     │
     ├─ 1. await storage.waitForInit()
@@ -1012,6 +1071,7 @@ class Storage {
 ### 4. PWA 安装体验
 
 **设计目标：**
+
 - 不打扰用户
 - 记住用户选择
 - 适时提醒
@@ -1041,7 +1101,7 @@ class PWAInstallPrompt {
 
 ### 书籍添加流程
 
-```
+```text
 User Action → Modal Input
     │
     ├─ Scenario A: OCR 识别
@@ -1071,7 +1131,7 @@ Render
 
 ### 搜索与过滤流程
 
-```
+```text
 User Input (SearchBar)
     │
     ├─ Title filter: input.value
@@ -1106,17 +1166,20 @@ Update Filters
 **选择：** Vanilla TypeScript
 
 **备选方案：**
+
 - React / Vue / Svelte
 
 **选择理由：**
+
 1. **性能优先：** Zero runtime overhead，bundle size < 100KB
 2. **PWA 特性：** 完全掌控 Service Worker 和初始化流程
 3. **学习成本：** 项目规模小（< 20 组件），不需要复杂状态管理
 4. **离线优先：** 减少依赖，提升离线可靠性
 
 **Trade-offs：**
+
 | 维度 | Vanilla TS | React/Vue | 最终选择 |
-|------|-----------|----------|---------|
+| ------ | ----------- | ---------- | --------- |
 | Bundle size | 50-100KB | 200-500KB | Vanilla ✅ |
 | 开发速度 | 中等 | 快 | - |
 | 类型安全 | 强（TS） | 强（TS） | - |
@@ -1124,6 +1187,7 @@ Update Filters
 | PWA 控制 | 完全 | 框架抽象 | Vanilla ✅ |
 
 **适用场景：**
+
 - ✅ 中小型应用
 - ✅ 性能敏感（PWA）
 - ❌ 大型 SPA（100+ 组件）
@@ -1135,31 +1199,36 @@ Update Filters
 **选择：** IndexedDB with Dexie.js
 
 **触发原因：**
+
 - 用户报告"存储已满"错误
 - 无法缓存封面图片（Blob）
 - 希望离线模式更可靠
 
 **备选方案：**
+
 | 方案 | 容量 | 二进制支持 | 查询能力 | 学习曲线 |
-|------|------|----------|---------|---------|
+| ------ | ------ | ---------- | --------- | --------- |
 | localStorage | 10MB | ❌ | 简单 | 低 |
 | IndexedDB raw | 50MB-GB | ✅ | 索引+查询 | 高 |
 | Dexie.js | 50MB-GB | ✅ | 简洁 API | 中 |
 | SQLite WASM | 无限 | ✅ | SQL 强大 | 高 |
 
 **选择 IndexedDB + Dexie.js 理由：**
+
 1. 浏览器原生支持（不需要 polyfill）
 2. Dexie.js 简化 API（像 Promise 而非回调）
 3. TypeScript 类型支持良好
 4. 社区成熟（活跃维护）
 
 **迁移成本：**
+
 - 修改 7 个文件
 - 18 个 TypeScript 编译错误（忘记 await）
 - 2 个初始化竞态条件 bug
 - 总工作量：约 1 天
 
 **成果：**
+
 - ✅ 存储容量 10MB → 50MB+
 - ✅ 支持封面图片缓存
 - ✅ 用户透明迁移（无感知）
@@ -1172,6 +1241,7 @@ Update Filters
 **选择：** 混合策略（Cache-first + Network-first）
 
 **备选方案：**
+
 1. **全部 Cache-first**
    - ✅ 最快启动
    - ❌ 图片永不更新
@@ -1188,12 +1258,13 @@ Update Filters
 **为什么混合？**
 
 | 资源 | 更新频率 | 离线重要性 | 策略 | 理由 |
-|------|---------|----------|------|------|
+| ------ | --------- | ---------- | ------ | ------ |
 | HTML/JS/CSS | 版本发布时 | 高 | Cache-first | 版本化构建，内容哈希 |
 | 封面图片 | 偶尔 | 中 | Network-first | 允许更新，失败回退 |
 | API 数据 | 实时 | 低 | Network-only | 不应缓存，已存 IndexedDB |
 
 **实现细节：**
+
 ```javascript
 // sw.js
 if (url.startsWith(self.origin)) {
@@ -1210,13 +1281,14 @@ if (url.startsWith(self.origin)) {
 **选择：** 三种模式（Auto / Manual / Skip）
 
 **问题：**
+
 - LLM API 需要付费（OpenAI/Anthropic）
 - 不想因为付费门槛阻止用户使用
 - Vision API 昂贵（10-50x Text API）
 
 **解决方案：分层设计**
 
-```
+```text
 Layer 1: Free Fallback (OCR.space)
     ├─ 免费，但准确度一般
     └─ 适合印刷文字，简单场景
@@ -1238,13 +1310,14 @@ Layer 4: Manual Mode (Free)
 **权衡分析：**
 
 | 模式 | 用户成本 | 操作步骤 | 准确度 | 适用场景 |
-|------|---------|---------|--------|---------|
+| ------ | --------- | --------- | -------- | --------- |
 | Auto (Vision) | $0.05/本 | 1 步 | 最高 | 复杂图片 |
 | Auto (Text) | $0.001/本 | 1 步 | 高 | 文字提取 |
 | Manual | $0 | 3 步 | 高 | 无 API Key |
 | Skip | $0 | 1 步 | - | 手动输入 |
 
 **设计哲学：**
+
 - AI 是增强，不是必需
 - 用户掌握成本和体验的平衡
 - 降级方案永远可用
@@ -1256,10 +1329,12 @@ Layer 4: Manual Mode (Free)
 **Commit:** `feat: make ISBN field optional in manual book entry`
 
 **动机：**
+
 - 用户反馈：古籍、手稿、电子笔记无 ISBN
 - 限制 ISBN 必填 = 限制使用场景
 
 **Before:**
+
 ```typescript
 interface Book {
   isbn: string;  // Required
@@ -1268,6 +1343,7 @@ interface Book {
 ```
 
 **After:**
+
 ```typescript
 interface Book {
   isbn?: string;  // Optional
@@ -1276,11 +1352,13 @@ interface Book {
 ```
 
 **影响范围：**
+
 - API 查询：ISBN 存在时才调用
 - 外部链接：无 ISBN 时使用书名搜索
 - 导出功能：ISBN 列可为空
 
 **设计原则：**
+
 - 用户场景 > 技术限制
 - 数据模型应适应真实世界
 
@@ -1291,6 +1369,7 @@ interface Book {
 **选择：** 独立 BulkEditModal + 选择模式
 
 **备选方案：**
+
 1. **内联编辑**
    - 每本书旁边显示编辑按钮
    - ❌ 占用空间，视觉混乱
@@ -1301,7 +1380,8 @@ interface Book {
    - ✅ 清晰的状态转换
 
 **实现流程：**
-```
+
+```text
 Normal Mode
     ↓ Click "Bulk Edit" button
 Bulk Edit Mode (UI changes)
@@ -1323,6 +1403,7 @@ Normal Mode (restored)
 ```
 
 **为什么独立模式？**
+
 - 避免误操作（明确进入/退出）
 - 清晰的视觉反馈
 - 批量操作与单本操作互不干扰
@@ -1334,6 +1415,7 @@ Normal Mode (restored)
 **最复杂的技术决策：Phase 6 重构的核心**
 
 **问题：**
+
 ```typescript
 // Bad: Race condition
 const app = new App();
@@ -1416,6 +1498,7 @@ private async init() {
 ```
 
 **设计原则：**
+
 - Init 方法不调用需要 ensureInit 的公开方法
 - 直接访问底层资源（DB/DOM）
 - 公开方法永远加 Guard
@@ -1443,12 +1526,14 @@ private async init() {
 ### 如果重新开始 🔄
 
 **Would Keep:**
+
 - Vanilla TypeScript（性能和控制力）
 - IndexedDB from day 1（避免迁移）
 - 三种录入入口设计（满足不同场景）
 - LLM Manual mode（降低门槛）
 
 **Would Change:**
+
 - 添加单元测试（至少 Storage 层）
 - 更早引入 Service Worker（PWA 特性）
 - 使用 Workbox（简化 SW 开发）
@@ -1461,7 +1546,7 @@ private async init() {
 ### Lighthouse Score (PWA Audit)
 
 | 指标 | Phase 1 (MVP) | Phase 6 (PWA) | 目标 |
-|------|--------------|--------------|------|
+| ------ | -------------- | -------------- | ------ |
 | Performance | 85 | 95+ | >90 |
 | Accessibility | 92 | 95+ | >90 |
 | Best Practices | 87 | 95+ | >90 |
@@ -1471,13 +1556,14 @@ private async init() {
 ### 加载性能
 
 | 指标 | localStorage | IndexedDB | 改进 |
-|------|-------------|-----------|------|
+| ------ | ------------- | ----------- | ------ |
 | FCP (First Contentful Paint) | 1.2s | 0.8s | ⬇️ 33% |
 | LCP (Largest Contentful Paint) | 2.5s | 1.5s | ⬇️ 40% |
 | TTI (Time to Interactive) | 3.0s | 2.0s | ⬇️ 33% |
 | Bundle Size | 95KB | 120KB | ⬆️ 26% (Dexie) |
 
 **为什么 IndexedDB 更快？**
+
 - 异步非阻塞（localStorage 同步阻塞主线程）
 - 离线时从 Service Worker cache 加载（< 100ms）
 - 图片缓存在本地（无网络请求）
@@ -1489,6 +1575,7 @@ private async init() {
 ### Phase 8: 书单功能 (2025-12-30 至 2026-01-01) ✅
 
 **核心目标：**
+
 - 支持多个书单（类似书架或阅读列表）
 - 书籍可以同时属于多个书单
 - 导入/导出书单以便分享和备份
@@ -1497,6 +1584,7 @@ private async init() {
 **问题背景：**
 
 用户希望将藏书分类管理：
+
 - 不同主题的阅读列表（如"科技书单"、"小说精选"）
 - 不同状态的书籍（如"待读"、"已读"、"收藏"）
 - 与朋友分享推荐书单
@@ -1516,6 +1604,7 @@ private async init() {
 2. **导入/导出格式**
    - 选择：JSON 格式，包含完整书籍元数据
    - 结构：
+
      ```json
      {
        "version": 1,
@@ -1523,6 +1612,7 @@ private async init() {
        "books": [{...}, {...}]
      }
      ```
+
    - 理由：
      - 自包含（无需依赖外部数据源）
      - 可读性强（便于调试和分享）
@@ -1542,9 +1632,11 @@ private async init() {
 **三阶段实施计划：**
 
 #### Phase 1: Core Functionality ✅
+
 实现时间：2025-12-30
 
 **功能：**
+
 - 数据模型：BookList interface，索引优化
 - CRUD 操作：创建、编辑、删除书单
 - Book List Manager Modal：集中管理界面
@@ -1554,6 +1646,7 @@ private async init() {
 - BookCard 集成：单本书籍添加/移除按钮
 
 **数据结构：**
+
 ```typescript
 interface BookList {
   id: string;              // UUID
@@ -1566,14 +1659,17 @@ interface BookList {
 ```
 
 **技术亮点：**
+
 - IndexedDB 版本升级（v1 → v2）
 - 书单选择器与主过滤系统深度集成
 - 删除书籍时自动从所有书单移除
 
 #### Phase 2: Enhanced Operations ✅
+
 实现时间：2025-12-30
 
 **功能：**
+
 - Bulk Edit 扩展：批量添加/移除到多个书单
 - BookCard 增强：下拉菜单显示所属书单，快速切换
 - Google Maps 风格 UI：Collection sidebar
@@ -1584,7 +1680,8 @@ interface BookList {
   - 实时统计显示（书籍数量、上次更新）
 
 **UI 创新：**
-```
+
+```text
 ┌─────────────────────────────────────┬─────────┐
 │  Book List (150 books)             │ [Menu] │
 │  ───────────────────────────────    │         │
@@ -1598,19 +1695,23 @@ interface BookList {
 ```
 
 **性能优化：**
+
 - 批量操作使用 `bulkAdd()` 单次数据库事务
 - Collection sidebar 延迟渲染（首次点击时初始化）
 
 #### Phase 3.1: Export ✅
+
 实现时间：2025-12-31
 
 **功能：**
+
 - 导出书单为 JSON 文件
 - 包含完整书籍元数据（避免依赖本地数据）
 - 版本控制（`version: 1` 字段，未来扩展）
 - BookListManager 集成导出按钮
 
 **导出格式：**
+
 ```json
 {
   "version": 1,
@@ -1631,19 +1732,23 @@ interface BookList {
 ```
 
 #### Phase 3.2: Import with Conflict Preview & Undo ✅
+
 实现时间：2025-12-31 至 2026-01-01
 
 **核心挑战：数据冲突处理**
 
 导入书单时可能遇到：
+
 1. **ISBN 冲突**：相同 ISBN，但元数据不同（标题、作者、出版社等）
 2. **书单名称冲突**：导入书单名称与现有书单重复
 
 **解决方案：三步走策略**
 
 **Step 1: 预检测与预览**
+
 - 扫描待导入书籍，识别冲突
 - 生成 `ConflictReport`：
+
   ```typescript
   interface ConflictReport {
     bookConflicts: Array<{
@@ -1657,9 +1762,11 @@ interface BookList {
     };
   }
   ```
+
 - ImportPreviewModal 显示冲突详情
 
 **Step 2: 用户决策**
+
 - 为每个冲突选择解决策略：
   - `keep`：保留现有数据
   - `replace`：使用导入数据覆盖
@@ -1670,6 +1777,7 @@ interface BookList {
   - `replace`：替换现有书单
 
 **Step 3: 执行与快照**
+
 - 创建 `ImportSnapshot`（保存原始状态，支持撤回）
 - 执行导入操作
 - 失败时自动回滚
@@ -1700,22 +1808,26 @@ async function restoreSnapshot(snapshot: ImportSnapshot) {
 ```
 
 **关键技术点：**
+
 - 使用底层 `db.put()` 而非高层 API（保留时间戳）
 - 保存完整对象而非部分字段（精确恢复）
 - 原子操作：快照创建、执行、恢复全程事务化
 
 **UI/UX 优化：**
+
 - 冲突项折叠展开（节省空间）
 - 字段差异高亮显示（红色删除线 vs 绿色加粗）
 - 批量选择策略（对所有冲突应用相同策略）
 - "撤回上次导入"按钮（Session Storage 保存快照）
 
 #### Phase 3.3: Advanced Conflict Resolution ✅
+
 实现时间：2026-01-01
 
 **核心挑战：字段级精细控制**
 
 Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
+
 - 保留现有书名，但更新作者信息
 - 使用导入的出版社，但保留自定义分类
 - 混合合并多个字段
@@ -1725,6 +1837,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 **Phase 3.3.1: Enhanced Resolution Options ✅**
 
 1. **字段级策略选择**
+
    ```typescript
    interface Resolution {
      strategy: 'keep' | 'replace' | 'detailed';
@@ -1742,6 +1855,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
      - 支持"保留未解决"状态（稍后手动编辑）
 
 3. **智能默认策略**
+
    ```typescript
    const strategies = {
      title: 'keep',          // 书名通常更准确
@@ -1791,6 +1905,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
      - **DiffViewer**：仅对 unresolved 字段显示
 
 3. **视觉设计**
+
    ```
    📖 Book Title Conflict
    ├─ Title:        [Keep ▼]
@@ -1818,6 +1933,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 **技术挑战与解决：**
 
 **Challenge 1: DiffViewer 组件生命周期**
+
 - 问题：用户改变字段策略后，其他字段的 diff view 消失
 - 根因：`updateConflictPreview()` 重建 HTML 摧毁了所有 DOM 元素
 - 解决：提取 `initializeExpandedConflict()` 方法
@@ -1826,14 +1942,17 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
   - 使用 `expandedConflicts: Set<number>` 追踪状态
 
 **Challenge 2: i18n 键一致性**
+
 - 问题：翻译键在多处使用不一致（`book.*` vs `bookForm.label.*`）
 - 解决：统一使用 `bookForm.label.*` 命名空间
   - 在 `renderConflictDetails()` 中修正
   - 在 `initializeExpandedConflict()` 中修正
 
 **Challenge 3: 策略值映射**
+
 - 问题：HTML `data-strategy="non-empty"` 与 i18n 键 `nonEmpty` 不匹配
 - 解决：创建显式映射表 `strategyI18nMap`
+
   ```typescript
   const strategyI18nMap = {
     'keep': 'keep',
@@ -1845,16 +1964,19 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
   ```
 
 **性能优化：**
+
 - DiffViewer 仅在 `unresolved` 状态创建（避免不必要实例）
 - 字段策略变更仅更新受影响区域（不重建整个 modal）
 - Myers 算法优化（Early termination，空间优化）
 
 **代码质量：**
+
 - DiffViewer 独立组件（447 lines，单一职责）
 - 两阶段渲染：HTML 生成（纯函数） + 组件 hydration（副作用）
 - TypeScript strict mode（完整类型安全）
 
 **最终成果：**
+
 - ✅ 支持 9 种智能合并策略
 - ✅ Git-style diff 可视化
 - ✅ 字段级精细控制
@@ -1862,6 +1984,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 - ✅ 详尽的 i18n 支持（英文 + 中文）
 
 **文档完整性：**
+
 - 设计文档：`docs/book-list-feature-design.md` (1199 lines)
 - 技术笔记：`TECHNICAL_NOTES.md` 新增章节（300+ lines）
   - Import Snapshot & Undo Mechanism
@@ -1872,11 +1995,13 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 ### Phase 9: 云端同步（规划中）
 
 **需求：**
+
 - 多设备访问
 - 数据备份
 - 协作共享（家庭图书馆）
 
 **技术方案：**
+
 ```
 选项 A: Google Drive API
   ✅ 免费 15GB
@@ -1895,6 +2020,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 ```
 
 **倾向选择：** A（Google Drive），理由：
+
 - 用户已有账号
 - 不增加服务器成本
 - 备份可靠（Google 基础设施）
@@ -1914,6 +2040,7 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫描工具，演变为功能完整的 PWA 藏书管理应用。
 
 **核心价值主张：**
+
 1. **快速录入：** 3 种方式（条形码/OCR/搜索）+ AI 辅助
 2. **离线优先：** PWA + IndexedDB + Service Worker
 3. **零门槛：** 无需付费 API，Manual LLM mode
@@ -1921,6 +2048,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 5. **用户数据掌控：** 本地存储，可导出，无供应商锁定
 
 **技术亮点：**
+
 - Vanilla TypeScript（零依赖，高性能）
 - IndexedDB（大容量，支持 Blob）
 - Service Worker（离线缓存策略）
@@ -1931,6 +2059,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 - Myers 算法 diff 实现（字词级差异可视化）
 
 **项目统计：**
+
 - 代码行数：~5000 LOC（包含 DiffViewer 447 lines）
 - 组件数量：20+ 个
 - 数据表：3 个（books, bookLists, settings, imageCache）
@@ -1940,7 +2069,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 **演进历程总结：**
 
 | Phase | 时间 | 核心功能 | 技术突破 |
-|-------|------|---------|---------|
+| ------- | ------ | --------- | --------- |
 | Phase 1 | 初始 | 条形码扫描 + ISBN 查询 | MVP 验证 |
 | Phase 2 | 早期 | 移动端优化 | iPhone 对焦、视口适配 |
 | Phase 3 | 早期 | 多入口（OCR/标题搜索） | API 聚合层 |
@@ -1951,6 +2080,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 | Phase 8 | 2025-12-30 至 2026-01-01 | 书单功能（三阶段） | 引用架构、冲突解决、Git-style diff |
 
 **当前版本特性：**
+
 - ✅ 多种书籍录入方式（条形码、OCR、标题搜索、Smart Paste）
 - ✅ 完整的分类管理（Category + Book List 双维度）
 - ✅ 书单导入/导出（带智能冲突解决）
@@ -1961,6 +2091,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 - 浏览器兼容：Chrome/Edge/Safari（iOS 13.4+）
 
 **适用场景：**
+
 - ✅ 个人藏书管理（家庭图书馆）
 - ✅ 快速记录书单推荐
 - ✅ 离线场景（书店、图书馆）
@@ -1980,6 +2111,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 **决策：** 使用 IndexedDB (via Dexie.js)
 
 **理由：**
+
 - **容量限制：** localStorage 限制 5-10MB，IndexedDB 可达 50MB-无限
 - **数据类型：** localStorage 只能存字符串，IndexedDB 支持 Blob（封面图片）
 - **性能：** IndexedDB 异步操作，不阻塞 UI
@@ -1987,6 +2119,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 - **PWA 需求：** 大量图书和封面需要大容量存储
 
 **Trade-offs：**
+
 - ❌ API 更复杂（通过 Dexie.js 缓解）
 - ❌ 异步操作需要重构代码（加 await）
 - ✅ 面向未来的扩展性
@@ -1997,12 +2130,14 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 **决策：** Vanilla TypeScript + Custom Components
 
 **理由：**
+
 - **性能：** 零运行时依赖，bundle size 小，加载快
 - **PWA 特性：** 框架对 Service Worker 支持不一定最优
 - **学习成本：** 项目规模小，不需要复杂状态管理
 - **控制力：** 完全掌控 DOM 操作和渲染时机
 
 **适用场景：**
+
 - ✅ 中小型应用（< 20 个组件）
 - ✅ 性能敏感应用（PWA）
 - ❌ 大型应用需要框架生态
@@ -2014,12 +2149,13 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 **理由：**
 
 | 资源类型 | 策略 | 原因 |
-|---------|------|------|
+| --------- | ------ | ------ |
 | HTML/CSS/JS | Cache-first | 静态资源，版本化管理，快速启动 |
 | 封面图片 | Network-first | 可能更新，优先获取最新，失败回退缓存 |
 | API 请求 | Network-only | 实时数据，不应缓存 |
 
 **Alternative considered：**
+
 - ❌ 全部 Network-first：离线完全不可用
 - ❌ 全部 Cache-first：图片永远不更新
 - ✅ 混合策略：平衡性能和实时性
@@ -2029,6 +2165,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 **决策：** 使用 Promise-based initialization chain
 
 **理由：**
+
 - **问题：** 多个异步依赖（DB、组件渲染、图片加载）
 - **方案：**
   - 每个模块 expose `waitForInit()` 方法
@@ -2036,6 +2173,7 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
   - 使用 Promise.all 并行初始化独立模块
 
 **Alternatives considered：**
+
 - ❌ Callback hell：难以维护
 - ❌ 事件驱动：时序难以保证
 - ✅ Promise chain：清晰的依赖关系
@@ -2076,6 +2214,7 @@ try {
 ```
 
 **原则：**
+
 - 存储错误：继续运行，降级到内存模式
 - 网络错误：友好提示，允许重试
 - 关键错误：显示错误 UI，提供重载按钮
@@ -2126,21 +2265,25 @@ try {
 ## 测试策略
 
 ### 单元测试
+
 - Storage API 测试
 - 数据迁移测试
 - 搜索过滤逻辑测试
 
 ### 集成测试
+
 - 初始化流程测试
 - API 调用测试
 - Service Worker 缓存测试
 
 ### E2E 测试
+
 - 完整书籍添加流程
 - 离线模式测试
 - PWA 安装测试
 
 ### 兼容性测试
+
 - Chrome/Edge (Desktop + Mobile)
 - Safari (Desktop + iOS)
 - Firefox
@@ -2249,6 +2392,7 @@ npm run deploy
 ### Phase 6: 国际化 (i18n) (2025-12-28)
 
 **核心目标：**
+
 - 支持多语言界面切换
 - 保持零依赖原则
 - 最小化 bundle size 影响
@@ -2274,6 +2418,7 @@ npm run deploy
 **技术实现：**
 
 1. **i18n 核心模块** (`src/modules/i18n.ts`)
+
    ```typescript
    class I18n {
      private locale: Locale = 'en';
@@ -2303,6 +2448,7 @@ npm run deploy
    ```
 
 2. **语言包结构** (`src/locales/*.ts`)
+
    ```typescript
    export const en = {
      'navbar.title': 'Book Scanner',
@@ -2318,6 +2464,7 @@ npm run deploy
    - 参数支持：`'found {count} results'` → `{count: 5}`
 
 3. **组件集成模式**
+
    ```typescript
    import { i18n } from '../modules/i18n';
 
@@ -2529,18 +2676,18 @@ const [en, zhCN, ja] = await Promise.all([
   ```
 
 - **添加新 Category**：
-  - 输入框 + [+ Add] 按钮
+  - 输入框 + \[+ Add\] 按钮
   - 验证：不能为空、不能重复
   - 添加后自动排序刷新列表
 
 - **重命名 Category**：
-  - 点击 [✏️ Edit] 按钮
+  - 点击 \[✏️ Edit\] 按钮
   - 原地变为输入框：`[Technology___] [✓] [✕]`
   - 验证：不能为空、不能与其他重名
   - 保存后更新所有关联书籍的 categories 数组
 
 - **删除 Category**：
-  - 点击 [🗑️ Delete] 按钮
+  - 点击 \[🗑️ Delete\] 按钮
   - 确认对话框：
 
     ```
@@ -2581,7 +2728,7 @@ const [en, zhCN, ja] = await Promise.all([
 
 - **已选标签显示**：
   - 输入框内显示已选的 Categories（类似 email to: 字段）
-  - 每个标签有 [×] 移除按钮
+  - 每个标签有 \[×\] 移除按钮
   - 标签可以换行（`flex-wrap: wrap`）
   - 最大高度限制：桌面 200px，移动 120px
   - 超出高度后框内滚动
@@ -2615,7 +2762,7 @@ const [en, zhCN, ja] = await Promise.all([
 
   - **两种触发方式**：
     1. 按 Enter 键
-    2. 点击右侧 [+] 按钮
+    2. 点击右侧 \[+\] 按钮
   - 创建后：
     1. 保存到数据库（包含 metadata）
     2. 立即作为标签添加到输入框
@@ -2623,7 +2770,7 @@ const [en, zhCN, ja] = await Promise.all([
     4. 保持焦点（支持连续添加）
 
 - **移除标签**：
-  - 点击标签的 [×] 按钮
+  - 点击标签的 \[×\] 按钮
   - 标签从输入框消失
   - 该 Category 重新出现在下拉列表（按排序规则）
   - lastUsedAt 不变（只有添加时才更新）
@@ -2867,12 +3014,14 @@ async deleteCategory(name: string): Promise<void> {
    - 被删除分类自动切换到"全部"
 
 **技术亮点：**
+
 - 事件委托模式解决重复绑定问题（详见 TECHNICAL_NOTES.md）
 - 增量 DOM 更新保持焦点与光标位置
 - 原子性批量操作避免数据竞争
 - 智能排序算法优化用户体验
 
 **用户体验改进：**
+
 - ✅ 输入时焦点不再丢失
 - ✅ 常用分类自动排前
 - ✅ 批量操作显著提速
@@ -2880,6 +3029,7 @@ async deleteCategory(name: string): Promise<void> {
 - ✅ 移动端软键盘适配良好
 
 **关键学习：**
+
 - 事件委托是动态 DOM 操作的标准模式
 - 增量更新优于完全重建（保持状态）
 - 批量原子操作提升性能和数据一致性

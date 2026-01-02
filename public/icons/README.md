@@ -12,8 +12,9 @@ Please generate PWA icons with the following sizes and place them in this direct
 - icon-512x512.png
 
 You can use online tools like:
-- https://realfavicongenerator.net/
-- https://www.pwabuilder.com/imageGenerator
+
+- <https://realfavicongenerator.net/>
+- <https://www.pwabuilder.com/imageGenerator>
 
 Or use ImageMagick to generate from a source SVG/PNG:
 

@@ -3,6 +3,7 @@
 ## Event Delegation Pattern in CategoryManagerModal
 
 ### Problem Context
+
 在 CategoryManagerModal 的初始实现中，由于每次 UI 更新（搜索输入、切换编辑模式、保存修改等）都会调用 `attachEventListeners()`，导致同一个 DOM 元素上绑定了多个事件监听器。这会造成：
 
 - 按钮点击时触发多次回调
@@ -10,6 +11,7 @@
 - 编辑模式在 true/false 间反复切换
 
 ### Root Cause
+
 ```typescript
 // Anti-pattern: Re-binding on every update
 searchInput.addEventListener('input', () => {
@@ -22,6 +24,7 @@ searchInput.addEventListener('input', () => {
 这种模式在函数式编程中很常见（数据变化 → 重新渲染 → 重新绑定），但在命令式 DOM 操作中会导致监听器累积。
 
 ### Solution: Event Delegation
+
 事件委托是 DOM 操作的标准模式，核心思想是：
 
 1. **仅在初始化时绑定一次**：在 `render()` 中调用 `attachEventListeners()`
@@ -54,6 +57,7 @@ attachEventListeners(): void {
 ### Implementation Details
 
 #### 1. Checkbox Events (change)
+
 ```typescript
 categoryList.addEventListener('change', (e) => {
   const target = e.target as HTMLElement;
@@ -71,6 +75,7 @@ categoryList.addEventListener('change', (e) => {
 ```
 
 #### 2. Button Clicks (click)
+
 ```typescript
 categoryList.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
@@ -96,6 +101,7 @@ categoryList.addEventListener('click', (e) => {
 ```
 
 #### 3. Toolbar Buttons
+
 ```typescript
 const toolbar = this.modalElement?.querySelector('.category-manager-toolbar');
 toolbar.addEventListener('click', async (e) => {
@@ -112,6 +118,7 @@ toolbar.addEventListener('click', async (e) => {
 ```
 
 #### 4. Search Input (Special Case)
+
 搜索输入框是唯一不需要重复绑定的元素（始终存在），因此可以直接绑定：
 
 ```typescript
@@ -124,6 +131,7 @@ searchInput.addEventListener('input', (e) => {
 ```
 
 ### Key Method: `renderCategoryListOnly()`
+
 为了支持搜索输入的 UI 更新，新增了这个方法：
 
 ```typescript
@@ -144,7 +152,7 @@ private renderCategoryListOnly(): void {
 ### Benefits
 
 | Aspect | Before (Re-binding) | After (Delegation) |
-|--------|---------------------|-------------------|
+| ------ | ------------------- | ----------------- |
 | **Listeners/Element** | N (increases with updates) | 1 (constant) |
 | **Memory Usage** | ↑ Growing | ✓ Constant |
 | **Bug Risk** | High (duplicate handlers) | Low (single handler) |
@@ -154,17 +162,20 @@ private renderCategoryListOnly(): void {
 ### When to Use Event Delegation
 
 **✅ Use when:**
+
 - Dynamic content (elements added/removed frequently)
 - List items with repeated actions
 - Modal dialogs with conditional UI states
 - Any scenario where DOM updates are common
 
 **❌ Don't use when:**
+
 - Static UI with no DOM changes
 - Need specific event.target checks (can get complex)
 - Performance-critical scenarios (delegation adds slight overhead)
 
-### Benefits
+### User Experience Benefits
+
 对于 CategoryManagerModal 这种场景（通常 < 100 个分类项）：
 
 - **Before**: 重复监听器（数量取决于用户操作次数）
@@ -172,11 +183,13 @@ private renderCategoryListOnly(): void {
 - **Maintenance**: 显著改善（避免了难以追踪的 bug）
 
 ### Related Patterns
+
 - **React**: 自动处理事件委托（所有事件在根节点）
 - **Vue**: 类似，通过虚拟 DOM diff 优化
 - **Vanilla JS**: 需要手动实现（如本项目）
 
 ### Testing Strategy
+
 验证事件委托正确性：
 
 1. **开发者工具 → Elements → Event Listeners**
@@ -198,7 +211,9 @@ private renderCategoryListOnly(): void {
 ## CategoryTagInput: Incremental DOM Updates
 
 ### Challenge
+
 CategoryTagInput 是一个复杂的类微信标签输入组件，包含：
+
 - 已选标签的显示与移除
 - 下拉列表的过滤与选择
 - 新分类的创建
@@ -212,6 +227,7 @@ CategoryTagInput 是一个复杂的类微信标签输入组件，包含：
 - **用户体验差**：输入时不断失去焦点
 
 ### Solution: Incremental Updates
+
 采用增量更新策略，仅更新需要变化的 DOM 部分：
 
 ```typescript
@@ -253,6 +269,7 @@ private updateTagDisplay(): void {
 ```
 
 ### Focus Preservation
+
 为了确保焦点不丢失，专门实现了焦点管理机制：
 
 ```typescript
@@ -278,7 +295,7 @@ private updateDropdownDisplay(): void {
 ### Comparison
 
 | Operation | Full Rebuild | Incremental Update |
-|-----------|--------------|-------------------|
+| --------- | ------------ | ------------------ |
 | Add tag | Slower | Faster |
 | Remove tag | Slower | Faster |
 | Filter search | Slower | Faster |
@@ -286,6 +303,7 @@ private updateDropdownDisplay(): void {
 | Scroll reset | ❌ Yes | ✅ No |
 
 ### Trade-offs
+
 - **Pros**:
   - 焦点和光标位置保持
   - 更流畅的用户体验
@@ -301,6 +319,7 @@ private updateDropdownDisplay(): void {
 ## Batch Operations & Atomicity
 
 ### Problem: Race Conditions in Category Deletion
+
 删除分类时需要两个步骤：
 
 1. 从所有书籍中移除该分类
@@ -318,6 +337,7 @@ for (const category of categoriesToDelete) {
 ```
 
 **问题**：
+
 - 性能差（串行操作导致总时间线性增长）
 - 数据竞争：多个操作同时读写同一数据
 - 不可回滚：部分成功、部分失败时难以恢复
@@ -357,6 +377,7 @@ async deleteCategoriesBatch(names: string[]): Promise<void> {
 ### Key Design Decisions
 
 #### 1. Update Order: Books First, Metadata Second
+
 ```typescript
 // ✅ Correct order
 // Step 1: Update books
@@ -368,10 +389,12 @@ async deleteCategoriesBatch(names: string[]): Promise<void> {
 ```
 
 **Reasoning**:
+
 - 如果书籍更新失败 → 元数据还没改 → 可以重试
 - 如果元数据更新失败 → 书籍已经更新 → 也可以接受（只是元数据冗余）
 
 #### 2. Parallel Book Updates
+
 ```typescript
 await Promise.all(
   booksToUpdate.map(book => db.books.put(book))
@@ -388,6 +411,7 @@ for (const book of booksToUpdate) {
 对于 IndexedDB，并行写入是安全的（事务隔离）。
 
 #### 3. Set for Lookup Performance
+
 ```typescript
 const namesToDelete = new Set(names); // O(1) lookup
 // vs.
@@ -418,6 +442,7 @@ try {
 ```
 
 **Design principles**:
+
 - 用户看到的：友好的错误提示
 - 开发者看到的：详细的 console.error
 - 系统状态：允许重试，不留半成品数据
@@ -427,6 +452,7 @@ try {
 ## Smart Sorting Algorithm
 
 ### Three-tier Sorting Logic
+
 Categories are sorted by three criteria in order:
 
 ```typescript
@@ -451,14 +477,17 @@ categoriesWithCount.sort((a, b) => {
 ### Rationale
 
 #### Tier 1: lastUsedAt (Most Important)
+
 **用户行为**：最近用过的分类最可能再次使用
 
 **场景**：
+
 - 用户正在录入某个主题的书籍
 - 连续添加 10 本 "科技" 类书籍
 - "科技" 应该持续排在最前面
 
-**实现**：
+**实现**:
+
 ```typescript
 // Update lastUsedAt when adding/editing books
 async touchCategory(name: string): Promise<void> {
@@ -471,21 +500,26 @@ async touchCategory(name: string): Promise<void> {
 ```
 
 #### Tier 2: bookCount (Secondary)
+
 **用户行为**：包含大量书籍的分类是重要分类
 
 **场景**：
+
 - "Fiction" 有 100 本书
 - "Biography" 有 5 本书
 - 用户可能更常操作 "Fiction"
 
-**权衡**：
+**权衡**:
+
 - 不使用 createdAt（创建时间与重要性无关）
 - 不使用 editCount（增加复杂度，收益有限）
 
 #### Tier 3: Alphabetical (Fallback)
+
 **用户行为**：当其他因素相同时，字母顺序便于查找
 
-**特殊处理**：
+**特殊处理**:
+
 ```typescript
 localeCompare(b.name, 'zh-CN', {
   sensitivity: 'base'
@@ -500,13 +534,14 @@ localeCompare(b.name, 'zh-CN', {
 ### Edge Cases
 
 | Case | Behavior |
-|------|----------|
+| ---- | -------- |
 | Same lastUsedAt & bookCount | Alphabetical |
 | lastUsedAt = 0 (never used) | Grouped at end, sorted by bookCount |
 | Empty category (bookCount = 0) | Valid, sorted by lastUsedAt |
 | Chinese + English mixed | Chinese by pinyin, English by ASCII |
 
 ### Implementation Notes
+
 - Sorting operation is efficient for typical category counts
 - bookCount is computed on demand when needed for display
 
@@ -514,8 +549,10 @@ localeCompare(b.name, 'zh-CN', {
 
 ## Import Snapshot & Undo Mechanism
 
-### Challenge
+### Design Challenge
+
 书单导入功能需要支持撤回操作，要求能够精确恢复到导入前的状态，包括：
+
 - 删除新创建的书单和书籍
 - 恢复被替换的书单
 - 恢复被修改的书籍元数据
@@ -523,6 +560,7 @@ localeCompare(b.name, 'zh-CN', {
 - **关键：保持所有时间戳不变（书单在列表中的顺序不应改变）**
 
 ### Initial Approach (Flawed)
+
 最初使用增量重建策略：
 
 ```typescript
@@ -548,15 +586,18 @@ async restoreModifiedList(listId: string, originalBooks: BookInList[]) {
 ```
 
 **问题**：
+
 1. 使用业务层 API（`addBookToList` 等）会触发自动时间戳更新
 2. 需要手动在最后恢复时间戳（复杂且容易遗漏）
 3. 多次数据库操作，性能差且不够原子化
 4. 代码冗长（~50 行）且易出错
 
 ### Evolution: Why Not Direct Rollback?
+
 用户提问：为什么不直接回滚数据？IndexedDB 支持事务为什么还要一步步重建？
 
 **答案**：完全可以！这是设计演进中的技术债：
+
 - 最初过度依赖高层 API，想保持"业务逻辑一致性"
 - 但撤回本质是**数据恢复**，不应触发业务逻辑
 - IndexedDB/Dexie.js 虽然不支持 MVCC，但可以通过应用层快照实现精确恢复
@@ -587,21 +628,23 @@ async function restoreSnapshot(snapshot: ImportSnapshot) {
 }
 ```
 
-**优势**：
-1. 代码从 ~50 行减少到 ~5 行
+**优势**：1. 代码从 ~50 行减少到 ~5 行
 2. 时间戳自动保留，无需手动恢复
 3. 原子操作，一次 `put` 完成
 4. 避免触发业务逻辑（如自动更新 `updatedAt`）
 5. 更容易理解和维护
 
 ### Key Insight
+
 在撤回/恢复场景中：
+
 - **高层 API**（`addBookToList`）→ 适合业务操作，会更新时间戳
 - **底层 API**（`db.put`）→ 适合数据恢复，精确覆盖所有字段
 
 选择正确的抽象层次至关重要。
 
-### Implementation Notes
+### Implementation Strategy
+
 - `createSnapshot` 在导入前保存完整状态（深拷贝）
 - `executeImport` 执行导入时填充 snapshot（记录新增 ID）
 - `restoreSnapshot` 直接用保存的数据覆盖（不经过业务层）
@@ -739,7 +782,7 @@ private updateConflictPreview(): void {
 }
 ```
 
-### Key Design Decisions
+### Design Decisions
 
 #### 1. Conditional DiffViewer Initialization
 
@@ -796,7 +839,7 @@ private expandedConflicts: Set<number> = new Set();
 ### Comparison with React/Vue
 
 | Aspect | Vanilla JS (This Project) | React | Vue |
-|--------|---------------------------|-------|-----|
+| ------ | ------------------------- | ----- | --- |
 | Re-render trigger | Manual (`updateConflictPreview()`) | State change | Reactive data |
 | Component lifecycle | Manual tracking (`initializeExpandedConflict`) | useEffect / componentDidMount | onMounted |
 | State preservation | Explicit re-initialization | Virtual DOM diffing | Virtual DOM diffing |
@@ -823,7 +866,7 @@ for (const index of expandedConflicts) {
 
 对于典型场景（< 10 个展开项），顺序初始化已足够快（< 100ms）。
 
-### Testing Strategy
+### Testing Approach
 
 **Manual testing checklist**:
 

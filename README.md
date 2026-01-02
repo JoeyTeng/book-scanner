@@ -180,7 +180,7 @@ All data is stored in your browser's `localStorage`:
 
 ## Project Structure
 
-```
+```text
 book-scanner/
 ├── src/
 │   ├── components/       # UI components
