@@ -42,7 +42,8 @@ class I18n {
    * Detect browser language
    */
   private detectBrowserLocale(): Locale {
-    const browserLang = navigator.language || (navigator as any).userLanguage;
+    type LocaleNavigator = Navigator & { userLanguage?: string };
+    const browserLang = navigator.language || (navigator as LocaleNavigator).userLanguage || '';
 
     // Chinese variants
     if (browserLang.startsWith('zh')) {
