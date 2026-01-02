@@ -11,6 +11,14 @@ export interface ParsedBookInfo {
   confidence?: number;
 }
 
+interface LLMChatResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+}
+
 export class LLMService {
   /**
    * Check if LLM Vision is configured
@@ -97,7 +105,7 @@ If a field is not found, use empty string. Always include all fields.`,
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as LLMChatResponse;
       const content = data.choices?.[0]?.message?.content;
 
       if (!content) {
@@ -200,7 +208,7 @@ Extract EVERY book mentioned or shown in the image. If a field is not visible, u
         return null;
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as LLMChatResponse;
       const content = data.choices?.[0]?.message?.content;
 
       if (!content) {
