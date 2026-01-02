@@ -50,12 +50,12 @@ export class BarcodeScanner {
       };
 
       // Use specific camera ID if provided, otherwise use environment-facing camera
-      const cameraConstraints = cameraId
+      const cameraConstraints: MediaTrackConstraints = cameraId
         ? { deviceId: { exact: cameraId } }
         : { facingMode: 'environment' };
 
       await this.html5QrCode.start(
-        cameraConstraints as any,
+        cameraConstraints,
         config,
         (decodedText) => {
           onSuccess(decodedText);
@@ -104,21 +104,30 @@ export class BarcodeScanner {
       }
 
       // Get supported capabilities
-      const capabilities = videoTrack.getCapabilities() as any;
-      const constraints: any = {};
+      type ExtendedMediaTrackCapabilities = MediaTrackCapabilities & {
+        focusMode?: string[];
+        focusDistance?: { min?: number; max?: number };
+        width?: { min?: number; max?: number };
+        height?: { min?: number; max?: number };
+      };
+      const capabilities: ExtendedMediaTrackCapabilities = videoTrack.getCapabilities();
+      const constraints: MediaTrackConstraints & {
+        focusMode?: string;
+        focusDistance?: number;
+      } = {};
 
       // Enable autofocus if supported
-      if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+      if (capabilities.focusMode?.includes('continuous')) {
         constraints.focusMode = 'continuous';
       }
 
       // Enable macro/close-up mode if supported (iPhone 13 Pro and later)
-      if (capabilities.focusDistance) {
+      if (capabilities.focusDistance?.min !== undefined) {
         constraints.focusDistance = capabilities.focusDistance.min || 0.1;
       }
 
       // Request higher resolution
-      if (capabilities.width && capabilities.height) {
+      if (capabilities.width?.max !== undefined && capabilities.height?.max !== undefined) {
         constraints.width = { ideal: capabilities.width.max || 1920 };
         constraints.height = { ideal: capabilities.height.max || 1080 };
       }
