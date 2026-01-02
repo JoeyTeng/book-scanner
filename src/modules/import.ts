@@ -6,16 +6,26 @@ import type { ExportData, StorageData } from '../types';
 /**
  * Import data from JSON file
  */
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 export async function importFromJSON(
   file: File,
   mode: 'merge' | 'replace' = 'merge'
 ): Promise<{ success: boolean; message: string }> {
   try {
     const text = await file.text();
-    const data = JSON.parse(text);
+    const data = JSON.parse(text) as unknown;
+
+    if (!isRecord(data)) {
+      return {
+        success: false,
+        message: 'Invalid file format. Missing required fields.',
+      };
+    }
 
     // Validate structure
-    if (!data.version || !data.books || !Array.isArray(data.books)) {
+    if (typeof data.version !== 'string' || !Array.isArray(data.books)) {
       return {
         success: false,
         message: 'Invalid file format. Missing required fields.',
