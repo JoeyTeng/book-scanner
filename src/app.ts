@@ -1,13 +1,13 @@
-import { Navbar } from './components/navbar';
-import { SearchBar } from './components/search-bar';
-import { BookList } from './components/book-list';
-import { ScannerModal } from './components/scanner-modal';
-import { OCRModal } from './components/ocr-modal';
-import { BookSelectorModal } from "./components/book-selector-modal";
 import { BookForm } from './components/book-form';
+import { BookList } from './components/book-list';
+import { BookSelectorModal } from './components/book-selector-modal';
 import { BulkEditModal } from './components/bulk-edit-modal';
+import { Navbar } from './components/navbar';
+import { OCRModal } from './components/ocr-modal';
+import { ScannerModal } from './components/scanner-modal';
+import { SearchBar } from './components/search-bar';
+import { searchBookByTitle } from './modules/api/aggregator';
 import { storage } from './modules/storage';
-import { searchBookByTitle } from "./modules/api/aggregator";
 
 export class App {
   private navbar!: Navbar;
@@ -23,7 +23,7 @@ export class App {
 
   async init(): Promise<void> {
     // Initialize components
-    this.navbar = new Navbar("navbar", async () => {
+    this.navbar = new Navbar('navbar', async () => {
       await this.searchBar.refresh();
       void this.bookList.render();
     });
@@ -40,9 +40,9 @@ export class App {
     this.bookSelectorModal = new BookSelectorModal();
 
     this.bookList = new BookList(
-      "book-list",
+      'book-list',
       (book) => {
-        this.bookForm.showForEdit(book);
+        void this.bookForm.showForEdit(book);
       },
       (id) => {
         void storage.deleteBook(id);
@@ -50,13 +50,10 @@ export class App {
       }
     );
 
-    this.searchBar = new SearchBar(
-      "search-bar",
-      (filters, sortField, sortOrder) => {
-        const scope = this.searchBar.getSearchScope();
-        this.bookList.updateFilters(filters, sortField, sortOrder, scope);
-      }
-    );
+    this.searchBar = new SearchBar('search-bar', (filters, sortField, sortOrder) => {
+      const scope = this.searchBar.getSearchScope();
+      this.bookList.updateFilters(filters, sortField, sortOrder, scope);
+    });
 
     // Wait for navbar and search bar to initialize
     await Promise.all([this.navbar.waitForInit(), this.searchBar.waitForInit()]);
@@ -85,28 +82,25 @@ export class App {
 
     this.ocrModal = new OCRModal();
 
-    this.scannerModal = new ScannerModal(async (isbn) => {
+    this.scannerModal = new ScannerModal((isbn) => {
       // Scenario C: ISBN search from barcode/manual input
-      await this.handleISBNSearch(isbn);
+      void this.handleISBNSearch(isbn);
     });
 
     // Attach FAB button
-    document.getElementById("fab-scan")?.addEventListener("click", () => {
-      this.scannerModal.show(
+    document.getElementById('fab-scan')?.addEventListener('click', () => {
+      void this.scannerModal.show(
         // OCR button callback
         () => {
           // Scenario A: OCR recognition
           this.ocrModal.open(
             // Direct add callback
-            async (result) => {
-              await this.handleOCRDirectAdd(
-                result.bookTitle,
-                result.recommendation
-              );
+            (result) => {
+              void this.handleOCRDirectAdd(result.bookTitle, result.recommendation);
             },
             // Search metadata callback
-            async (title, recommendation) => {
-              await this.handleTitleSearch(title, recommendation);
+            (title, recommendation) => {
+              void this.handleTitleSearch(title, recommendation);
             },
             // Books added callback (for manual LLM mode)
             () => {
@@ -115,9 +109,9 @@ export class App {
           );
         },
         // Title search callback
-        async (title) => {
+        (title) => {
           // Scenario B: Manual title input
-          await this.handleTitleSearch(title);
+          void this.handleTitleSearch(title);
         }
       );
     });
@@ -138,10 +132,10 @@ export class App {
       isbn,
       undefined,
       // Fallback: search by title when ISBN fails
-      async () => {
-        const title = prompt("Enter book title to search:");
+      () => {
+        const title = prompt('Enter book title to search:');
         if (title) {
-          await this.handleTitleSearch(title, undefined, isbn);
+          void this.handleTitleSearch(title, undefined, isbn);
         }
       }
     );
@@ -161,59 +155,50 @@ export class App {
 
     if (results.length === 0) {
       // No results - let user fill manually
-      await this.bookSelectorModal.close();
+      this.bookSelectorModal.close();
       await this.bookForm.showForNew(preserveISBN, recommendation);
 
       // Pre-fill title
       setTimeout(() => {
-        const titleInput = document.querySelector(
-          "#input-title"
-        ) as HTMLInputElement;
+        const titleInput = document.querySelector('#input-title') as HTMLInputElement;
         if (titleInput) titleInput.value = title;
       }, 100);
     } else {
       // Show results for selection
-      await this.bookSelectorModal.open(results, async (selected) => {
-        // User selected a book - open form with all data
-        await this.bookForm.showForNew(
-          preserveISBN || selected.isbn,
-          recommendation
-        );
+      await this.bookSelectorModal.open(results, (selected) => {
+        void (async () => {
+          // User selected a book - open form with all data
+          await this.bookForm.showForNew(preserveISBN || selected.isbn, recommendation);
 
-        // Pre-fill all fields from selected source
-        setTimeout(() => {
-          if (selected.title) {
-            (document.querySelector("#input-title") as HTMLInputElement).value =
-              selected.title;
-          }
-          if (selected.author) {
-            (
-              document.querySelector("#input-author") as HTMLInputElement
-            ).value = selected.author;
-          }
-          if (selected.publisher) {
-            (
-              document.querySelector("#input-publisher") as HTMLInputElement
-            ).value = selected.publisher;
-          }
-          if (selected.publishDate) {
-            (
-              document.querySelector("#input-publish-date") as HTMLInputElement
-            ).value = selected.publishDate;
-          }
-          if (selected.cover) {
-            (document.querySelector("#input-cover") as HTMLInputElement).value =
-              selected.cover;
-          }
+          // Pre-fill all fields from selected source
+          setTimeout(() => {
+            if (selected.title) {
+              (document.querySelector('#input-title') as HTMLInputElement).value = selected.title;
+            }
+            if (selected.author) {
+              (document.querySelector('#input-author') as HTMLInputElement).value = selected.author;
+            }
+            if (selected.publisher) {
+              (document.querySelector('#input-publisher') as HTMLInputElement).value =
+                selected.publisher;
+            }
+            if (selected.publishDate) {
+              (document.querySelector('#input-publish-date') as HTMLInputElement).value =
+                selected.publishDate;
+            }
+            if (selected.cover) {
+              (document.querySelector('#input-cover') as HTMLInputElement).value = selected.cover;
+            }
 
-          // Auto-select Wishlist if recommendation exists
-          if (recommendation) {
-            const wishlistCheckbox = document.querySelector(
-              'input[name="category"][value="Wishlist"]'
-            ) as HTMLInputElement;
-            if (wishlistCheckbox) wishlistCheckbox.checked = true;
-          }
-        }, 100);
+            // Auto-select Wishlist if recommendation exists
+            if (recommendation) {
+              const wishlistCheckbox = document.querySelector(
+                'input[name="category"][value="Wishlist"]'
+              ) as HTMLInputElement;
+              if (wishlistCheckbox) wishlistCheckbox.checked = true;
+            }
+          }, 100);
+        })();
       });
     }
   }
@@ -221,14 +206,11 @@ export class App {
   /**
    * Handle OCR direct add (without metadata search)
    */
-  private async handleOCRDirectAdd(
-    title?: string,
-    recommendation?: string
-  ): Promise<void> {
+  private async handleOCRDirectAdd(title?: string, recommendation?: string): Promise<void> {
     // Ensure Wishlist category exists
     const categories = await storage.getCategories();
-    if (!categories.includes("Wishlist")) {
-      await storage.addCategory("Wishlist");
+    if (!categories.includes('Wishlist')) {
+      await storage.addCategory('Wishlist');
     }
 
     await this.bookForm.showForNew(undefined, recommendation);
@@ -236,9 +218,7 @@ export class App {
     // Pre-fill title if recognized
     if (title) {
       setTimeout(() => {
-        const titleInput = document.querySelector(
-          "#input-title"
-        ) as HTMLInputElement;
+        const titleInput = document.querySelector('#input-title') as HTMLInputElement;
         if (titleInput) titleInput.value = title;
 
         // Auto-select Wishlist category
@@ -255,14 +235,10 @@ export class App {
     const books = await storage.getBooks();
     if (!apiKey && books.length === 0) {
       setTimeout(() => {
-        if (
-          confirm(
-            "Google Books API key is not set. Would you like to set it now?"
-          )
-        ) {
-          document.getElementById("btn-menu")?.click();
+        if (confirm('Google Books API key is not set. Would you like to set it now?')) {
+          document.getElementById('btn-menu')?.click();
           setTimeout(() => {
-            document.getElementById("btn-api-key")?.click();
+            document.getElementById('btn-api-key')?.click();
           }, 100);
         }
       }, 1000);
@@ -277,7 +253,7 @@ export class App {
       // If in bulk edit mode, either exit or open modal
       if (this.selectedBookIds.length > 0) {
         const activeBookListId = this.navbar.getActiveBookListId();
-        this.bulkEditModal.show(this.selectedBookIds, activeBookListId);
+        void this.bulkEditModal.show(this.selectedBookIds, activeBookListId);
       } else {
         this.exitBulkEditMode();
       }

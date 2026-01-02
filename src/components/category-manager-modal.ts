@@ -1,6 +1,6 @@
-import type { CategoryMetadata } from '../types';
-import { storage } from '../modules/storage';
 import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
+import type { CategoryMetadata } from '../types';
 
 // Extended type with bookCount
 interface CategoryWithCount extends CategoryMetadata {
@@ -18,7 +18,10 @@ export class CategoryManagerModal {
   private onClose?: () => void | Promise<void>;
   private onCategoriesChanged?: () => void | Promise<void>;
 
-  constructor(onClose?: () => void | Promise<void>, onCategoriesChanged?: () => void | Promise<void>) {
+  constructor(
+    onClose?: () => void | Promise<void>,
+    onCategoriesChanged?: () => void | Promise<void>
+  ) {
     this.onClose = onClose;
     this.onCategoriesChanged = onCategoriesChanged;
   }
@@ -35,7 +38,7 @@ export class CategoryManagerModal {
       document.body.style.overflow = '';
 
       // Notify parent that categories may have changed
-      this.onClose?.();
+      void this.onClose?.();
     }
   }
 
@@ -134,7 +137,9 @@ export class CategoryManagerModal {
 
   private attachEventListeners(): void {
     // Search input - bind once
-    const searchInput = this.modalElement?.querySelector('#category-search-input') as HTMLInputElement;
+    const searchInput = this.modalElement?.querySelector(
+      '#category-search-input'
+    ) as HTMLInputElement;
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         this.searchQuery = (e.target as HTMLInputElement).value;
@@ -145,20 +150,22 @@ export class CategoryManagerModal {
       searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          this.handleAddCategory();
+          void this.handleAddCategory();
         }
       });
     }
 
     // Add button - bind once
     this.modalElement?.querySelector('#btn-add-category')?.addEventListener('click', () => {
-      this.handleAddCategory();
+      void this.handleAddCategory();
     });
 
     // Close button - bind once
-    this.modalElement?.querySelector('#btn-close-category-manager')?.addEventListener('click', () => {
-      this.hide();
-    });
+    this.modalElement
+      ?.querySelector('#btn-close-category-manager')
+      ?.addEventListener('click', () => {
+        this.hide();
+      });
 
     // Use event delegation for dynamic elements
     const categoryList = this.modalElement?.querySelector('#category-list');
@@ -180,7 +187,10 @@ export class CategoryManagerModal {
         const target = e.target as HTMLElement;
 
         // Handle category content click (for editing)
-        if (target.classList.contains('category-content') && target.classList.contains('clickable')) {
+        if (
+          target.classList.contains('category-content') &&
+          target.classList.contains('clickable')
+        ) {
           const name = target.dataset.name!;
           this.startEditing(name);
         }
@@ -188,7 +198,7 @@ export class CategoryManagerModal {
         // Handle save button
         if (target.classList.contains('btn-save')) {
           const oldName = target.dataset.oldName!;
-          this.saveEditing(oldName);
+          void this.saveEditing(oldName);
         }
 
         // Handle cancel button
@@ -204,7 +214,7 @@ export class CategoryManagerModal {
           if (keyEvent.key === 'Enter') {
             e.preventDefault();
             const oldName = this.editingCategory!;
-            this.saveEditing(oldName);
+            void this.saveEditing(oldName);
           } else if (keyEvent.key === 'Escape') {
             this.cancelEditing();
           }
@@ -215,7 +225,7 @@ export class CategoryManagerModal {
     // Toolbar buttons - use event delegation
     const toolbar = this.modalElement?.querySelector('.category-manager-toolbar');
     if (toolbar) {
-      toolbar.addEventListener('click', async (e) => {
+      toolbar.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
 
         if (target.id === 'btn-toggle-edit-mode' || target.closest('#btn-toggle-edit-mode')) {
@@ -223,7 +233,7 @@ export class CategoryManagerModal {
         }
 
         if (target.id === 'btn-batch-delete' || target.closest('#btn-batch-delete')) {
-          await this.handleBatchDelete();
+          void this.handleBatchDelete();
         }
       });
     }
@@ -356,7 +366,9 @@ export class CategoryManagerModal {
   }
 
   private async handleAddCategory(): Promise<void> {
-    const searchInput = this.modalElement?.querySelector('#category-search-input') as HTMLInputElement;
+    const searchInput = this.modalElement?.querySelector(
+      '#category-search-input'
+    ) as HTMLInputElement;
     const categoryName = searchInput?.value.trim();
 
     if (!categoryName) return;
@@ -415,7 +427,7 @@ export class CategoryManagerModal {
       return;
     }
 
-    if (newName !== oldName && this.categories.find(c => c.name === newName)) {
+    if (newName !== oldName && this.categories.find((c) => c.name === newName)) {
       alert(i18n.t('error.categoryExists', { name: newName }));
       return;
     }
@@ -490,7 +502,7 @@ export class CategoryManagerModal {
 
     try {
       // Show loading overlay
-      this.showLoading(i18n.t("common.loading"));
+      this.showLoading(i18n.t('common.loading'));
 
       // Use setTimeout to let the UI update before blocking operation
       await new Promise((resolve) => setTimeout(resolve, 50));

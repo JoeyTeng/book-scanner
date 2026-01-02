@@ -1,6 +1,6 @@
-import { storage } from '../modules/storage';
-import { i18n } from '../modules/i18n';
 import { exportBookLists } from '../modules/book-list-export';
+import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
 
 export class BookListManagerModal {
   private modalElement: HTMLElement | null = null;
@@ -25,9 +25,9 @@ export class BookListManagerModal {
     this.modalElement.innerHTML = `
       <div class="modal-content category-manager-modal">
         <div class="modal-header">
-          <h2>${i18n.t("bookListManager.title")}</h2>
+          <h2>${i18n.t('bookListManager.title')}</h2>
           <button class="btn-import" id="btn-import-booklists">
-            ${i18n.t("bookListManager.import")}
+            ${i18n.t('bookListManager.import')}
           </button>
           <button class="btn-close" id="btn-close-modal">&times;</button>
         </div>
@@ -36,23 +36,23 @@ export class BookListManagerModal {
             <input
               type="text"
               id="booklist-name-input"
-              placeholder="${i18n.t("bookListManager.placeholder")}"
+              placeholder="${i18n.t('bookListManager.placeholder')}"
               class="category-search-input"
             />
             <button id="btn-add-booklist" class="btn btn-primary">
-              ${i18n.t("bookListManager.add")}
+              ${i18n.t('bookListManager.add')}
             </button>
           </div>
           <small class="export-hint">
-            📝 ${i18n.t("bookListManager.exportHint")}
+            📝 ${i18n.t('bookListManager.exportHint')}
           </small>
           <div id="batch-actions-toolbar" class="batch-actions-toolbar" style="display: none;">
             <span id="selection-count" class="selection-count"></span>
             <button id="btn-export-selected" class="btn btn-primary">
-              📤 ${i18n.t("bookListManager.exportSelected")}
+              📤 ${i18n.t('bookListManager.exportSelected')}
             </button>
             <button id="btn-delete-selected" class="btn btn-danger">
-              🗑️ ${i18n.t("bookListManager.deleteSelected")}
+              🗑️ ${i18n.t('bookListManager.deleteSelected')}
             </button>
           </div>
           <div id="booklist-list" class="category-list"></div>
@@ -91,7 +91,7 @@ export class BookListManagerModal {
     if (bookLists.length === 0) {
       listContainer.innerHTML = `
         <div class="empty-state-small">
-          ${i18n.t("bookListManager.emptyList")}
+          ${i18n.t('bookListManager.emptyList')}
         </div>
       `;
       return;
@@ -104,20 +104,18 @@ export class BookListManagerModal {
         const isChecked = this.selectedListIds.has(list.id);
 
         return `
-          <div class="category-item ${isChecked ? "selected" : ""}" data-id="${
-          list.id
-        }">
+          <div class="category-item ${isChecked ? 'selected' : ''}" data-id="${list.id}">
             <input
               type="checkbox"
               class="list-checkbox"
               data-id="${list.id}"
-              ${isChecked ? "checked" : ""}
+              ${isChecked ? 'checked' : ''}
             />
             <div class="category-content">
               <div class="category-main">
                 <span class="category-name">${this.escapeHtml(list.name)}</span>
                 <span class="category-meta">
-                  ${i18n.t("bookListManager.booksCount", { count: bookCount })}
+                  ${i18n.t('bookListManager.booksCount', { count: bookCount })}
                 </span>
               </div>
               ${
@@ -127,23 +125,23 @@ export class BookListManagerModal {
                   ${this.escapeHtml(list.description)}
                 </div>
               `
-                  : ""
+                  : ''
               }
             </div>
             <div class="category-actions">
               <button class="btn-icon btn-export" data-id="${
                 list.id
-              }" title="${i18n.t("bookListManager.export")}">
+              }" title="${i18n.t('bookListManager.export')}">
                 📤
               </button>
               <button class="btn-icon btn-edit" data-id="${
                 list.id
-              }" title="${i18n.t("bookListManager.edit")}">
+              }" title="${i18n.t('bookListManager.edit')}">
                 ✏️
               </button>
               <button class="btn-icon btn-delete" data-id="${
                 list.id
-              }" title="${i18n.t("bookListManager.delete")}">
+              }" title="${i18n.t('bookListManager.delete')}">
                 🗑️
               </button>
             </div>
@@ -173,31 +171,32 @@ export class BookListManagerModal {
     const addButton = this.modalElement?.querySelector('#btn-add-booklist');
     const nameInput = this.modalElement?.querySelector('#booklist-name-input') as HTMLInputElement;
 
-    addButton?.addEventListener('click', async () => {
-      await this.handleAdd();
+    addButton?.addEventListener('click', () => {
+      void this.handleAdd();
     });
 
-    nameInput?.addEventListener('keypress', async (e) => {
+    nameInput?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        await this.handleAdd();
+        void this.handleAdd();
       }
     });
 
     // Event delegation for edit and delete buttons
     const listContainer = this.modalElement?.querySelector('#booklist-list');
-    listContainer?.addEventListener('click', async (e) => {
+    listContainer?.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-
-      if (target.classList.contains('btn-edit')) {
-        const id = target.dataset.id!;
-        await this.handleEdit(id);
-      } else if (target.classList.contains('btn-delete')) {
-        const id = target.dataset.id!;
-        await this.handleDelete(id);
-      } else if (target.classList.contains('btn-export')) {
-        const id = target.dataset.id!;
-        await this.handleExportSingle(id);
-      }
+      void (async () => {
+        if (target.classList.contains('btn-edit')) {
+          const id = target.dataset.id!;
+          await this.handleEdit(id);
+        } else if (target.classList.contains('btn-delete')) {
+          const id = target.dataset.id!;
+          await this.handleDelete(id);
+        } else if (target.classList.contains('btn-export')) {
+          const id = target.dataset.id!;
+          await this.handleExportSingle(id);
+        }
+      })();
     });
 
     // Checkbox change events
@@ -215,18 +214,18 @@ export class BookListManagerModal {
     });
 
     // Batch export button
-    this.modalElement?.querySelector('#btn-export-selected')?.addEventListener('click', async () => {
-      await this.handleBatchExport();
+    this.modalElement?.querySelector('#btn-export-selected')?.addEventListener('click', () => {
+      void this.handleBatchExport();
     });
 
     // Batch delete button
-    this.modalElement?.querySelector('#btn-delete-selected')?.addEventListener('click', async () => {
-      await this.handleBatchDelete();
+    this.modalElement?.querySelector('#btn-delete-selected')?.addEventListener('click', () => {
+      void this.handleBatchDelete();
     });
 
     // Import button
-    this.modalElement?.querySelector('#btn-import-booklists')?.addEventListener('click', async () => {
-      await this.handleImport();
+    this.modalElement?.querySelector('#btn-import-booklists')?.addEventListener('click', () => {
+      void this.handleImport();
     });
   }
 
@@ -241,7 +240,7 @@ export class BookListManagerModal {
 
     // Check for duplicate names
     const existing = await storage.getBookLists();
-    if (existing.some(list => list.name === name)) {
+    if (existing.some((list) => list.name === name)) {
       alert(i18n.t('error.bookListExists', { name }));
       return;
     }
@@ -271,7 +270,7 @@ export class BookListManagerModal {
 
     // Check for duplicate names
     const existing = await storage.getBookLists();
-    if (existing.some(list => list.id !== id && list.name === newName.trim())) {
+    if (existing.some((list) => list.id !== id && list.name === newName.trim())) {
       alert(i18n.t('error.bookListExists', { name: newName.trim() }));
       return;
     }
@@ -294,9 +293,10 @@ export class BookListManagerModal {
     if (!bookList) return;
 
     const books = await storage.getBooksInList(id);
-    const confirmMsg = books.length > 0
-      ? i18n.t('bookListManager.deleteWarning', { name: bookList.name, count: books.length })
-      : i18n.t('bookListManager.deleteConfirm', { name: bookList.name });
+    const confirmMsg =
+      books.length > 0
+        ? i18n.t('bookListManager.deleteWarning', { name: bookList.name, count: books.length })
+        : i18n.t('bookListManager.deleteConfirm', { name: bookList.name });
 
     if (!confirm(confirmMsg)) {
       return;
@@ -341,10 +341,11 @@ export class BookListManagerModal {
     if (this.selectedListIds.size === 0) return;
 
     const bookLists = await storage.getBookLists();
-    const selectedLists = bookLists.filter(list => this.selectedListIds.has(list.id));
+    const selectedLists = bookLists.filter((list) => this.selectedListIds.has(list.id));
 
     // Build confirmation message
-    let message = i18n.t('bookListManager.batchDeleteConfirm', { count: selectedLists.length }) + '\n\n';
+    let message =
+      i18n.t('bookListManager.batchDeleteConfirm', { count: selectedLists.length }) + '\n\n';
     for (const list of selectedLists) {
       const books = await storage.getBooksInList(list.id);
       message += `- "${list.name}" (${books.length} ${i18n.t('bookListManager.books')})\n`;
@@ -383,15 +384,10 @@ export class BookListManagerModal {
 
       try {
         // Import modules dynamically
-        const {
-          parseImportFile,
-          detectConflicts,
-          createSnapshot,
-          executeImport,
-          restoreSnapshot,
-        } = await import("../modules/book-list-import");
-        const { ImportPreviewModal } = await import("./import-preview-modal");
-        const { UndoToast } = await import("./undo-toast");
+        const { parseImportFile, detectConflicts, createSnapshot, executeImport, restoreSnapshot } =
+          await import('../modules/book-list-import');
+        const { ImportPreviewModal } = await import('./import-preview-modal');
+        const { UndoToast } = await import('./undo-toast');
 
         // Parse and validate file
         const data = await parseImportFile(file);
@@ -404,52 +400,54 @@ export class BookListManagerModal {
           conflicts,
           data.lists.length,
           data.lists.reduce((sum, list) => sum + list.books.length, 0),
-          async (strategy) => {
-            // User confirmed import
-            try {
-              // ⚠️ CRITICAL: Create snapshot BEFORE any database writes
-              const snapshot = await createSnapshot(data, strategy);
+          (strategy) => {
+            void (async () => {
+              // User confirmed import
+              try {
+                // ⚠️ CRITICAL: Create snapshot BEFORE any database writes
+                const snapshot = await createSnapshot(data, strategy);
 
-              // Execute import
-              const result = await executeImport(data, strategy, snapshot);
+                // Execute import
+                const result = await executeImport(data, strategy, snapshot);
 
-              if (!result.success) {
-                alert(
-                  i18n.t("import.parseError") + ": " + result.errors.join(", ")
-                );
-                return;
-              }
+                if (!result.success) {
+                  alert(i18n.t('import.parseError') + ': ' + result.errors.join(', '));
+                  return;
+                }
 
-              // Refresh UI
-              await this.renderBookLists();
-              if (this.onBookListsChanged) {
-                this.onBookListsChanged();
-              }
-
-              // Show undo toast
-              const message = i18n.t("import.undoMessage", {
-                lists: result.imported.lists,
-                merged: result.imported.booksMerged,
-                added: result.imported.booksAdded,
-              });
-
-              const toast = new UndoToast(message, async () => {
-                // Undo import
-                await restoreSnapshot(result.snapshot);
+                // Refresh UI
                 await this.renderBookLists();
                 if (this.onBookListsChanged) {
                   this.onBookListsChanged();
                 }
-              });
-              toast.show();
-            } catch (error) {
-              console.error("Import failed:", error);
-              alert(
-                i18n.t("import.parseError") +
-                  ": " +
-                  (error instanceof Error ? error.message : "Unknown error")
-              );
-            }
+
+                // Show undo toast
+                const message = i18n.t('import.undoMessage', {
+                  lists: result.imported.lists,
+                  merged: result.imported.booksMerged,
+                  added: result.imported.booksAdded,
+                });
+
+                const toast = new UndoToast(message, () => {
+                  void (async () => {
+                    // Undo import
+                    await restoreSnapshot(result.snapshot);
+                    await this.renderBookLists();
+                    if (this.onBookListsChanged) {
+                      this.onBookListsChanged();
+                    }
+                  })();
+                });
+                toast.show();
+              } catch (error) {
+                console.error('Import failed:', error);
+                alert(
+                  i18n.t('import.parseError') +
+                    ': ' +
+                    (error instanceof Error ? error.message : 'Unknown error')
+                );
+              }
+            })();
           },
           () => {
             // User cancelled
@@ -457,11 +455,11 @@ export class BookListManagerModal {
         );
         previewModal.show();
       } catch (error) {
-        console.error("Import file parsing failed:", error);
+        console.error('Import file parsing failed:', error);
         alert(
-          i18n.t("import.invalidFile") +
-            ": " +
-            (error instanceof Error ? error.message : "Unknown error")
+          i18n.t('import.invalidFile') +
+            ': ' +
+            (error instanceof Error ? error.message : 'Unknown error')
         );
       }
     };
@@ -484,10 +482,12 @@ export class BookListManagerModal {
         countSpan.textContent = i18n.t('bookListManager.selectedCount', { count });
       }
       if (exportBtn) {
-        (exportBtn as HTMLElement).textContent = `📤 ${i18n.t('bookListManager.exportSelected')} (${count})`;
+        (exportBtn as HTMLElement).textContent =
+          `📤 ${i18n.t('bookListManager.exportSelected')} (${count})`;
       }
       if (deleteBtn) {
-        (deleteBtn as HTMLElement).textContent = `🗑️ ${i18n.t('bookListManager.deleteSelected')} (${count})`;
+        (deleteBtn as HTMLElement).textContent =
+          `🗑️ ${i18n.t('bookListManager.deleteSelected')} (${count})`;
       }
     } else {
       toolbar.style.display = 'none';

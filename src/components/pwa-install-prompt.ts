@@ -58,7 +58,9 @@ export class PWAInstallPrompt {
     const installBtn = document.getElementById('pwa-install');
     const dismissBtn = document.getElementById('pwa-dismiss');
 
-    installBtn?.addEventListener('click', () => this.handleInstall());
+    installBtn?.addEventListener('click', () => {
+      void this.handleInstall();
+    });
     dismissBtn?.addEventListener('click', () => this.handleDismiss());
 
     // Add styles
@@ -82,7 +84,7 @@ export class PWAInstallPrompt {
 
     // Wait for the user to respond to the prompt
     const { outcome } = await this.deferredPrompt.userChoice;
-    console.log(`User response to install prompt: ${outcome}`);
+    console.log(`User response to install prompt: ${String(outcome)}`);
 
     if (outcome === 'accepted') {
       this.hidePrompt();
@@ -100,8 +102,10 @@ export class PWAInstallPrompt {
 
   private isAppInstalled(): boolean {
     // Check if running in standalone mode (already installed)
-    return window.matchMedia('(display-mode: standalone)').matches ||
-           (window.navigator as any).standalone === true;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    );
   }
 
   private wasPromptDismissed(): boolean {

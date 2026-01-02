@@ -1,7 +1,7 @@
+import { db } from './db';
 import { storage } from './storage';
-import { db } from "./db";
-import type { Book, BookList } from "../types";
-import type { BookListExportFormat, ExportedBook } from "./book-list-export";
+import type { Book, BookList } from '../types';
+import type { BookListExportFormat, ExportedBook } from './book-list-export';
 
 /**
  * Conflict detection and resolution for book list imports
@@ -22,41 +22,41 @@ export interface ListNameConflict {
 export interface BookConflict {
   importedBook: ExportedBook;
   existingBook: Book;
-  matchType: "isbn" | "title-author";
+  matchType: 'isbn' | 'title-author';
 }
 
 /**
  * List-level conflict resolution
  */
 export interface ListConflictResolution {
-  action: "rename" | "merge" | "replace" | "skip";
+  action: 'rename' | 'merge' | 'replace' | 'skip';
   // Comment merge strategy (only applies when action="merge")
-  commentMergeStrategy?: "local" | "import" | "both";
+  commentMergeStrategy?: 'local' | 'import' | 'both';
 }
 
 /**
  * Book-level conflict resolution
  */
 export interface BookConflictResolution {
-  action: "merge" | "skip" | "duplicate";
+  action: 'merge' | 'skip' | 'duplicate';
   // Global field merge strategy (applies to all fields when no per-field strategy specified)
-  fieldMergeStrategy?: "detailed" | "non-empty" | "local" | "import";
+  fieldMergeStrategy?: 'detailed' | 'non-empty' | 'local' | 'import';
   // Per-field merge strategies (only applies when action="merge")
   // If specified, overrides fieldMergeStrategy for that field
   fieldStrategies?: {
-    isbn?: "unresolved" | "local" | "import" | "non-empty";
-    publisher?: "unresolved" | "local" | "import" | "non-empty";
-    publishDate?: "unresolved" | "local" | "import" | "non-empty";
-    cover?: "unresolved" | "local" | "import" | "non-empty";
+    isbn?: 'unresolved' | 'local' | 'import' | 'non-empty';
+    publisher?: 'unresolved' | 'local' | 'import' | 'non-empty';
+    publishDate?: 'unresolved' | 'local' | 'import' | 'non-empty';
+    cover?: 'unresolved' | 'local' | 'import' | 'non-empty';
   };
 }
 
 export interface ImportStrategy {
   // Global defaults
-  defaultListAction: "rename" | "merge" | "replace" | "skip";
-  defaultBookAction: "merge" | "skip" | "duplicate";
-  defaultCommentMerge: "local" | "import" | "both";
-  defaultFieldMerge: "detailed" | "non-empty" | "local" | "import";
+  defaultListAction: 'rename' | 'merge' | 'replace' | 'skip';
+  defaultBookAction: 'merge' | 'skip' | 'duplicate';
+  defaultCommentMerge: 'local' | 'import' | 'both';
+  defaultFieldMerge: 'detailed' | 'non-empty' | 'local' | 'import';
 
   // Per-conflict overrides (key: list name for lists, bookKey for books)
   listResolutions?: Map<string, ListConflictResolution>;
@@ -99,36 +99,34 @@ export interface ImportSnapshot {
  * Default import strategy (backward compatible with Phase 3.2)
  */
 export const DEFAULT_STRATEGY: ImportStrategy = {
-  defaultListAction: "rename",
-  defaultBookAction: "merge",
-  defaultCommentMerge: "both", // Preserve both comments
-  defaultFieldMerge: "non-empty", // Prefer non-empty values
+  defaultListAction: 'rename',
+  defaultBookAction: 'merge',
+  defaultCommentMerge: 'both', // Preserve both comments
+  defaultFieldMerge: 'non-empty', // Prefer non-empty values
 };
 
 /**
  * Parse and validate import file
  */
-export async function parseImportFile(
-  file: File
-): Promise<BookListExportFormat> {
+export async function parseImportFile(file: File): Promise<BookListExportFormat> {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
 
     // Validate structure
     if (!data.version || !data.exportedAt || !Array.isArray(data.lists)) {
-      throw new Error("Invalid export format");
+      throw new Error('Invalid export format');
     }
 
     // Support version 2 and 3
     if (data.version < 2 || data.version > 3) {
-      throw new Error(`Unsupported version: ${data.version}`);
+      throw new Error(`Unsupported version: ${String(data.version)}`);
     }
 
     return data as BookListExportFormat;
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error("Invalid JSON file");
+      throw new Error('Invalid JSON file');
     }
     throw error;
   }
@@ -137,9 +135,7 @@ export async function parseImportFile(
 /**
  * Detect conflicts before import
  */
-export async function detectConflicts(
-  data: BookListExportFormat
-): Promise<ConflictInfo> {
+export async function detectConflicts(data: BookListExportFormat): Promise<ConflictInfo> {
   const listNameConflicts: ListNameConflict[] = [];
   const bookConflicts: BookConflict[] = [];
   const processedBooks = new Set<string>(); // Track processed books to avoid duplicates
@@ -150,9 +146,7 @@ export async function detectConflicts(
 
   // Check list name conflicts
   for (const importedList of data.lists) {
-    const existingList = existingLists.find(
-      (l) => l.name === importedList.name
-    );
+    const existingList = existingLists.find((l) => l.name === importedList.name);
     if (existingList) {
       listNameConflicts.push({
         importedName: importedList.name,
@@ -167,8 +161,7 @@ export async function detectConflicts(
   for (const importedList of data.lists) {
     for (const importedBook of importedList.books) {
       // Create a unique key for this book
-      const bookKey =
-        importedBook.isbn || `${importedBook.title}|${importedBook.author}`;
+      const bookKey = importedBook.isbn || `${importedBook.title}|${importedBook.author}`;
       if (processedBooks.has(bookKey)) {
         continue; // Already processed this book
       }
@@ -176,14 +169,12 @@ export async function detectConflicts(
       // Match by ISBN first (most reliable)
       let existingBook: Book | undefined;
       if (importedBook.isbn) {
-        existingBook = existingBooks.find(
-          (b: Book) => b.isbn === importedBook.isbn
-        );
+        existingBook = existingBooks.find((b: Book) => b.isbn === importedBook.isbn);
         if (existingBook) {
           bookConflicts.push({
             importedBook,
             existingBook,
-            matchType: "isbn",
+            matchType: 'isbn',
           });
           processedBooks.add(bookKey);
           continue;
@@ -192,14 +183,13 @@ export async function detectConflicts(
 
       // Fall back to title+author match
       existingBook = existingBooks.find(
-        (b: Book) =>
-          b.title === importedBook.title && b.author === importedBook.author
+        (b: Book) => b.title === importedBook.title && b.author === importedBook.author
       );
       if (existingBook) {
         bookConflicts.push({
           importedBook,
           existingBook,
-          matchType: "title-author",
+          matchType: 'title-author',
         });
         processedBooks.add(bookKey);
       }
@@ -233,10 +223,10 @@ export async function createSnapshot(
     const listResolution = strategy.listResolutions?.get(importedList.name);
     const action = listResolution?.action || strategy.defaultListAction;
 
-    if (!existing || action === "rename") {
+    if (!existing || action === 'rename') {
       // Will create new list - track for undo (but ID not yet assigned)
       // We'll fill this in during import
-    } else if (action === "replace") {
+    } else if (action === 'replace') {
       // Will delete and recreate - track for undo
       // We'll fill this in during import
     }
@@ -287,14 +277,14 @@ export async function executeImport(
       const listResolution = strategy.listResolutions?.get(importedList.name);
       const action = listResolution?.action || strategy.defaultListAction;
 
-      if (action === "skip") {
+      if (action === 'skip') {
         continue;
       }
 
       let listId: string;
       let listName = importedList.name;
 
-      if (action === "replace" && existing) {
+      if (action === 'replace' && existing) {
         // Save original list data before deletion
         snapshot.replacedLists.push({
           id: existing.id,
@@ -303,22 +293,18 @@ export async function executeImport(
 
         // Delete existing and create new
         await storage.deleteBookList(existing.id);
-        listId = (
-          await storage.createBookList(listName, importedList.description)
-        ).id;
+        listId = (await storage.createBookList(listName, importedList.description)).id;
         snapshot.addedListIds.push(listId);
-      } else if (action === "merge" && existing) {
+      } else if (action === 'merge' && existing) {
         // Merge into existing list (books will be added below)
         listId = existing.id;
         // Don't increment lists count for merge
-      } else if (action === "rename" || !existing) {
+      } else if (action === 'rename' || !existing) {
         // Create new with possibly renamed name
         if (existing) {
           listName = generateUniqueName(importedList.name, existingLists);
         }
-        listId = (
-          await storage.createBookList(listName, importedList.description)
-        ).id;
+        listId = (await storage.createBookList(listName, importedList.description)).id;
         snapshot.addedListIds.push(listId);
       } else {
         // Should not reach here
@@ -326,25 +312,20 @@ export async function executeImport(
       }
 
       // Only increment count for new lists (not merges)
-      if (action !== "merge") {
+      if (action !== 'merge') {
         result.imported.lists++;
       }
 
       // Import books into this list
       for (const importedBook of importedList.books) {
-        const bookKey =
-          importedBook.isbn || `${importedBook.title}|${importedBook.author}`;
+        const bookKey = importedBook.isbn || `${importedBook.title}|${importedBook.author}`;
 
         // Check if we already processed this book
         if (bookIdMap.has(bookKey)) {
           const bookId = bookIdMap.get(bookKey)!;
           await storage.addBookToList(listId, bookId);
           if (importedBook.comment) {
-            await storage.updateBookComment(
-              listId,
-              bookId,
-              importedBook.comment
-            );
+            await storage.updateBookComment(listId, bookId, importedBook.comment);
           }
           continue;
         }
@@ -352,14 +333,11 @@ export async function executeImport(
         // Find existing book
         let existingBook: Book | undefined;
         if (importedBook.isbn) {
-          existingBook = existingBooks.find(
-            (b: Book) => b.isbn === importedBook.isbn
-          );
+          existingBook = existingBooks.find((b: Book) => b.isbn === importedBook.isbn);
         }
         if (!existingBook) {
           existingBook = existingBooks.find(
-            (b: Book) =>
-              b.title === importedBook.title && b.author === importedBook.author
+            (b: Book) => b.title === importedBook.title && b.author === importedBook.author
           );
         }
 
@@ -368,7 +346,7 @@ export async function executeImport(
 
         let bookId: string;
 
-        if (existingBook && bookAction === "merge") {
+        if (existingBook && bookAction === 'merge') {
           // Merge: update existing book with imported data
           bookId = existingBook.id;
 
@@ -391,22 +369,22 @@ export async function executeImport(
           const mergedBook: Partial<Book> = {
             isbn: mergeField(
               existingBook.isbn,
-              importedBook.isbn || "",
+              importedBook.isbn || '',
               fieldStrategies?.isbn || globalFieldStrategy
             ),
             publisher: mergeField(
               existingBook.publisher,
-              importedBook.publisher || "",
+              importedBook.publisher || '',
               fieldStrategies?.publisher || globalFieldStrategy
             ),
             publishDate: mergeField(
               existingBook.publishDate,
-              importedBook.publishDate || "",
+              importedBook.publishDate || '',
               fieldStrategies?.publishDate || globalFieldStrategy
             ),
             cover: mergeField(
               existingBook.cover,
-              importedBook.coverUrl || "",
+              importedBook.coverUrl || '',
               fieldStrategies?.cover || globalFieldStrategy
             ),
           };
@@ -414,7 +392,7 @@ export async function executeImport(
           // Only update if there are actual changes
           await storage.updateBook(bookId, mergedBook);
           result.imported.booksMerged++;
-        } else if (existingBook && bookAction === "skip") {
+        } else if (existingBook && bookAction === 'skip') {
           // Skip: only update list membership, don't touch book metadata
           bookId = existingBook.id;
           result.imported.booksMerged++;
@@ -425,16 +403,16 @@ export async function executeImport(
             id: bookId,
             title: importedBook.title,
             author: importedBook.author,
-            isbn: importedBook.isbn || "",
-            publisher: importedBook.publisher || "",
-            publishDate: importedBook.publishDate || "",
-            cover: importedBook.coverUrl || "",
-            status: "want", // Default status
-            source: ["manual"], // Default source
+            isbn: importedBook.isbn || '',
+            publisher: importedBook.publisher || '',
+            publishDate: importedBook.publishDate || '',
+            cover: importedBook.coverUrl || '',
+            status: 'want', // Default status
+            source: ['manual'], // Default source
             categories: [],
             tags: [],
-            notes: "",
-            recommendation: "",
+            notes: '',
+            recommendation: '',
             addedAt: Date.now(),
             updatedAt: Date.now(),
           };
@@ -449,16 +427,13 @@ export async function executeImport(
         await storage.addBookToList(listId, bookId);
 
         // Handle comment merge for list conflicts
-        if (action === "merge" && existing) {
+        if (action === 'merge' && existing) {
           // Get existing comment for this book in this list
-          const existingBookInList = existing.books.find(
-            (b) => b.bookId === bookId
-          );
+          const existingBookInList = existing.books.find((b) => b.bookId === bookId);
           const existingComment = existingBookInList?.comment;
 
           const commentStrategy =
-            listResolution?.commentMergeStrategy ||
-            strategy.defaultCommentMerge;
+            listResolution?.commentMergeStrategy || strategy.defaultCommentMerge;
           const mergedComment = mergeComments(
             existingComment,
             importedBook.comment,
@@ -471,20 +446,14 @@ export async function executeImport(
         } else {
           // For new lists or non-merge actions, just use imported comment
           if (importedBook.comment) {
-            await storage.updateBookComment(
-              listId,
-              bookId,
-              importedBook.comment
-            );
+            await storage.updateBookComment(listId, bookId, importedBook.comment);
           }
         }
       }
     }
   } catch (error) {
     result.success = false;
-    result.errors.push(
-      error instanceof Error ? error.message : "Unknown error"
-    );
+    result.errors.push(error instanceof Error ? error.message : 'Unknown error');
   }
 
   return result;
@@ -506,9 +475,7 @@ export async function restoreSnapshot(snapshot: ImportSnapshot): Promise<void> {
 
   // 3. Restore replaced lists (direct overwrite with original data)
   for (const replaced of snapshot.replacedLists) {
-    console.log(
-      `[Undo] Restoring replaced list "${replaced.fullData.name}" with original ID`
-    );
+    console.log(`[Undo] Restoring replaced list "${replaced.fullData.name}" with original ID`);
     await db.bookLists.put(replaced.fullData);
   }
 
@@ -519,9 +486,7 @@ export async function restoreSnapshot(snapshot: ImportSnapshot): Promise<void> {
 
   // 5. Restore modified lists to previous state (direct overwrite)
   for (const modified of snapshot.modifiedLists) {
-    console.log(
-      `[Undo] Restoring merged list "${modified.fullDataBefore.name}" to previous state`
-    );
+    console.log(`[Undo] Restoring merged list "${modified.fullDataBefore.name}" to previous state`);
     await db.bookLists.put(modified.fullDataBefore);
   }
 }
@@ -529,10 +494,7 @@ export async function restoreSnapshot(snapshot: ImportSnapshot): Promise<void> {
 /**
  * Generate a unique name by appending (2), (3), etc.
  */
-function generateUniqueName(
-  baseName: string,
-  existingLists: BookList[]
-): string {
+function generateUniqueName(baseName: string, existingLists: BookList[]): string {
   const existingNames = new Set(existingLists.map((l) => l.name));
   let counter = 2;
   let newName = `${baseName} (${counter})`;
@@ -551,17 +513,17 @@ function generateUniqueName(
 function mergeComments(
   localComment: string | undefined,
   importedComment: string | undefined,
-  strategy: "local" | "import" | "both"
+  strategy: 'local' | 'import' | 'both'
 ): string | undefined {
-  const local = localComment?.trim() || "";
-  const imported = importedComment?.trim() || "";
+  const local = localComment?.trim() || '';
+  const imported = importedComment?.trim() || '';
 
   switch (strategy) {
-    case "local":
+    case 'local':
       return local || undefined;
-    case "import":
+    case 'import':
       return imported || undefined;
-    case "both":
+    case 'both':
       if (!local && !imported) return undefined;
       if (!local) return imported;
       if (!imported) return local;
@@ -577,19 +539,20 @@ function mergeComments(
 function mergeField<T>(
   localValue: T,
   importedValue: T,
-  strategy: "detailed" | "unresolved" | "non-empty" | "local" | "import"
+  strategy: 'detailed' | 'unresolved' | 'non-empty' | 'local' | 'import'
 ): T {
   // If strategy is "detailed" or "unresolved", use "non-empty" as fallback
-  const effectiveStrategy = (strategy === "detailed" || strategy === "unresolved") ? "non-empty" : strategy;
+  const effectiveStrategy =
+    strategy === 'detailed' || strategy === 'unresolved' ? 'non-empty' : strategy;
 
   switch (effectiveStrategy) {
-    case "local":
+    case 'local':
       return localValue;
-    case "import":
+    case 'import':
       return importedValue;
-    case "non-empty":
+    case 'non-empty':
       // For strings, check if empty
-      if (typeof localValue === "string" && typeof importedValue === "string") {
+      if (typeof localValue === 'string' && typeof importedValue === 'string') {
         return (localValue.trim() || importedValue.trim() || localValue) as T;
       }
       // For other types, prefer non-null/non-undefined

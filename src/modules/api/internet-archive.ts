@@ -53,10 +53,10 @@ function parseInternetArchiveDoc(doc: any): BookDataSource | null {
   return {
     isbn: '',
     title: doc.title || '',
-    author: Array.isArray(doc.creator) ? doc.creator[0] : (doc.creator || ''),
+    author: Array.isArray(doc.creator) ? doc.creator[0] : doc.creator || '',
     publisher: doc.publisher || '',
     publishDate: doc.date || '',
-    cover: doc.identifier ? `https://archive.org/services/img/${doc.identifier}` : '',
-    source: 'Internet Archive'
+    cover: doc.identifier ? `https://archive.org/services/img/${String(doc.identifier)}` : '',
+    source: 'Internet Archive',
   };
 }

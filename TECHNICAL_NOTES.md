@@ -81,8 +81,7 @@ categoryList.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
 
   // Edit button
-  if (target.classList.contains('category-content') &&
-      target.classList.contains('clickable')) {
+  if (target.classList.contains('category-content') && target.classList.contains('clickable')) {
     const categoryName = target.textContent?.trim();
     this.startEditing(categoryName);
   }
@@ -151,13 +150,13 @@ private renderCategoryListOnly(): void {
 
 ### Benefits
 
-| Aspect | Before (Re-binding) | After (Delegation) |
-| ------ | ------------------- | ----------------- |
-| **Listeners/Element** | N (increases with updates) | 1 (constant) |
-| **Memory Usage** | ↑ Growing | ✓ Constant |
-| **Bug Risk** | High (duplicate handlers) | Low (single handler) |
-| **Performance** | Degrades over time | Stable |
-| **Code Clarity** | Scattered rebinds | Centralized in one place |
+| Aspect                | Before (Re-binding)        | After (Delegation)       |
+| --------------------- | -------------------------- | ------------------------ |
+| **Listeners/Element** | N (increases with updates) | 1 (constant)             |
+| **Memory Usage**      | ↑ Growing                  | ✓ Constant               |
+| **Bug Risk**          | High (duplicate handlers)  | Low (single handler)     |
+| **Performance**       | Degrades over time         | Stable                   |
+| **Code Clarity**      | Scattered rebinds          | Centralized in one place |
 
 ### When to Use Event Delegation
 
@@ -294,13 +293,13 @@ private updateDropdownDisplay(): void {
 
 ### Comparison
 
-| Operation | Full Rebuild | Incremental Update |
-| --------- | ------------ | ------------------ |
-| Add tag | Slower | Faster |
-| Remove tag | Slower | Faster |
-| Filter search | Slower | Faster |
-| Focus loss | ❌ Yes | ✅ No |
-| Scroll reset | ❌ Yes | ✅ No |
+| Operation     | Full Rebuild | Incremental Update |
+| ------------- | ------------ | ------------------ |
+| Add tag       | Slower       | Faster             |
+| Remove tag    | Slower       | Faster             |
+| Filter search | Slower       | Faster             |
+| Focus loss    | ❌ Yes       | ✅ No              |
+| Scroll reset  | ❌ Yes       | ✅ No              |
 
 ### Trade-offs
 
@@ -396,9 +395,7 @@ async deleteCategoriesBatch(names: string[]): Promise<void> {
 #### 2. Parallel Book Updates
 
 ```typescript
-await Promise.all(
-  booksToUpdate.map(book => db.books.put(book))
-);
+await Promise.all(booksToUpdate.map((book) => db.books.put(book)));
 // vs.
 for (const book of booksToUpdate) {
   await db.books.put(book);
@@ -469,7 +466,7 @@ categoriesWithCount.sort((a, b) => {
 
   // 3. Alphabetical (ascending, locale-aware)
   return a.name.localeCompare(b.name, 'zh-CN', {
-    sensitivity: 'base' // Ignore case, ignore accents
+    sensitivity: 'base', // Ignore case, ignore accents
   });
 });
 ```
@@ -522,7 +519,7 @@ async touchCategory(name: string): Promise<void> {
 
 ```typescript
 localeCompare(b.name, 'zh-CN', {
-  sensitivity: 'base'
+  sensitivity: 'base',
 });
 ```
 
@@ -533,12 +530,12 @@ localeCompare(b.name, 'zh-CN', {
 
 ### Edge Cases
 
-| Case | Behavior |
-| ---- | -------- |
-| Same lastUsedAt & bookCount | Alphabetical |
-| lastUsedAt = 0 (never used) | Grouped at end, sorted by bookCount |
-| Empty category (bookCount = 0) | Valid, sorted by lastUsedAt |
-| Chinese + English mixed | Chinese by pinyin, English by ASCII |
+| Case                           | Behavior                            |
+| ------------------------------ | ----------------------------------- |
+| Same lastUsedAt & bookCount    | Alphabetical                        |
+| lastUsedAt = 0 (never used)    | Grouped at end, sorted by bookCount |
+| Empty category (bookCount = 0) | Valid, sorted by lastUsedAt         |
+| Chinese + English mixed        | Chinese by pinyin, English by ASCII |
 
 ### Implementation Notes
 
@@ -628,11 +625,7 @@ async function restoreSnapshot(snapshot: ImportSnapshot) {
 }
 ```
 
-**优势**：1. 代码从 ~50 行减少到 ~5 行
-2. 时间戳自动保留，无需手动恢复
-3. 原子操作，一次 `put` 完成
-4. 避免触发业务逻辑（如自动更新 `updatedAt`）
-5. 更容易理解和维护
+**优势**：1. 代码从 ~50 行减少到 ~5 行 2. 时间戳自动保留，无需手动恢复 3. 原子操作，一次 `put` 完成 4. 避免触发业务逻辑（如自动更新 `updatedAt`）5. 更容易理解和维护
 
 ### Key Insight
 
@@ -788,8 +781,10 @@ private updateConflictPreview(): void {
 
 ```typescript
 // Only create DiffViewer for unresolved fields
-if (fieldStrategy === "unresolved") {
-  new DiffViewer(container, { /* ... */ });
+if (fieldStrategy === 'unresolved') {
+  new DiffViewer(container, {
+    /* ... */
+  });
 }
 ```
 
@@ -838,13 +833,13 @@ private expandedConflicts: Set<number> = new Set();
 
 ### Comparison with React/Vue
 
-| Aspect | Vanilla JS (This Project) | React | Vue |
-| ------ | ------------------------- | ----- | --- |
-| Re-render trigger | Manual (`updateConflictPreview()`) | State change | Reactive data |
-| Component lifecycle | Manual tracking (`initializeExpandedConflict`) | useEffect / componentDidMount | onMounted |
-| State preservation | Explicit re-initialization | Virtual DOM diffing | Virtual DOM diffing |
-| Event listeners | Manual re-attach | Synthetic events (delegated) | @click directives |
-| Complexity | Higher (manual management) | Lower (automatic) | Lower (automatic) |
+| Aspect              | Vanilla JS (This Project)                      | React                         | Vue                 |
+| ------------------- | ---------------------------------------------- | ----------------------------- | ------------------- |
+| Re-render trigger   | Manual (`updateConflictPreview()`)             | State change                  | Reactive data       |
+| Component lifecycle | Manual tracking (`initializeExpandedConflict`) | useEffect / componentDidMount | onMounted           |
+| State preservation  | Explicit re-initialization                     | Virtual DOM diffing           | Virtual DOM diffing |
+| Event listeners     | Manual re-attach                               | Synthetic events (delegated)  | @click directives   |
+| Complexity          | Higher (manual management)                     | Lower (automatic)             | Lower (automatic)   |
 
 **Trade-offs**:
 

@@ -1,6 +1,6 @@
-import type { ExportData } from '../types';
 import { APP_VERSION } from '../config';
 import { storage } from './storage';
+import type { ExportData } from '../types';
 
 /**
  * Export data as JSON
@@ -12,7 +12,7 @@ export async function exportAsJSON(): Promise<string> {
     version: APP_VERSION,
     exportedAt: Date.now(),
     books: data.books,
-    categories: data.settings.categories
+    categories: data.settings.categories,
   };
 
   return JSON.stringify(exportData, null, 2);
@@ -37,10 +37,10 @@ export async function exportAsCSV(): Promise<string> {
     'Notes',
     'Cover URL',
     'Added At',
-    'Updated At'
+    'Updated At',
   ];
 
-  const rows = books.map(book => [
+  const rows = books.map((book) => [
     escapeCSV(book.title),
     escapeCSV(book.author),
     escapeCSV(book.isbn),
@@ -52,13 +52,10 @@ export async function exportAsCSV(): Promise<string> {
     escapeCSV(book.notes),
     escapeCSV(book.cover || ''),
     new Date(book.addedAt).toISOString(),
-    new Date(book.updatedAt).toISOString()
+    new Date(book.updatedAt).toISOString(),
   ]);
 
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n');
+  const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
 
   return csvContent;
 }
@@ -75,9 +72,9 @@ export async function exportAsMarkdown(): Promise<string> {
 
   // Group by status
   const groupedByStatus = {
-    want: books.filter(b => b.status === 'want'),
-    reading: books.filter(b => b.status === 'reading'),
-    read: books.filter(b => b.status === 'read')
+    want: books.filter((b) => b.status === 'want'),
+    reading: books.filter((b) => b.status === 'reading'),
+    read: books.filter((b) => b.status === 'read'),
   };
 
   for (const [status, statusBooks] of Object.entries(groupedByStatus)) {

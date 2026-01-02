@@ -23,58 +23,60 @@ interface BookListDB extends BookList {
 
 // Create database
 class BookScannerDB extends Dexie {
-  books!: EntityTable<BookDB, "id">;
-  settings!: EntityTable<SettingsDB, "key">;
-  imageCache!: EntityTable<CacheDB, "url">;
-  bookLists!: EntityTable<BookListDB, "id">;
+  books!: EntityTable<BookDB, 'id'>;
+  settings!: EntityTable<SettingsDB, 'key'>;
+  imageCache!: EntityTable<CacheDB, 'url'>;
+  bookLists!: EntityTable<BookListDB, 'id'>;
 
   constructor() {
-    super("BookScannerDB");
+    super('BookScannerDB');
 
     this.version(1).stores({
-      books: "id, isbn, title, author, status, *categories, addedAt, updatedAt",
-      settings: "key",
-      imageCache: "url, timestamp",
+      books: 'id, isbn, title, author, status, *categories, addedAt, updatedAt',
+      settings: 'key',
+      imageCache: 'url, timestamp',
     });
 
     // Version 2: Add bookLists table
     this.version(2).stores({
-      books: "id, isbn, title, author, status, *categories, addedAt, updatedAt",
-      settings: "key",
-      imageCache: "url, timestamp",
-      bookLists: "id, name, createdAt, updatedAt",
+      books: 'id, isbn, title, author, status, *categories, addedAt, updatedAt',
+      settings: 'key',
+      imageCache: 'url, timestamp',
+      bookLists: 'id, name, createdAt, updatedAt',
     });
 
     // Version 3: Migrate bookIds to books array with BookInList structure
-    this.version(3).stores({
-      books: "id, isbn, title, author, status, *categories, addedAt, updatedAt",
-      settings: "key",
-      imageCache: "url, timestamp",
-      bookLists: "id, name, createdAt, updatedAt",
-    }).upgrade(async (trans) => {
-      // Migrate all book lists from bookIds to books structure
-      const bookLists = await trans.table('bookLists').toArray();
+    this.version(3)
+      .stores({
+        books: 'id, isbn, title, author, status, *categories, addedAt, updatedAt',
+        settings: 'key',
+        imageCache: 'url, timestamp',
+        bookLists: 'id, name, createdAt, updatedAt',
+      })
+      .upgrade(async (trans) => {
+        // Migrate all book lists from bookIds to books structure
+        const bookLists = await trans.table('bookLists').toArray();
 
-      for (const list of bookLists) {
-        // Check if list has old bookIds format
-        if ("bookIds" in list && Array.isArray((list as any).bookIds)) {
-          const bookIds = (list as any).bookIds as string[];
-          const books = bookIds.map((bookId) => ({
-            bookId,
-            comment: undefined,
-            addedAt: list.updatedAt || Date.now(),
-          }));
+        for (const list of bookLists) {
+          // Check if list has old bookIds format
+          if ('bookIds' in list && Array.isArray(list.bookIds)) {
+            const bookIds = list.bookIds as string[];
+            const books = bookIds.map((bookId) => ({
+              bookId,
+              comment: undefined,
+              addedAt: list.updatedAt || Date.now(),
+            }));
 
-          // Update the list with new structure
-          await trans.table("bookLists").update(list.id, {
-            books,
-            bookIds: undefined, // Remove old field
-          });
+            // Update the list with new structure
+            await trans.table('bookLists').update(list.id, {
+              books,
+              bookIds: undefined, // Remove old field
+            });
+          }
         }
-      }
 
-      console.log(`Migrated ${bookLists.length} book lists to v3 structure`);
-    });
+        console.log(`Migrated ${bookLists.length} book lists to v3 structure`);
+      });
   }
 }
 
@@ -83,9 +85,7 @@ export const db = new BookScannerDB();
 /**
  * Migrate data from localStorage to IndexedDB
  */
-export async function migrateFromLocalStorage(
-  storageKey: string
-): Promise<void> {
+export async function migrateFromLocalStorage(storageKey: string): Promise<void> {
   try {
     const stored = localStorage.getItem(storageKey);
     if (!stored) return;
@@ -107,7 +107,7 @@ export async function migrateFromLocalStorage(
       const existingCategories = await db.settings.get('categories');
       if (!existingCategories) {
         await db.settings.put({
-          key: "categories",
+          key: 'categories',
           value: data.settings.categories || [],
         });
       }
@@ -117,7 +117,7 @@ export async function migrateFromLocalStorage(
         const existing = await db.settings.get('googleBooksApiKey');
         if (!existing) {
           await db.settings.put({
-            key: "googleBooksApiKey",
+            key: 'googleBooksApiKey',
             value: data.settings.googleBooksApiKey,
           });
         }
@@ -126,7 +126,7 @@ export async function migrateFromLocalStorage(
         const existing = await db.settings.get('isbndbApiKey');
         if (!existing) {
           await db.settings.put({
-            key: "isbndbApiKey",
+            key: 'isbndbApiKey',
             value: data.settings.isbndbApiKey,
           });
         }
@@ -135,7 +135,7 @@ export async function migrateFromLocalStorage(
         const existing = await db.settings.get('llmApiEndpoint');
         if (!existing) {
           await db.settings.put({
-            key: "llmApiEndpoint",
+            key: 'llmApiEndpoint',
             value: data.settings.llmApiEndpoint,
           });
         }
@@ -144,7 +144,7 @@ export async function migrateFromLocalStorage(
         const existing = await db.settings.get('llmApiKey');
         if (!existing) {
           await db.settings.put({
-            key: "llmApiKey",
+            key: 'llmApiKey',
             value: data.settings.llmApiKey,
           });
         }
@@ -153,19 +153,19 @@ export async function migrateFromLocalStorage(
         const existing = await db.settings.get('llmModel');
         if (!existing) {
           await db.settings.put({
-            key: "llmModel",
+            key: 'llmModel',
             value: data.settings.llmModel,
           });
         }
       }
-      console.log("Migrated settings to IndexedDB");
+      console.log('Migrated settings to IndexedDB');
     }
 
     // Mark migration as complete and remove original localStorage data
-    localStorage.setItem(storageKey + "_migrated", "true");
+    localStorage.setItem(storageKey + '_migrated', 'true');
     localStorage.removeItem(storageKey);
   } catch (error) {
-    console.error("Failed to migrate from localStorage:", error);
+    console.error('Failed to migrate from localStorage:', error);
   }
 }
 
@@ -177,7 +177,7 @@ export async function cacheImage(url: string, blob: Blob): Promise<void> {
     await db.imageCache.put({
       url,
       blob,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   } catch (error) {
     console.error('Failed to cache image:', error);

@@ -1,5 +1,5 @@
-import type { StorageData } from '../types';
 import { APP_VERSION } from '../config';
+import type { StorageData } from '../types';
 
 type MigrationFunction = (data: any) => any;
 
@@ -15,7 +15,7 @@ const migrations: Record<string, MigrationFunction> = {
       data.settings.categories.push('Wishlist');
     }
     return data;
-  }
+  },
 };
 
 /**
@@ -65,7 +65,7 @@ export function migrateData(data: any): StorageData {
     const nextVersion = getNextVersion(currentVersion);
 
     if (!nextVersion) {
-      console.warn(`Cannot migrate from ${currentVersion} to ${APP_VERSION}`);
+      console.warn(`Cannot migrate from ${String(currentVersion)} to ${APP_VERSION}`);
       break;
     }
 

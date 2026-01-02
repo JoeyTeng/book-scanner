@@ -8,7 +8,13 @@
     "build": "tsc && vite build",
     "build:local": "tsc && vite build --mode development",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' --fix",
+    "format": "prettier --write '**/*.{ts,css,html,json,md}' --ignore-path .gitignore",
+    "format:check": "prettier --check '**/*.{ts,css,html,json,md}' --ignore-path .gitignore",
+    "quality": "npm run type-check && npm run lint && npm run format:check",
+    "prepare": "husky"
   },
   "dependencies": {
     "dexie": "^4.0.0",
@@ -16,7 +22,15 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.19.1",
     "vite": "^7.3.0"
   },
   "keywords": [

@@ -1,6 +1,6 @@
-import { i18n } from "../modules/i18n";
+import { i18n } from '../modules/i18n';
 
-export type DiffMode = "side-by-side" | "inline";
+export type DiffMode = 'side-by-side' | 'inline';
 
 export interface FieldDiff {
   label: string;
@@ -17,7 +17,7 @@ export interface DiffViewerOptions {
 
 interface DiffPart {
   value: string;
-  type: "equal" | "delete" | "insert";
+  type: 'equal' | 'delete' | 'insert';
   charDiff?: string[]; // For character-level highlighting within the part
 }
 
@@ -25,14 +25,11 @@ interface DiffPart {
  * Compute character-level diff between two strings
  * Returns word-level diff with character-level highlighting for changed words
  */
-function computeDiff(
-  oldStr: string,
-  newStr: string
-): { old: DiffPart[]; new: DiffPart[] } {
+function computeDiff(oldStr: string, newStr: string): { old: DiffPart[]; new: DiffPart[] } {
   if (oldStr === newStr) {
     return {
-      old: [{ value: oldStr, type: "equal" }],
-      new: [{ value: newStr, type: "equal" }],
+      old: [{ value: oldStr, type: 'equal' }],
+      new: [{ value: newStr, type: 'equal' }],
     };
   }
 
@@ -47,24 +44,24 @@ function computeDiff(
   const changes = myersDiff(oldWords, newWords);
 
   for (const change of changes) {
-    if (change.type === "equal") {
-      oldParts.push({ value: change.value, type: "equal" });
-      newParts.push({ value: change.value, type: "equal" });
-    } else if (change.type === "delete") {
-      oldParts.push({ value: change.value, type: "delete" });
-    } else if (change.type === "insert") {
-      newParts.push({ value: change.value, type: "insert" });
-    } else if (change.type === "replace") {
+    if (change.type === 'equal') {
+      oldParts.push({ value: change.value, type: 'equal' });
+      newParts.push({ value: change.value, type: 'equal' });
+    } else if (change.type === 'delete') {
+      oldParts.push({ value: change.value, type: 'delete' });
+    } else if (change.type === 'insert') {
+      newParts.push({ value: change.value, type: 'insert' });
+    } else if (change.type === 'replace') {
       // For replaced words, do character-level diff
       const charDiff = characterDiff(change.oldValue!, change.newValue!);
       oldParts.push({
         value: change.oldValue!,
-        type: "delete",
+        type: 'delete',
         charDiff: charDiff.old,
       });
       newParts.push({
         value: change.newValue!,
-        type: "insert",
+        type: 'insert',
         charDiff: charDiff.new,
       });
     }
@@ -74,7 +71,7 @@ function computeDiff(
 }
 
 interface DiffChange {
-  type: "equal" | "delete" | "insert" | "replace";
+  type: 'equal' | 'delete' | 'insert' | 'replace';
   value: string;
   oldValue?: string;
   newValue?: string;
@@ -108,14 +105,14 @@ function myersDiff(oldWords: string[], newWords: string[]): DiffChange[] {
     j = n;
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && oldWords[i - 1] === newWords[j - 1]) {
-      changes.unshift({ type: "equal", value: oldWords[i - 1] });
+      changes.unshift({ type: 'equal', value: oldWords[i - 1] });
       i--;
       j--;
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      changes.unshift({ type: "insert", value: newWords[j - 1] });
+      changes.unshift({ type: 'insert', value: newWords[j - 1] });
       j--;
     } else if (i > 0 && (j === 0 || dp[i - 1][j] >= dp[i][j - 1])) {
-      changes.unshift({ type: "delete", value: oldWords[i - 1] });
+      changes.unshift({ type: 'delete', value: oldWords[i - 1] });
       i--;
     }
   }
@@ -127,15 +124,15 @@ function myersDiff(oldWords: string[], newWords: string[]): DiffChange[] {
     const next = changes[k + 1];
 
     if (
-      curr.type === "delete" &&
-      next?.type === "insert" &&
+      curr.type === 'delete' &&
+      next?.type === 'insert' &&
       !/\s/.test(curr.value) &&
       !/\s/.test(next.value)
     ) {
       // Both are non-whitespace words, treat as replacement
       merged.push({
-        type: "replace",
-        value: "",
+        type: 'replace',
+        value: '',
         oldValue: curr.value,
         newValue: next.value,
       });
@@ -157,8 +154,8 @@ interface CharDiff {
  * Character-level diff for highlighting within changed words
  */
 function characterDiff(oldWord: string, newWord: string): CharDiff {
-  const oldChars = oldWord.split("");
-  const newChars = newWord.split("");
+  const oldChars = oldWord.split('');
+  const newChars = newWord.split('');
 
   const m = oldChars.length;
   const n = newChars.length;
@@ -188,14 +185,10 @@ function characterDiff(oldWord: string, newWord: string): CharDiff {
       i--;
       j--;
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      newResult.unshift(
-        `<mark class="diff-char-insert">${escapeHtml(newChars[j - 1])}</mark>`
-      );
+      newResult.unshift(`<mark class="diff-char-insert">${escapeHtml(newChars[j - 1])}</mark>`);
       j--;
     } else if (i > 0) {
-      oldResult.unshift(
-        `<mark class="diff-char-delete">${escapeHtml(oldChars[i - 1])}</mark>`
-      );
+      oldResult.unshift(`<mark class="diff-char-delete">${escapeHtml(oldChars[i - 1])}</mark>`);
       i--;
     }
   }
@@ -207,7 +200,7 @@ function characterDiff(oldWord: string, newWord: string): CharDiff {
  * Escape HTML special characters
  */
 function escapeHtml(str: string): string {
-  const div = document.createElement("div");
+  const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
@@ -218,12 +211,12 @@ function escapeHtml(str: string): string {
 function renderDiffParts(parts: DiffPart[]): string {
   return parts
     .map((part) => {
-      if (part.type === "equal") {
+      if (part.type === 'equal') {
         return escapeHtml(part.value);
-      } else if (part.type === "delete") {
+      } else if (part.type === 'delete') {
         if (part.charDiff) {
           // Has character-level diff, use it (already HTML-escaped in characterDiff)
-          return `<mark class="diff-delete">${part.charDiff.join("")}</mark>`;
+          return `<mark class="diff-delete">${part.charDiff.join('')}</mark>`;
         } else {
           // No character-level diff, highlight entire part
           return `<mark class="diff-delete">${escapeHtml(part.value)}</mark>`;
@@ -231,14 +224,14 @@ function renderDiffParts(parts: DiffPart[]): string {
       } else {
         if (part.charDiff) {
           // Has character-level diff, use it (already HTML-escaped in characterDiff)
-          return `<mark class="diff-insert">${part.charDiff.join("")}</mark>`;
+          return `<mark class="diff-insert">${part.charDiff.join('')}</mark>`;
         } else {
           // No character-level diff, highlight entire part
           return `<mark class="diff-insert">${escapeHtml(part.value)}</mark>`;
         }
       }
     })
-    .join("");
+    .join('');
 }
 
 /**
@@ -266,9 +259,7 @@ export class DiffViewer {
   }
 
   private render(): void {
-    const conflictCount = this.options.fields.filter(
-      (f) => f.hasConflict
-    ).length;
+    const conflictCount = this.options.fields.filter((f) => f.hasConflict).length;
     const noConflicts = conflictCount === 0;
 
     this.container.innerHTML = `
@@ -277,26 +268,22 @@ export class DiffViewer {
           <span class="diff-conflict-count">
             ${
               noConflicts
-                ? `✅ ${i18n.t("diff.noConflicts")}`
-                : `⚠️ ${i18n.t("diff.conflictCount", { count: conflictCount })}`
+                ? `✅ ${i18n.t('diff.noConflicts')}`
+                : `⚠️ ${i18n.t('diff.conflictCount', { count: conflictCount })}`
             }
           </span>
           <div class="diff-mode-toggle">
             <button
-              class="diff-mode-btn ${
-                this.options.mode === "side-by-side" ? "active" : ""
-              }"
+              class="diff-mode-btn ${this.options.mode === 'side-by-side' ? 'active' : ''}"
               data-mode="side-by-side"
-              title="${i18n.t("diff.sideBySide")}"
+              title="${i18n.t('diff.sideBySide')}"
             >
               <span class="diff-mode-icon">⬌</span>
             </button>
             <button
-              class="diff-mode-btn ${
-                this.options.mode === "inline" ? "active" : ""
-              }"
+              class="diff-mode-btn ${this.options.mode === 'inline' ? 'active' : ''}"
               data-mode="inline"
-              title="${i18n.t("diff.inline")}"
+              title="${i18n.t('diff.inline')}"
             >
               <span class="diff-mode-icon">☰</span>
             </button>
@@ -304,11 +291,7 @@ export class DiffViewer {
         </div>
 
         <div class="diff-body">
-          ${
-            this.options.mode === "side-by-side"
-              ? this.renderSideBySide()
-              : this.renderInline()
-          }
+          ${this.options.mode === 'side-by-side' ? this.renderSideBySide() : this.renderInline()}
         </div>
       </div>
     `;
@@ -320,59 +303,47 @@ export class DiffViewer {
     return `
       <div class="diff-side-by-side">
         <div class="diff-column diff-local">
-          <div class="diff-column-header">📍 ${i18n.t(
-            "diff.localVersion"
-          )}</div>
+          <div class="diff-column-header">📍 ${i18n.t('diff.localVersion')}</div>
           ${this.options.fields
             .map((field) => {
-              const diff = field.hasConflict
-                ? computeDiff(field.local, field.imported)
-                : null;
+              const diff = field.hasConflict ? computeDiff(field.local, field.imported) : null;
 
               const localValue = field.local
                 ? diff
                   ? renderDiffParts(diff.old)
                   : escapeHtml(field.local)
-                : `<span class="diff-empty">${i18n.t("diff.empty")}</span>`;
+                : `<span class="diff-empty">${i18n.t('diff.empty')}</span>`;
 
               return `
-                <div class="diff-field ${
-                  field.hasConflict ? "diff-conflict" : ""
-                }">
+                <div class="diff-field ${field.hasConflict ? 'diff-conflict' : ''}">
                   <div class="diff-field-label">${field.label}</div>
                   <div class="diff-field-value">${localValue}</div>
                 </div>
               `;
             })
-            .join("")}
+            .join('')}
         </div>
 
         <div class="diff-column diff-imported">
-          <div class="diff-column-header">📥 ${i18n.t(
-            "diff.importedVersion"
-          )}</div>
+          <div class="diff-column-header">📥 ${i18n.t('diff.importedVersion')}</div>
           ${this.options.fields
             .map((field) => {
-              const diff = field.hasConflict
-                ? computeDiff(field.local, field.imported)
-                : null;
+              const diff = field.hasConflict ? computeDiff(field.local, field.imported) : null;
 
               const importedValue = field.imported
                 ? diff
                   ? renderDiffParts(diff.new)
                   : escapeHtml(field.imported)
-                : `<span class="diff-empty">${i18n.t("diff.empty")}</span>`;
+                : `<span class="diff-empty">${i18n.t('diff.empty')}</span>`;
 
               return `
-                <div class="diff-field ${
-                  field.hasConflict ? "diff-conflict" : ""
-                }">
+                <div class="diff-field ${field.hasConflict ? 'diff-conflict' : ''}">
                   <div class="diff-field-label">${field.label}</div>
                   <div class="diff-field-value">${importedValue}</div>
                 </div>
               `;
             })
-            .join("")}
+            .join('')}
         </div>
       </div>
     `;
@@ -383,21 +354,19 @@ export class DiffViewer {
       <div class="diff-inline">
         ${this.options.fields
           .map((field) => {
-            const diff = field.hasConflict
-              ? computeDiff(field.local, field.imported)
-              : null;
+            const diff = field.hasConflict ? computeDiff(field.local, field.imported) : null;
 
             const localValue = field.local
               ? diff
                 ? renderDiffParts(diff.old)
                 : escapeHtml(field.local)
-              : `<span class="diff-empty">${i18n.t("diff.empty")}</span>`;
+              : `<span class="diff-empty">${i18n.t('diff.empty')}</span>`;
 
             const importedValue = field.imported
               ? diff
                 ? renderDiffParts(diff.new)
                 : escapeHtml(field.imported)
-              : `<span class="diff-empty">${i18n.t("diff.empty")}</span>`;
+              : `<span class="diff-empty">${i18n.t('diff.empty')}</span>`;
 
             // GitHub-style inline: show conflict as two lines (delete + insert)
             if (field.hasConflict) {
@@ -416,7 +385,10 @@ export class DiffViewer {
               `;
             } else {
               // No conflict: show as single line
-              const value = field.local || field.imported || `<span class="diff-empty">${i18n.t("diff.empty")}</span>`;
+              const value =
+                field.local ||
+                field.imported ||
+                `<span class="diff-empty">${i18n.t('diff.empty')}</span>`;
               return `
                 <div class="diff-field">
                   <div class="diff-field-label">${field.label}</div>
@@ -428,15 +400,15 @@ export class DiffViewer {
               `;
             }
           })
-          .join("")}
+          .join('')}
       </div>
     `;
   }
 
   private attachEventListeners(): void {
-    const modeButtons = this.container.querySelectorAll(".diff-mode-btn");
+    const modeButtons = this.container.querySelectorAll('.diff-mode-btn');
     modeButtons.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
         const newMode = target.dataset.mode as DiffMode;
         this.setMode(newMode);

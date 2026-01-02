@@ -1,6 +1,6 @@
-import type { Book, StorageData, CategoryMetadata, BookList } from '../types';
 import { APP_VERSION, STORAGE_KEY, DEFAULT_CATEGORIES } from '../config';
 import { db, migrateFromLocalStorage } from './db';
+import type { Book, StorageData, CategoryMetadata, BookList } from '../types';
 
 /**
  * Storage class backed by IndexedDB for better performance and larger capacity
@@ -22,37 +22,36 @@ class Storage {
       await migrateFromLocalStorage(STORAGE_KEY);
 
       // Ensure default categories exist and migrate old format
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories = setting?.value || [];
 
       if (categories.length === 0) {
         // Initialize with default categories
-        const defaultCategoryMetadata: CategoryMetadata[] =
-          DEFAULT_CATEGORIES.map((name) => ({
-            name,
-            lastUsedAt: Date.now(),
-          }));
-        await db.settings.put({
-          key: "categories",
-          value: defaultCategoryMetadata,
-        });
-      } else if (categories.length > 0 && typeof categories[0] === "string") {
-        // Migrate old format (string[]) to new format (CategoryMetadata[])
-        const migratedCategories: CategoryMetadata[] = (
-          categories as unknown as string[]
-        ).map((name) => ({
+        const defaultCategoryMetadata: CategoryMetadata[] = DEFAULT_CATEGORIES.map((name) => ({
           name,
           lastUsedAt: Date.now(),
         }));
         await db.settings.put({
-          key: "categories",
+          key: 'categories',
+          value: defaultCategoryMetadata,
+        });
+      } else if (categories.length > 0 && typeof categories[0] === 'string') {
+        // Migrate old format (string[]) to new format (CategoryMetadata[])
+        const migratedCategories: CategoryMetadata[] = (categories as unknown as string[]).map(
+          (name) => ({
+            name,
+            lastUsedAt: Date.now(),
+          })
+        );
+        await db.settings.put({
+          key: 'categories',
           value: migratedCategories,
         });
       }
 
       this.initialized = true;
     } catch (error) {
-      console.error("Failed to initialize storage:", error);
+      console.error('Failed to initialize storage:', error);
       this.initialized = true; // Continue anyway
     }
   }
@@ -74,7 +73,7 @@ class Storage {
     try {
       return await db.books.toArray();
     } catch (error) {
-      console.error("Failed to get books:", error);
+      console.error('Failed to get books:', error);
       return [];
     }
   }
@@ -87,7 +86,7 @@ class Storage {
     try {
       return await db.books.get(id);
     } catch (error) {
-      console.error("Failed to get book:", error);
+      console.error('Failed to get book:', error);
       return undefined;
     }
   }
@@ -100,8 +99,8 @@ class Storage {
     try {
       await db.books.add(book);
     } catch (error) {
-      console.error("Failed to add book:", error);
-      throw new Error("Failed to add book");
+      console.error('Failed to add book:', error);
+      throw new Error('Failed to add book');
     }
   }
 
@@ -120,8 +119,8 @@ class Storage {
         });
       }
     } catch (error) {
-      console.error("Failed to update book:", error);
-      throw new Error("Failed to update book");
+      console.error('Failed to update book:', error);
+      throw new Error('Failed to update book');
     }
   }
 
@@ -146,8 +145,8 @@ class Storage {
         })
       );
     } catch (error) {
-      console.error("Failed to delete book:", error);
-      throw new Error("Failed to delete book");
+      console.error('Failed to delete book:', error);
+      throw new Error('Failed to delete book');
     }
   }
 
@@ -157,12 +156,12 @@ class Storage {
   async getCategories(): Promise<string[]> {
     await this.ensureInit();
     try {
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categoryMetadata: CategoryMetadata[] = setting?.value || [];
       const categoryNames = categoryMetadata.map((c) => c.name);
       return categoryNames;
     } catch (error) {
-      console.error("Failed to get categories:", error);
+      console.error('Failed to get categories:', error);
       return [...DEFAULT_CATEGORIES];
     }
   }
@@ -173,15 +172,13 @@ class Storage {
   async getCategoriesSorted(): Promise<CategoryMetadata[]> {
     await this.ensureInit();
     try {
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
 
       // Get book count for each category
       const books = await this.getBooks();
       const categoriesWithCount = categories.map((cat) => {
-        const bookCount = books.filter((b) =>
-          b.categories.includes(cat.name)
-        ).length;
+        const bookCount = books.filter((b) => b.categories.includes(cat.name)).length;
         return { ...cat, bookCount };
       });
 
@@ -198,12 +195,12 @@ class Storage {
         }
 
         // 3. alphabetical (case-insensitive, Chinese by pinyin)
-        return a.name.localeCompare(b.name, "zh-CN", {
-          sensitivity: "base",
+        return a.name.localeCompare(b.name, 'zh-CN', {
+          sensitivity: 'base',
         });
       });
     } catch (error) {
-      console.error("Failed to get sorted categories:", error);
+      console.error('Failed to get sorted categories:', error);
       return [];
     }
   }
@@ -214,7 +211,7 @@ class Storage {
   async addCategory(category: string): Promise<void> {
     await this.ensureInit();
     try {
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
 
       if (!categories.find((c) => c.name === category)) {
@@ -222,11 +219,11 @@ class Storage {
           name: category,
           lastUsedAt: Date.now(),
         });
-        await db.settings.put({ key: "categories", value: categories });
+        await db.settings.put({ key: 'categories', value: categories });
       }
     } catch (error) {
-      console.error("Failed to add category:", error);
-      throw new Error("Failed to add category");
+      console.error('Failed to add category:', error);
+      throw new Error('Failed to add category');
     }
   }
 
@@ -237,16 +234,16 @@ class Storage {
   async touchCategory(name: string): Promise<void> {
     await this.ensureInit();
     try {
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
 
       const category = categories.find((c) => c.name === name);
       if (category) {
         category.lastUsedAt = Date.now();
-        await db.settings.put({ key: "categories", value: categories });
+        await db.settings.put({ key: 'categories', value: categories });
       }
     } catch (error) {
-      console.error("Failed to touch category:", error);
+      console.error('Failed to touch category:', error);
     }
   }
 
@@ -259,7 +256,7 @@ class Storage {
       const books = await this.getBooks();
       return books.filter((b) => b.categories.includes(name)).length;
     } catch (error) {
-      console.error("Failed to get book count:", error);
+      console.error('Failed to get book count:', error);
       return 0;
     }
   }
@@ -271,28 +268,26 @@ class Storage {
     await this.ensureInit();
     try {
       // 1. Update category metadata
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
 
       const category = categories.find((c) => c.name === oldName);
       if (category) {
         category.name = newName;
-        await db.settings.put({ key: "categories", value: categories });
+        await db.settings.put({ key: 'categories', value: categories });
       }
 
       // 2. Update all books using this category
       const books = await this.getBooks();
       for (const book of books) {
         if (book.categories.includes(oldName)) {
-          book.categories = book.categories.map((c) =>
-            c === oldName ? newName : c
-          );
+          book.categories = book.categories.map((c) => (c === oldName ? newName : c));
           await this.updateBook(book.id, { categories: book.categories });
         }
       }
     } catch (error) {
-      console.error("Failed to update category name:", error);
-      throw new Error("Failed to update category name");
+      console.error('Failed to update category name:', error);
+      throw new Error('Failed to update category name');
     }
   }
 
@@ -303,17 +298,15 @@ class Storage {
     await this.ensureInit();
     try {
       // 1. Remove from category metadata
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
 
       const filtered = categories.filter((c) => c.name !== name);
-      await db.settings.put({ key: "categories", value: filtered });
+      await db.settings.put({ key: 'categories', value: filtered });
 
       // 2. Remove from all books (bulk update for performance)
       const books = await this.getBooks();
-      const booksToUpdate = books.filter((book) =>
-        book.categories.includes(name)
-      );
+      const booksToUpdate = books.filter((book) => book.categories.includes(name));
 
       if (booksToUpdate.length > 0) {
         // Update all affected books in parallel
@@ -325,8 +318,8 @@ class Storage {
         );
       }
     } catch (error) {
-      console.error("Failed to delete category:", error);
-      throw new Error("Failed to delete category");
+      console.error('Failed to delete category:', error);
+      throw new Error('Failed to delete category');
     }
   }
 
@@ -350,22 +343,20 @@ class Storage {
         // Update all affected books in parallel
         await Promise.all(
           booksToUpdate.map((book) => {
-            book.categories = book.categories.filter(
-              (c) => !namesToDelete.has(c)
-            );
+            book.categories = book.categories.filter((c) => !namesToDelete.has(c));
             return db.books.put(book);
           })
         );
       }
 
       // 2. Remove from category metadata (after books are updated successfully)
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
       const filtered = categories.filter((c) => !namesToDelete.has(c.name));
-      await db.settings.put({ key: "categories", value: filtered });
+      await db.settings.put({ key: 'categories', value: filtered });
     } catch (error) {
-      console.error("Failed to delete categories:", error);
-      throw new Error("Failed to delete categories");
+      console.error('Failed to delete categories:', error);
+      throw new Error('Failed to delete categories');
     }
   }
 
@@ -374,7 +365,7 @@ class Storage {
    */
   async getGoogleBooksApiKey(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("googleBooksApiKey");
+    const setting = await db.settings.get('googleBooksApiKey');
     return setting?.value;
   }
 
@@ -383,7 +374,7 @@ class Storage {
    */
   async setGoogleBooksApiKey(apiKey: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "googleBooksApiKey", value: apiKey });
+    await db.settings.put({ key: 'googleBooksApiKey', value: apiKey });
   }
 
   /**
@@ -391,7 +382,7 @@ class Storage {
    */
   async getISBNdbApiKey(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("isbndbApiKey");
+    const setting = await db.settings.get('isbndbApiKey');
     return setting?.value;
   }
 
@@ -400,7 +391,7 @@ class Storage {
    */
   async setISBNdbApiKey(apiKey: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "isbndbApiKey", value: apiKey });
+    await db.settings.put({ key: 'isbndbApiKey', value: apiKey });
   }
 
   /**
@@ -408,7 +399,7 @@ class Storage {
    */
   async getLLMApiEndpoint(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("llmApiEndpoint");
+    const setting = await db.settings.get('llmApiEndpoint');
     return setting?.value;
   }
 
@@ -417,7 +408,7 @@ class Storage {
    */
   async setLLMApiEndpoint(endpoint: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "llmApiEndpoint", value: endpoint });
+    await db.settings.put({ key: 'llmApiEndpoint', value: endpoint });
   }
 
   /**
@@ -425,7 +416,7 @@ class Storage {
    */
   async getLLMApiKey(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("llmApiKey");
+    const setting = await db.settings.get('llmApiKey');
     return setting?.value;
   }
 
@@ -434,7 +425,7 @@ class Storage {
    */
   async setLLMApiKey(apiKey: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "llmApiKey", value: apiKey });
+    await db.settings.put({ key: 'llmApiKey', value: apiKey });
   }
 
   /**
@@ -442,7 +433,7 @@ class Storage {
    */
   async getLLMModel(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("llmModel");
+    const setting = await db.settings.get('llmModel');
     return setting?.value;
   }
 
@@ -451,7 +442,7 @@ class Storage {
    */
   async setLLMModel(model: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "llmModel", value: model });
+    await db.settings.put({ key: 'llmModel', value: model });
   }
 
   /**
@@ -459,7 +450,7 @@ class Storage {
    */
   async getLLMTextApiEndpoint(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("llmTextApiEndpoint");
+    const setting = await db.settings.get('llmTextApiEndpoint');
     return setting?.value;
   }
 
@@ -468,7 +459,7 @@ class Storage {
    */
   async setLLMTextApiEndpoint(endpoint: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "llmTextApiEndpoint", value: endpoint });
+    await db.settings.put({ key: 'llmTextApiEndpoint', value: endpoint });
   }
 
   /**
@@ -476,7 +467,7 @@ class Storage {
    */
   async getLLMTextApiKey(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("llmTextApiKey");
+    const setting = await db.settings.get('llmTextApiKey');
     return setting?.value;
   }
 
@@ -485,7 +476,7 @@ class Storage {
    */
   async setLLMTextApiKey(apiKey: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "llmTextApiKey", value: apiKey });
+    await db.settings.put({ key: 'llmTextApiKey', value: apiKey });
   }
 
   /**
@@ -493,7 +484,7 @@ class Storage {
    */
   async getLLMTextModel(): Promise<string | undefined> {
     await this.ensureInit();
-    const setting = await db.settings.get("llmTextModel");
+    const setting = await db.settings.get('llmTextModel');
     return setting?.value;
   }
 
@@ -502,7 +493,7 @@ class Storage {
    */
   async setLLMTextModel(model: string): Promise<void> {
     await this.ensureInit();
-    await db.settings.put({ key: "llmTextModel", value: model });
+    await db.settings.put({ key: 'llmTextModel', value: model });
   }
 
   /**
@@ -516,25 +507,22 @@ class Storage {
       await db.imageCache.clear();
       // Restore default categories
       await db.settings.put({
-        key: "categories",
+        key: 'categories',
         value: [...DEFAULT_CATEGORIES],
       });
     } catch (error) {
-      console.error("Failed to clear data:", error);
-      throw new Error("Failed to clear data");
+      console.error('Failed to clear data:', error);
+      throw new Error('Failed to clear data');
     }
   }
 
   /**
    * Import data from JSON
    */
-  async importData(
-    imported: StorageData,
-    mode: "merge" | "replace" = "merge"
-  ): Promise<void> {
+  async importData(imported: StorageData, mode: 'merge' | 'replace' = 'merge'): Promise<void> {
     await this.ensureInit();
     try {
-      if (mode === "replace") {
+      if (mode === 'replace') {
         // Clear existing data
         await db.books.clear();
         await db.settings.clear();
@@ -545,55 +533,55 @@ class Storage {
         // Import settings
         if (imported.settings.categories) {
           await db.settings.put({
-            key: "categories",
+            key: 'categories',
             value: imported.settings.categories,
           });
         }
         if (imported.settings.googleBooksApiKey) {
           await db.settings.put({
-            key: "googleBooksApiKey",
+            key: 'googleBooksApiKey',
             value: imported.settings.googleBooksApiKey,
           });
         }
         if (imported.settings.isbndbApiKey) {
           await db.settings.put({
-            key: "isbndbApiKey",
+            key: 'isbndbApiKey',
             value: imported.settings.isbndbApiKey,
           });
         }
         if (imported.settings.llmApiEndpoint) {
           await db.settings.put({
-            key: "llmApiEndpoint",
+            key: 'llmApiEndpoint',
             value: imported.settings.llmApiEndpoint,
           });
         }
         if (imported.settings.llmApiKey) {
           await db.settings.put({
-            key: "llmApiKey",
+            key: 'llmApiKey',
             value: imported.settings.llmApiKey,
           });
         }
         if (imported.settings.llmModel) {
           await db.settings.put({
-            key: "llmModel",
+            key: 'llmModel',
             value: imported.settings.llmModel,
           });
         }
         if (imported.settings.llmTextApiEndpoint) {
           await db.settings.put({
-            key: "llmTextApiEndpoint",
+            key: 'llmTextApiEndpoint',
             value: imported.settings.llmTextApiEndpoint,
           });
         }
         if (imported.settings.llmTextApiKey) {
           await db.settings.put({
-            key: "llmTextApiKey",
+            key: 'llmTextApiKey',
             value: imported.settings.llmTextApiKey,
           });
         }
         if (imported.settings.llmTextModel) {
           await db.settings.put({
-            key: "llmTextModel",
+            key: 'llmTextModel',
             value: imported.settings.llmTextModel,
           });
         }
@@ -608,7 +596,7 @@ class Storage {
         }
 
         // Merge categories
-        const setting = await db.settings.get("categories");
+        const setting = await db.settings.get('categories');
         const categories: CategoryMetadata[] = setting?.value || [];
         let categoriesUpdated = false;
 
@@ -620,12 +608,12 @@ class Storage {
         });
 
         if (categoriesUpdated) {
-          await db.settings.put({ key: "categories", value: categories });
+          await db.settings.put({ key: 'categories', value: categories });
         }
       }
     } catch (error) {
-      console.error("Failed to import data:", error);
-      throw new Error("Failed to import data");
+      console.error('Failed to import data:', error);
+      throw new Error('Failed to import data');
     }
   }
 
@@ -636,7 +624,7 @@ class Storage {
     await this.ensureInit();
     try {
       const books = await db.books.toArray();
-      const setting = await db.settings.get("categories");
+      const setting = await db.settings.get('categories');
       const categories: CategoryMetadata[] = setting?.value || [];
       const googleBooksApiKey = await this.getGoogleBooksApiKey();
       const isbndbApiKey = await this.getISBNdbApiKey();
@@ -663,8 +651,8 @@ class Storage {
         },
       };
     } catch (error) {
-      console.error("Failed to export data:", error);
-      throw new Error("Failed to export data");
+      console.error('Failed to export data:', error);
+      throw new Error('Failed to export data');
     }
   }
 
@@ -686,7 +674,7 @@ class Storage {
       const lists = await db.bookLists.toArray();
       return lists.sort((a, b) => b.updatedAt - a.updatedAt);
     } catch (error) {
-      console.error("Failed to get book lists:", error);
+      console.error('Failed to get book lists:', error);
       return [];
     }
   }
@@ -699,7 +687,7 @@ class Storage {
     try {
       return await db.bookLists.get(id);
     } catch (error) {
-      console.error("Failed to get book list:", error);
+      console.error('Failed to get book list:', error);
       return undefined;
     }
   }
@@ -707,10 +695,7 @@ class Storage {
   /**
    * Create a new book list
    */
-  async createBookList(
-    name: string,
-    description?: string
-  ): Promise<BookList> {
+  async createBookList(name: string, description?: string): Promise<BookList> {
     await this.ensureInit();
     try {
       const now = Date.now();
@@ -725,8 +710,8 @@ class Storage {
       await db.bookLists.add(bookList);
       return bookList;
     } catch (error) {
-      console.error("Failed to create book list:", error);
-      throw new Error("Failed to create book list");
+      console.error('Failed to create book list:', error);
+      throw new Error('Failed to create book list');
     }
   }
 
@@ -735,21 +720,21 @@ class Storage {
    */
   async updateBookList(
     id: string,
-    updates: Partial<Omit<BookList, "id" | "createdAt">>
+    updates: Partial<Omit<BookList, 'id' | 'createdAt'>>
   ): Promise<void> {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(id);
       if (!bookList) {
-        throw new Error("Book list not found");
+        throw new Error('Book list not found');
       }
       await db.bookLists.update(id, {
         ...updates,
         updatedAt: Date.now(),
       });
     } catch (error) {
-      console.error("Failed to update book list:", error);
-      throw new Error("Failed to update book list");
+      console.error('Failed to update book list:', error);
+      throw new Error('Failed to update book list');
     }
   }
 
@@ -761,24 +746,20 @@ class Storage {
     try {
       await db.bookLists.delete(id);
     } catch (error) {
-      console.error("Failed to delete book list:", error);
-      throw new Error("Failed to delete book list");
+      console.error('Failed to delete book list:', error);
+      throw new Error('Failed to delete book list');
     }
   }
 
   /**
    * Add a book to a book list
    */
-  async addBookToList(
-    bookListId: string,
-    bookId: string,
-    comment?: string
-  ): Promise<void> {
+  async addBookToList(bookListId: string, bookId: string, comment?: string): Promise<void> {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(bookListId);
       if (!bookList) {
-        throw new Error("Book list not found");
+        throw new Error('Book list not found');
       }
       if (!bookList.books.some((item) => item.bookId === bookId)) {
         bookList.books.push({
@@ -790,8 +771,8 @@ class Storage {
         await db.bookLists.put(bookList);
       }
     } catch (error) {
-      console.error("Failed to add book to list:", error);
-      throw new Error("Failed to add book to list");
+      console.error('Failed to add book to list:', error);
+      throw new Error('Failed to add book to list');
     }
   }
 
@@ -803,14 +784,14 @@ class Storage {
     try {
       const bookList = await db.bookLists.get(bookListId);
       if (!bookList) {
-        throw new Error("Book list not found");
+        throw new Error('Book list not found');
       }
       bookList.books = bookList.books.filter((item) => item.bookId !== bookId);
       bookList.updatedAt = Date.now();
       await db.bookLists.put(bookList);
     } catch (error) {
-      console.error("Failed to remove book from list:", error);
-      throw new Error("Failed to remove book from list");
+      console.error('Failed to remove book from list:', error);
+      throw new Error('Failed to remove book from list');
     }
   }
 
@@ -826,9 +807,7 @@ class Storage {
       if (!bookList) {
         return [];
       }
-      const booksWithMeta: Array<
-        Book & { comment?: string; addedAt?: number }
-      > = [];
+      const booksWithMeta: Array<Book & { comment?: string; addedAt?: number }> = [];
 
       for (const item of bookList.books) {
         const book = await this.getBook(item.bookId);
@@ -843,7 +822,7 @@ class Storage {
 
       return booksWithMeta;
     } catch (error) {
-      console.error("Failed to get books in list:", error);
+      console.error('Failed to get books in list:', error);
       return [];
     }
   }
@@ -855,11 +834,9 @@ class Storage {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(bookListId);
-      return bookList
-        ? bookList.books.some((item) => item.bookId === bookId)
-        : false;
+      return bookList ? bookList.books.some((item) => item.bookId === bookId) : false;
     } catch (error) {
-      console.error("Failed to check book in list:", error);
+      console.error('Failed to check book in list:', error);
       return false;
     }
   }
@@ -876,7 +853,7 @@ class Storage {
     try {
       const bookList = await db.bookLists.get(bookListId);
       if (!bookList) {
-        throw new Error("Book list not found");
+        throw new Error('Book list not found');
       }
 
       const bookItem = bookList.books.find((item) => item.bookId === bookId);
@@ -886,18 +863,15 @@ class Storage {
         await db.bookLists.put(bookList);
       }
     } catch (error) {
-      console.error("Failed to update book comment:", error);
-      throw new Error("Failed to update book comment");
+      console.error('Failed to update book comment:', error);
+      throw new Error('Failed to update book comment');
     }
   }
 
   /**
    * Get comment for a book in a book list
    */
-  async getBookComment(
-    bookListId: string,
-    bookId: string
-  ): Promise<string | undefined> {
+  async getBookComment(bookListId: string, bookId: string): Promise<string | undefined> {
     await this.ensureInit();
     try {
       const bookList = await db.bookLists.get(bookListId);
@@ -906,7 +880,7 @@ class Storage {
       const bookItem = bookList.books.find((item) => item.bookId === bookId);
       return bookItem?.comment;
     } catch (error) {
-      console.error("Failed to get book comment:", error);
+      console.error('Failed to get book comment:', error);
       return undefined;
     }
   }

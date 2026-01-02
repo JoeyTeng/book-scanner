@@ -1,37 +1,27 @@
+import { getCrossrefBookByISBN, searchCrossrefByTitle } from './crossref';
+import { searchGoogleBooks, searchGoogleBooksByTitle } from './google-books';
+import { getInternetArchiveBookByISBN, searchInternetArchiveByTitle } from './internet-archive';
+import { getISBNdbBookByISBN, searchISBNdbByTitle } from './isbndb';
+import { searchOpenLibrary, searchOpenLibraryByTitle } from './open-library';
+import { normalizeISBN } from '../../utils/isbn';
 import type { BookDataSource } from '../../types';
-import { searchGoogleBooks, searchGoogleBooksByTitle } from "./google-books";
-import { searchOpenLibrary, searchOpenLibraryByTitle } from "./open-library";
-import {
-  getInternetArchiveBookByISBN,
-  searchInternetArchiveByTitle,
-} from "./internet-archive";
-import { getISBNdbBookByISBN, searchISBNdbByTitle } from "./isbndb";
-import { getCrossrefBookByISBN, searchCrossrefByTitle } from "./crossref";
-import { normalizeISBN } from "../../utils/isbn";
 
 /**
  * Aggregate book data from multiple sources by ISBN
  */
-export async function aggregateBookData(
-  query: string
-): Promise<BookDataSource[]> {
+export async function aggregateBookData(query: string): Promise<BookDataSource[]> {
   const normalizedQuery = normalizeISBN(query);
 
   try {
     // Fetch from all APIs in parallel
-    const [
-      googleResults,
-      openLibraryResults,
-      internetArchiveResult,
-      isbndbResult,
-      crossrefResult,
-    ] = await Promise.all([
-      searchGoogleBooks(normalizedQuery),
-      searchOpenLibrary(normalizedQuery),
-      getInternetArchiveBookByISBN(normalizedQuery),
-      getISBNdbBookByISBN(normalizedQuery),
-      getCrossrefBookByISBN(normalizedQuery),
-    ]);
+    const [googleResults, openLibraryResults, internetArchiveResult, isbndbResult, crossrefResult] =
+      await Promise.all([
+        searchGoogleBooks(normalizedQuery),
+        searchOpenLibrary(normalizedQuery),
+        getInternetArchiveBookByISBN(normalizedQuery),
+        getISBNdbBookByISBN(normalizedQuery),
+        getCrossrefBookByISBN(normalizedQuery),
+      ]);
 
     // Combine all results
     const allResults = [
@@ -44,7 +34,7 @@ export async function aggregateBookData(
 
     return deduplicateResults(allResults);
   } catch (error) {
-    console.error("Error aggregating book data:", error);
+    console.error('Error aggregating book data:', error);
     return [];
   }
 }
@@ -52,9 +42,7 @@ export async function aggregateBookData(
 /**
  * Search books by title from multiple sources
  */
-export async function searchBookByTitle(
-  title: string
-): Promise<BookDataSource[]> {
+export async function searchBookByTitle(title: string): Promise<BookDataSource[]> {
   if (!title.trim()) {
     return [];
   }
@@ -86,7 +74,7 @@ export async function searchBookByTitle(
 
     return deduplicateResults(allResults);
   } catch (error) {
-    console.error("Error searching book by title:", error);
+    console.error('Error searching book by title:', error);
     return [];
   }
 }
@@ -116,7 +104,7 @@ function deduplicateResults(results: BookDataSource[]): BookDataSource[] {
  */
 export function mergeSources(sources: BookDataSource[]): BookDataSource {
   const merged: BookDataSource = {
-    source: sources.map(s => s.source).join(', ')
+    source: sources.map((s) => s.source).join(', '),
   };
 
   // Priority order: Google Books > Open Library

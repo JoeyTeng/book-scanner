@@ -1,13 +1,14 @@
+import { searchBookByTitle } from '../modules/api/aggregator';
 import { llmService, ParsedBookInfo } from '../modules/llm';
 import { storage } from '../modules/storage';
 import { Book } from '../types';
-import { searchBookByTitle } from '../modules/api/aggregator';
-import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from "./manual-llm-helper";
+import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
 import { i18n } from '../modules/i18n';
 
 export class VisionUploadModal {
   private modalElement: HTMLDivElement | null = null;
   private onBooksAdded?: () => void;
+  private isLLMConfigured: boolean = true;
 
   constructor(onBooksAdded?: () => void) {
     this.onBooksAdded = onBooksAdded;
@@ -26,6 +27,8 @@ export class VisionUploadModal {
   }
 
   private async render(): Promise<void> {
+    const isConfigured = Boolean(llmService.isConfigured());
+    this.isLLMConfigured = isConfigured;
     this.modalElement = document.createElement('div');
     this.modalElement.className = 'modal';
     this.modalElement.innerHTML = `
@@ -41,7 +44,7 @@ export class VisionUploadModal {
           </div>
 
           ${
-            !llmService.isConfigured()
+            !isConfigured
               ? `
               <div class="info-box warning-box">
                 <p>${i18n.t('vision.noAPI')}</p>
@@ -108,7 +111,7 @@ export class VisionUploadModal {
       this.showManualVisionHelper();
     });
 
-    if (!llmService.isConfigured()) {
+    if (!this.isLLMConfigured) {
       return;
     }
 
@@ -118,22 +121,24 @@ export class VisionUploadModal {
     });
 
     // File input change
-    this.modalElement?.querySelector('#vision-file-input')?.addEventListener('change', async (e) => {
-      const input = e.target as HTMLInputElement;
-      const file = input.files?.[0];
-      if (!file) return;
+    this.modalElement?.querySelector('#vision-file-input')?.addEventListener('change', (e) => {
+      void (async () => {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) return;
 
-      // Show preview
-      const preview = this.modalElement?.querySelector('#image-preview') as HTMLElement;
-      const previewImg = this.modalElement?.querySelector('#preview-img') as HTMLImageElement;
-      const previewName = this.modalElement?.querySelector('#preview-name') as HTMLElement;
+        // Show preview
+        const preview = this.modalElement?.querySelector('#image-preview') as HTMLElement;
+        const previewImg = this.modalElement?.querySelector('#preview-img') as HTMLImageElement;
+        const previewName = this.modalElement?.querySelector('#preview-name') as HTMLElement;
 
-      previewImg.src = URL.createObjectURL(file);
-      previewName.textContent = file.name;
-      preview.style.display = 'block';
+        previewImg.src = URL.createObjectURL(file);
+        previewName.textContent = file.name;
+        preview.style.display = 'block';
 
-      // Start parsing
-      await this.parseImage(file);
+        // Start parsing
+        await this.parseImage(file);
+      })();
     });
   }
 
@@ -167,7 +172,9 @@ export class VisionUploadModal {
   private async showBooksPreview(parsedBooks: ParsedBookInfo[]): Promise<void> {
     const booksList = this.modalElement?.querySelector('#books-list') as HTMLElement;
 
-    booksList.innerHTML = parsedBooks.map((book, index) => `
+    booksList.innerHTML = parsedBooks
+      .map(
+        (book, index) => `
       <div class="book-preview-item" data-index="${index}">
         <div class="book-preview-content">
           <h4>${book.title || 'Unknown Title'}</h4>
@@ -184,22 +191,30 @@ export class VisionUploadModal {
           </label>
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     // Add All button
-    this.modalElement?.querySelector('#btn-add-all')?.addEventListener('click', async () => {
-      const checkboxes = this.modalElement?.querySelectorAll<HTMLInputElement>('#books-list input[type="checkbox"]');
-      const selectedBooks = parsedBooks.filter((_, index) => {
-        const checkbox = Array.from(checkboxes || []).find(cb => cb.dataset.index === String(index));
-        return checkbox?.checked;
-      });
+    this.modalElement?.querySelector('#btn-add-all')?.addEventListener('click', () => {
+      void (async () => {
+        const checkboxes = this.modalElement?.querySelectorAll<HTMLInputElement>(
+          '#books-list input[type="checkbox"]'
+        );
+        const selectedBooks = parsedBooks.filter((_, index) => {
+          const checkbox = Array.from(checkboxes || []).find(
+            (cb) => cb.dataset.index === String(index)
+          );
+          return checkbox?.checked;
+        });
 
-      if (selectedBooks.length === 0) {
-        alert('Please select at least one book to add.');
-        return;
-      }
+        if (selectedBooks.length === 0) {
+          alert('Please select at least one book to add.');
+          return;
+        }
 
-      await this.addBooks(selectedBooks);
+        await this.addBooks(selectedBooks);
+      })();
     });
 
     // Cancel button
@@ -217,9 +232,7 @@ export class VisionUploadModal {
       const isDuplicate = existingBooks.some(
         (b: Book) =>
           (parsedBook.isbn && b.isbn === parsedBook.isbn) ||
-          (parsedBook.title &&
-            b.title === parsedBook.title &&
-            b.author === parsedBook.author)
+          (parsedBook.title && b.title === parsedBook.title && b.author === parsedBook.author)
       );
 
       if (isDuplicate) {
@@ -240,7 +253,7 @@ export class VisionUploadModal {
               isbn: parsedBook.isbn || apiBook.isbn,
               cover: parsedBook.cover || apiBook.cover,
               publisher: parsedBook.publisher || apiBook.publisher,
-              publishDate: parsedBook.publishDate || apiBook.publishDate
+              publishDate: parsedBook.publishDate || apiBook.publishDate,
             };
           }
         } catch (error) {
@@ -264,7 +277,7 @@ export class VisionUploadModal {
         tags: [],
         recommendation: finalBook.notes, // Store LLM notes as recommendation
         notes: '',
-        source: ['llm-vision']
+        source: ['llm-vision'],
       };
 
       await storage.addBook(newBook);
@@ -286,17 +299,20 @@ export class VisionUploadModal {
   private showManualVisionHelper(): void {
     const helper = new ManualLLMHelper({
       title: '📱 Extract Books with Your LLM App',
-      description: 'Use ChatGPT, Claude, or any LLM app with vision capability to extract all books from your image.',
+      description:
+        'Use ChatGPT, Claude, or any LLM app with vision capability to extract all books from your image.',
       systemPrompt: MANUAL_LLM_PROMPTS.visionMultiBook.system,
       userPromptTemplate: MANUAL_LLM_PROMPTS.visionMultiBook.user,
-      onResult: async (result) => {
-        const books = Array.isArray(result) ? result : [result];
-        if (books.length === 0) {
-          alert('No books found in the result. Please try again.');
-          return;
-        }
-        await this.addBooks(books);
-      }
+      onResult: (result) => {
+        void (async () => {
+          const books = Array.isArray(result) ? result : [result];
+          if (books.length === 0) {
+            alert('No books found in the result. Please try again.');
+            return;
+          }
+          await this.addBooks(books);
+        })();
+      },
     });
 
     helper.show('Upload your image to your LLM app and paste the JSON response below.');

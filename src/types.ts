@@ -89,11 +89,11 @@ export interface BookDataSource {
 export interface SearchFilters {
   query: string;
   category?: string;
-  status?: ReadingStatus | "all";
+  status?: ReadingStatus | 'all';
 }
 
-export type SortField = "addedAt" | "title" | "author" | "publishDate";
-export type SortOrder = "asc" | "desc";
+export type SortField = 'addedAt' | 'title' | 'author' | 'publishDate';
+export type SortOrder = 'asc' | 'desc';
 
 export interface ExternalLinks {
   amazonUS: string;

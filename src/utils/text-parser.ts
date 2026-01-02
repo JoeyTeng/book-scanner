@@ -24,7 +24,10 @@ export function parseSmartPaste(text: string): Partial<Book> {
   }
 
   // Try key-value pairs format
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line);
   const kvPattern = /^(title|author|isbn|publisher|publish date|date|year)[\s:：]+(.+)$/i;
 
   let foundKV = false;

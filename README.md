@@ -241,7 +241,7 @@ The app includes a lightweight, zero-dependency internationalization system:
    const [en, zhCN, ja] = await Promise.all([
      import('../locales/en.js'),
      import('../locales/zh-CN.js'),
-     import('../locales/ja.js')
+     import('../locales/ja.js'),
    ]);
 
    this.translations['ja'] = ja.ja;

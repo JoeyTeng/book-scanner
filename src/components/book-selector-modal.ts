@@ -1,5 +1,5 @@
-import type { BookDataSource } from '../types';
 import { i18n } from '../modules/i18n';
+import type { BookDataSource } from '../types';
 
 export class BookSelectorModal {
   private modal: HTMLElement;
@@ -62,12 +62,15 @@ export class BookSelectorModal {
       return;
     }
 
-    resultsContainer.innerHTML = this.results.map((result, index) => `
+    resultsContainer.innerHTML = this.results
+      .map(
+        (result, index) => `
       <div class="selector-item" data-index="${index}">
         <div class="selector-item-cover">
-          ${result.cover
-            ? `<img src="${result.cover}" alt="${result.title}">`
-            : '<div class="no-cover">No Cover</div>'
+          ${
+            result.cover
+              ? `<img src="${result.cover}" alt="${result.title}">`
+              : '<div class="no-cover">No Cover</div>'
           }
         </div>
         <div class="selector-item-info">
@@ -82,10 +85,12 @@ export class BookSelectorModal {
           <button class="btn btn-primary btn-select" data-index="${index}">${i18n.t('selector.button.select')}</button>
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     // Attach click handlers to select buttons
-    resultsContainer.querySelectorAll('.btn-select').forEach(btn => {
+    resultsContainer.querySelectorAll('.btn-select').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const index = parseInt((e.target as HTMLElement).dataset.index || '0');
         this.handleSelect(index);

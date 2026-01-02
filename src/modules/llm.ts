@@ -39,14 +39,15 @@ export class LLMService {
    * Parse book information from arbitrary text using LLM
    */
   async parseBookInfo(text: string): Promise<ParsedBookInfo | null> {
-    if (!await this.isTextConfigured()) {
+    if (!(await this.isTextConfigured())) {
       return null;
     }
 
     // Use dedicated text API if configured, otherwise fallback to main API
-    const endpoint = await storage.getLLMTextApiEndpoint() || await storage.getLLMApiEndpoint();
-    const apiKey = await storage.getLLMTextApiKey() || await storage.getLLMApiKey();
-    const model = await storage.getLLMTextModel() || await storage.getLLMModel() || 'gpt-4o-mini';
+    const endpoint = (await storage.getLLMTextApiEndpoint()) || (await storage.getLLMApiEndpoint());
+    const apiKey = (await storage.getLLMTextApiKey()) || (await storage.getLLMApiKey());
+    const model =
+      (await storage.getLLMTextModel()) || (await storage.getLLMModel()) || 'gpt-4o-mini';
 
     if (!endpoint || !apiKey) {
       return null;
@@ -56,14 +57,15 @@ export class LLMService {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: model,
-          messages: [{
-            role: 'system',
-            content: `You are a book information extraction assistant. Extract book metadata from any text format (Douban, Amazon, WeChat Read, Xiaohongshu, etc.).
+          messages: [
+            {
+              role: 'system',
+              content: `You are a book information extraction assistant. Extract book metadata from any text format (Douban, Amazon, WeChat Read, Xiaohongshu, etc.).
 
 Return ONLY valid JSON with this exact structure (no markdown, no explanations):
 {
@@ -77,14 +79,16 @@ Return ONLY valid JSON with this exact structure (no markdown, no explanations):
   "confidence": 0.95
 }
 
-If a field is not found, use empty string. Always include all fields.`
-          }, {
-            role: 'user',
-            content: `Extract book information from this text:\n\n${text}`
-          }],
+If a field is not found, use empty string. Always include all fields.`,
+            },
+            {
+              role: 'user',
+              content: `Extract book information from this text:\n\n${text}`,
+            },
+          ],
           response_format: { type: 'json_object' },
-          temperature: 0.3
-        })
+          temperature: 0.3,
+        }),
       });
 
       if (!response.ok) {
@@ -104,7 +108,7 @@ If a field is not found, use empty string. Always include all fields.`
       const parsed = JSON.parse(content) as ParsedBookInfo;
 
       // Clean up empty strings
-      Object.keys(parsed).forEach(key => {
+      Object.keys(parsed).forEach((key) => {
         if (parsed[key as keyof ParsedBookInfo] === '') {
           delete parsed[key as keyof ParsedBookInfo];
         }
@@ -121,13 +125,13 @@ If a field is not found, use empty string. Always include all fields.`
    * Extract multiple books from an image using Vision API
    */
   async parseBooksFromImage(imageFile: File): Promise<ParsedBookInfo[] | null> {
-    if (!await this.isConfigured()) {
+    if (!(await this.isConfigured())) {
       return null;
     }
 
     const endpoint = await storage.getLLMApiEndpoint();
     const apiKey = await storage.getLLMApiKey();
-    const model = await storage.getLLMModel() || 'gpt-4o-mini';
+    const model = (await storage.getLLMModel()) || 'gpt-4o-mini';
 
     if (!endpoint || !apiKey) {
       return null;
@@ -140,14 +144,15 @@ If a field is not found, use empty string. Always include all fields.`
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: model,
-          messages: [{
-            role: 'system',
-            content: `You are a book information extraction assistant. Extract ALL book metadata from images (screenshots from Douban, Amazon, WeChat Read, Xiaohongshu, etc.).
+          messages: [
+            {
+              role: 'system',
+              content: `You are a book information extraction assistant. Extract ALL book metadata from images (screenshots from Douban, Amazon, WeChat Read, Xiaohongshu, etc.).
 
 Return ONLY valid JSON with this exact structure (no markdown, no explanations):
 {
@@ -165,26 +170,28 @@ Return ONLY valid JSON with this exact structure (no markdown, no explanations):
   ]
 }
 
-Extract EVERY book mentioned or shown in the image. If a field is not visible, use empty string. Always include all fields for each book.`
-          }, {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Extract information for ALL books shown in this image:'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: base64Image
-                }
-              }
-            ]
-          }],
+Extract EVERY book mentioned or shown in the image. If a field is not visible, use empty string. Always include all fields for each book.`,
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Extract information for ALL books shown in this image:',
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: base64Image,
+                  },
+                },
+              ],
+            },
+          ],
           response_format: { type: 'json_object' },
           temperature: 0.3,
-          max_tokens: 2000
-        })
+          max_tokens: 2000,
+        }),
       });
 
       if (!response.ok) {
@@ -209,8 +216,8 @@ Extract EVERY book mentioned or shown in the image. If a field is not visible, u
       }
 
       // Clean up empty strings in each book
-      parsed.books.forEach(book => {
-        Object.keys(book).forEach(key => {
+      parsed.books.forEach((book) => {
+        Object.keys(book).forEach((key) => {
           if (book[key as keyof ParsedBookInfo] === '') {
             delete book[key as keyof ParsedBookInfo];
           }
@@ -244,7 +251,7 @@ Extract EVERY book mentioned or shown in the image. If a field is not visible, u
     return {
       configured,
       endpoint: configured ? await storage.getLLMApiEndpoint() : undefined,
-      model: configured ? await storage.getLLMModel() || 'gpt-4o-mini' : undefined
+      model: configured ? (await storage.getLLMModel()) || 'gpt-4o-mini' : undefined,
     };
   }
 }

@@ -13,13 +13,14 @@ The Book List (书单) feature allows users to organize their book collection in
 ### Features Implemented
 
 #### 1. Data Model
+
 - **BookList Interface**:
   ```typescript
   interface BookList {
-    id: string;              // UUID
-    name: string;            // Display name
-    description?: string;    // Optional description
-    bookIds: string[];       // References to books
+    id: string; // UUID
+    name: string; // Display name
+    description?: string; // Optional description
+    bookIds: string[]; // References to books
     createdAt: Date;
     updatedAt: Date;
   }
@@ -27,11 +28,14 @@ The Book List (书单) feature allows users to organize their book collection in
 - **Export/Import Interfaces**: `BookListExport`, `BookListImportResult`
 
 #### 2. Database Schema
+
 - IndexedDB upgraded to version 2
 - Added `bookLists` table with index on `id, name, createdAt, updatedAt`
 
 #### 3. Storage Layer (storage.ts)
+
 New methods:
+
 - `getBookLists()`: Fetch all lists (sorted by updatedAt DESC)
 - `getBookList(id)`: Get single list
 - `createBookList(name, description?)`: Create new list with UUID
@@ -43,9 +47,11 @@ New methods:
 - `isBookInList(bookListId, bookId)`: Check membership
 
 Enhanced existing methods:
+
 - `deleteBook()`: Now automatically removes book ID from all book lists
 
 #### 4. Book List Manager Modal
+
 - Create, rename, delete book lists
 - Shows book count for each list
 - Optional description display
@@ -53,6 +59,7 @@ Enhanced existing methods:
 - Deletion warning if list contains books
 
 #### 5. Navbar Integration
+
 - Center section: Book list selector dropdown
 - Default option: "📚 All Books"
 - Menu item: "Manage Book Lists"
@@ -60,22 +67,27 @@ Enhanced existing methods:
 - Public API methods for external control
 
 #### 6. Filtering System
+
 - App.ts: Connects navbar selection to BookList component
 - BookList.ts: Filters books based on active book list ID
 - Seamless switching between "All Books" and specific lists
 
 #### 7. Internationalization
+
 Added translations for:
+
 - `bookListSelector.*`: Selector UI
 - `bookListManager.*`: Manager modal
 - `error.bookList*`: Error messages
 - `navbar.menu.manageBookLists`: Menu item
 
 #### 8. Styling
+
 - `.navbar-center`: Center section layout
 - `.booklist-selector`: Dropdown styling with hover/focus states
 
 ### Verification Points
+
 - ✅ Create book list → appears in dropdown
 - ✅ Select book list → only shows books in that list
 - ✅ Select "All Books" → shows all books
@@ -221,6 +233,7 @@ Dropdown menu:
 ## Phase 2.5: Book List Comments ✅ COMPLETED
 
 ### Overview
+
 Add per-list comments for each book, allowing users to add public, shareable notes specific to each book list context.
 
 ### Features to Implement
@@ -228,24 +241,26 @@ Add per-list comments for each book, allowing users to add public, shareable not
 #### 1. Data Model Changes ✅
 
 **Updated BookList Interface**:
+
 ```typescript
 interface BookInList {
   bookId: string;
-  comment?: string;     // Public comment, 500 char limit
-  addedAt: Date;        // When book was added to this list
+  comment?: string; // Public comment, 500 char limit
+  addedAt: Date; // When book was added to this list
 }
 
 interface BookList {
   id: string;
   name: string;
   description?: string;
-  books: BookInList[];  // Replaces bookIds: string[]
+  books: BookInList[]; // Replaces bookIds: string[]
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
 **Database Migration**: v2 → v3
+
 - Convert `bookIds: string[]` to `books: BookInList[]`
 - Set `addedAt` to `bookList.updatedAt` or current time
 - Initial `comment` is `undefined`
@@ -253,16 +268,19 @@ interface BookList {
 #### 2. Storage API Updates ✅
 
 **Modified methods**:
+
 - `addBookToList(bookListId, bookId, comment?)`: Accept optional comment
 - `getBooksInList(bookListId)`: Return books with comment and addedAt
 
 **New methods**:
+
 - `updateBookComment(bookListId, bookId, comment)`: Update comment
 - `getBookComment(bookListId, bookId)`: Get comment for specific book
 
 #### 3. UI Components ✅
 
 **3.1 Comment Edit Modal** ✅
+
 - Modal popup for editing comments
 - Textarea with 500 character limit
 - Real-time character counter (e.g., "234/500")
@@ -272,6 +290,7 @@ interface BookList {
 - Note: "This comment can be publicly shared"
 
 **3.2 Book List Management Modal** ✅
+
 - **Google Maps-style collection interface**
 - Single modal for managing all book list memberships
 - Shows book info preview at top
@@ -283,6 +302,7 @@ interface BookList {
 - Unified entry point from BookForm and BookCard
 
 **3.3 BookCard Display** ✅
+
 - Single ⭐/☆ button for collection management
 - Dynamic icon based on list membership:
   - ☆ (empty star): Book not in any list
@@ -294,6 +314,7 @@ interface BookList {
 - Opens BookListManagementModal
 
 **3.4 BookForm - Book Lists Section** ✅
+
 - Replaced detailed list section with collection button
 - Button shows "⭐ 管理收藏书单" with badge showing count
 - Badge only visible when book is in lists
@@ -303,6 +324,7 @@ interface BookList {
 #### 4. Technical Improvements ✅
 
 **4.1 Modal Flash Fix**
+
 - **Problem**: Modal flickered when adding/removing books (entire modal was removed and recreated)
 - **Solution**: Separated modal into static and dynamic parts
   - `createModal()`: Creates modal skeleton once (header, close buttons, static event listeners)
@@ -311,11 +333,13 @@ interface BookList {
 - **Result**: Smooth content updates without visual interruption
 
 **4.2 Privacy Notice Improvements**
+
 - Removed clickable alert buttons
 - Changed to inline `<small class="privacy-hint">` text
 - Always visible, better for mobile UX
 
 **4.3 Visual State Feedback**
+
 - Icon distinction: ☆ vs ⭐ for unsaved vs saved
 - CSS transitions for smooth opacity and scale changes
 - Consistent collection paradigm across all components
@@ -323,10 +347,12 @@ interface BookList {
 #### 5. Files Modified ✅
 
 **New files created**:
+
 - `src/components/book-comment-edit-modal.ts`: Comment editing modal
 - `src/components/book-list-management-modal.ts`: Unified collection management modal
 
 **Modified files**:
+
 - `src/types.ts`: Added `BookInList` interface, updated `BookList`
 - `src/modules/db.ts`: Database v2→v3 migration
 - `src/modules/storage.ts`: Updated methods for comment support
@@ -339,12 +365,14 @@ interface BookList {
 #### 6. Design Decisions ✅
 
 **Character Limit Handling**:
+
 - 500 char soft limit (respects IME composition)
 - Over-limit: Red border + warning, but allows typing
 - Submit disabled when over limit
 - Bulk edit: Does not support comments
 
 **Google Maps-Style Collection Interface**:
+
 - Unified modal approach reduces UI complexity
 - Clear visual separation of "in lists" vs "available lists"
 - In-place operations avoid navigation overhead
@@ -352,6 +380,7 @@ interface BookList {
 - Badge count provides at-a-glance membership info
 
 **Icon Selection**:
+
 - ☆ (empty star): Universal symbol for "not saved"
 - ⭐ (filled star): Universal symbol for "saved/favorited"
 - Consistent with Google Maps collection metaphor
@@ -381,19 +410,20 @@ interface BookList {
 **Feature**: Export one or more book lists as JSON with full book data
 
 **Export format**:
+
 ```typescript
 interface BookListExportFormat {
-  version: number;        // DB version (currently 3)
-  exportedAt: string;     // ISO 8601 timestamp
+  version: number; // DB version (currently 3)
+  exportedAt: string; // ISO 8601 timestamp
   lists: BookListExportData[];
 }
 
 interface BookListExportData {
-  id: string;             // Original list ID (for reference)
+  id: string; // Original list ID (for reference)
   name: string;
   description?: string;
-  createdAt: string;      // ISO 8601
-  updatedAt: string;      // ISO 8601
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
   books: ExportedBook[];
 }
 
@@ -409,8 +439,8 @@ interface ExportedBook {
   // Note: recommendation and notes are NOT exported (private fields)
 
   // List-specific info
-  comment?: string;       // Book's comment in this list
-  addedAt: string;        // ISO 8601
+  comment?: string; // Book's comment in this list
+  addedAt: string; // ISO 8601
 }
 ```
 
@@ -706,7 +736,7 @@ interface ConflictInfo {
   listNameConflicts: Array<{
     importedName: string;
     existingId: string;
-    suggestedName: string;  // Auto-generated rename
+    suggestedName: string; // Auto-generated rename
   }>;
   bookConflicts: Array<{
     importedBook: ExportedBook;
@@ -732,7 +762,7 @@ interface ImportResult {
     booksMerged: number;
   };
   errors: string[];
-  snapshot: ImportSnapshot;  // For undo
+  snapshot: ImportSnapshot; // For undo
 }
 
 interface ImportSnapshot {
@@ -798,6 +828,7 @@ async function performImport(data: BookListExportFormat, strategy: ImportStrateg
 **Feature**: Field-level conflict resolution with detailed diff view
 
 **Design Philosophy**: Progressive disclosure
+
 - Default behavior unchanged (rename + merge + non-empty first)
 - Advanced options collapsible for expert users
 - Clear consequences for every action
@@ -808,22 +839,26 @@ async function performImport(data: BookListExportFormat, strategy: ImportStrateg
 #### Phase 3.3.1: Enhanced Resolution Options (Current)
 
 **Book List Conflicts** - Extended actions:
+
 - `rename`: Auto-generate unique name (e.g., "待读 (2)")
 - `merge`: Merge books into existing list + handle comment conflicts
 - `replace`: Delete existing list and create new one
 - `skip`: Ignore this imported list
 
 **Comment Merge Strategy** (when list action = "merge"):
+
 - `local`: Keep existing comments, discard imported
 - `import`: Replace with imported comments, discard existing
 - `both`: Concatenate: `existing + "\n\n" + imported`
 
 **Book Conflicts** - Extended actions:
+
 - `merge`: Merge metadata into existing book (with field-level strategy)
 - `skip`: Only update list membership and comments, ignore book metadata
 - `duplicate`: Create new book with different ID (force keep both)
 
 **Field-Level Merge Strategy** (when book action = "merge"):
+
 - `non-empty`: Use non-empty value (imported if local is empty, local if imported is empty)
 - `local`: Always prefer local book data
 - `import`: Always prefer imported data
@@ -840,18 +875,18 @@ interface ImportStrategy {
   defaultFieldMerge: 'non-empty' | 'local' | 'import';
 
   // Per-conflict overrides
-  listResolutions: Map<string, ListConflictResolution>;  // key: list name
-  bookResolutions: Map<string, BookConflictResolution>;  // key: bookKey
+  listResolutions: Map<string, ListConflictResolution>; // key: list name
+  bookResolutions: Map<string, BookConflictResolution>; // key: bookKey
 }
 
 interface ListConflictResolution {
   action: 'rename' | 'merge' | 'replace' | 'skip';
-  commentMergeStrategy?: 'local' | 'import' | 'both';  // Only for action="merge"
+  commentMergeStrategy?: 'local' | 'import' | 'both'; // Only for action="merge"
 }
 
 interface BookConflictResolution {
   action: 'merge' | 'skip' | 'duplicate';
-  fieldMergeStrategy?: 'non-empty' | 'local' | 'import';  // Only for action="merge"
+  fieldMergeStrategy?: 'non-empty' | 'local' | 'import'; // Only for action="merge"
 }
 ```
 
@@ -936,6 +971,7 @@ interface BookConflictResolution {
 **Implementation Files**:
 
 **Modified**:
+
 - `src/modules/book-list-import.ts`
   - Extend `ImportStrategy` interface
   - Update `executeImport()` to handle new strategies
@@ -951,6 +987,7 @@ interface BookConflictResolution {
   - Add exit confirmation
 
 **New**:
+
 - `src/components/confirmation-dialog.ts`
   - Reusable 3-option confirmation dialog
   - Used for exit confirmation and other scenarios
@@ -1097,7 +1134,7 @@ interface BookConflictResolution {
 
 5. ✅ Fix critical bugs
    - Diff view persistence when changing strategies (re-initialize on HTML re-render)
-   - i18n key corrections (bookForm.label.* for field labels)
+   - i18n key corrections (bookForm.label.\* for field labels)
    - Strategy label mapping (non-empty → nonEmpty)
    - BookKey format consistency (ISBN or "title|author")
 
@@ -1108,6 +1145,7 @@ interface BookConflictResolution {
    - 20+ new i18n translation keys
 
 **Implementation Summary**:
+
 - **New files**: `diff-viewer.ts` (447 lines)
 - **Modified**: `import-preview-modal.ts` (+540 lines → 971 total)
 - **Modified**: `book-list-import.ts` (updated types and merge logic)
@@ -1118,6 +1156,7 @@ interface BookConflictResolution {
   - `9a4786d`: Phase 3.3.2 detailed selection mode with diff viewer
 
 **Verification Points**:
+
 - ✅ Can expand multiple books, verify diff views persist after strategy changes
 - ✅ Switch between detailed/non-detailed modes works correctly
 - ✅ Button disables with unresolved conflicts, shows red warning
@@ -1128,6 +1167,7 @@ interface BookConflictResolution {
 - ✅ Merge result preview accurate for all strategies
 
 **Early Design Iterations** (弯路记录):
+
 - Initial approach tried re-binding event listeners on every HTML update → caused diff views to disappear
 - Solution: Extracted initialization into separate method, called for all expanded items after re-render
 - Field label i18n: Initially used `book.*` keys, corrected to `bookForm.label.*` keys
@@ -1138,17 +1178,20 @@ interface BookConflictResolution {
 ## Technical Decisions
 
 ### Why ID References Instead of Embedding Books?
+
 - **Single source of truth**: Book data is edited in one place
 - **Consistency**: Updates to book metadata automatically reflect in all lists
 - **Storage efficiency**: No data duplication
 - **Referential integrity**: Deleting a book removes it from all lists automatically
 
 ### Why Union (not Intersection) for Bulk Remove?
+
 - More intuitive: "Show me all lists these books are in"
 - More useful: User can see the full scope of where books exist
 - Flexible: User can selectively remove from some lists but not others
 
 ### Why Export Includes Full Book Data?
+
 - **Portability**: Recipient gets complete information
 - **Backup**: Full restoration capability
 - **Sharing**: Others can import without having the books already
@@ -1158,6 +1201,7 @@ interface BookConflictResolution {
 ## Future Enhancements (Post Phase 3)
 
 ### Potential additions:
+
 1. **List descriptions/notes**: Rich text descriptions for each list
 2. **List cover images**: Visual representation of lists
 3. **Smart lists**: Auto-populate based on rules (e.g., "All 5-star sci-fi books")
@@ -1172,11 +1216,13 @@ interface BookConflictResolution {
 ## Migration Notes
 
 ### Database Migrations
+
 - v1 → v2: Added `bookLists` table
 - Future migrations should preserve existing data
 - Consider adding migration tests
 
 ### Backwards Compatibility
+
 - Users without book lists: Feature is optional, doesn't affect existing workflow
 - Old exports: Can still import old JSON format (without book lists)
 - Future exports: Should be compatible with older app versions (graceful degradation)
@@ -1185,14 +1231,14 @@ interface BookConflictResolution {
 
 ## Development Status
 
-| Phase | Status | Completion Date |
-|-------|--------|----------------|
-| Phase 1: Core Functionality | ✅ Completed | 2025-12-30 |
-| Phase 2: Enhanced Operations | ✅ Completed | 2025-12-31 |
-| Phase 2.5: Book List Comments | ✅ Completed | 2025-12-31 |
-| Phase 3.1: Export Book Lists | ✅ Completed | 2025-12-31 |
-| Phase 3.2: Import Book Lists | ✅ Completed | 2026-01-01 |
-| Phase 3.3.1: Advanced Conflict Resolution | ✅ Completed | 2026-01-01 |
-| Phase 3.3.2: Detailed Selection & Diff Viewer | ✅ Completed | 2026-01-01 |
+| Phase                                         | Status       | Completion Date |
+| --------------------------------------------- | ------------ | --------------- |
+| Phase 1: Core Functionality                   | ✅ Completed | 2025-12-30      |
+| Phase 2: Enhanced Operations                  | ✅ Completed | 2025-12-31      |
+| Phase 2.5: Book List Comments                 | ✅ Completed | 2025-12-31      |
+| Phase 3.1: Export Book Lists                  | ✅ Completed | 2025-12-31      |
+| Phase 3.2: Import Book Lists                  | ✅ Completed | 2026-01-01      |
+| Phase 3.3.1: Advanced Conflict Resolution     | ✅ Completed | 2026-01-01      |
+| Phase 3.3.2: Detailed Selection & Diff Viewer | ✅ Completed | 2026-01-01      |
 
 Last updated: 2026-01-01

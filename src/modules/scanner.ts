@@ -12,9 +12,9 @@ export class BarcodeScanner {
   async getCameras(): Promise<{ id: string; label: string }[]> {
     try {
       const devices = await Html5Qrcode.getCameras();
-      this.availableCameras = devices.map(device => ({
+      this.availableCameras = devices.map((device) => ({
         id: device.id,
-        label: device.label || `Camera ${device.id.substring(0, 8)}`
+        label: device.label || `Camera ${device.id.substring(0, 8)}`,
       }));
       return this.availableCameras;
     } catch (error) {
@@ -46,13 +46,13 @@ export class BarcodeScanner {
         formatsToSupport: BARCODE_FORMATS,
         // Additional configuration for better scanning
         aspectRatio: 1.0,
-        disableFlip: false
+        disableFlip: false,
       };
 
       // Use specific camera ID if provided, otherwise use environment-facing camera
       const cameraConstraints = cameraId
         ? { deviceId: { exact: cameraId } }
-        : { facingMode: "environment" };
+        : { facingMode: 'environment' };
 
       await this.html5QrCode.start(
         cameraConstraints as any,
@@ -72,7 +72,7 @@ export class BarcodeScanner {
 
       // Try to apply additional constraints after camera starts
       // This helps with macro/close-up focus on iPhone
-      this.applyAdvancedConstraints();
+      void this.applyAdvancedConstraints();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start scanner';
       console.error('Scanner error:', error);

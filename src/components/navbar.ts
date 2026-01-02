@@ -1,11 +1,11 @@
-import { storage } from '../modules/storage';
-import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
-import { importFromJSON } from '../modules/import';
-import { exportBookLists } from '../modules/book-list-export';
-import { VisionUploadModal } from './vision-upload-modal';
-import { CategoryManagerModal } from './category-manager-modal';
 import { BookListManagerModal } from './book-list-manager-modal';
+import { CategoryManagerModal } from './category-manager-modal';
+import { VisionUploadModal } from './vision-upload-modal';
+import { exportBookLists } from '../modules/book-list-export';
+import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
 import { i18n } from '../modules/i18n';
+import { importFromJSON } from '../modules/import';
+import { storage } from '../modules/storage';
 
 export class Navbar {
   private element: HTMLElement;
@@ -47,17 +47,25 @@ export class Navbar {
         <div class="navbar-center">
           <select id="booklist-selector" class="booklist-selector">
             <option value="">${i18n.t('bookListSelector.allBooks')}</option>
-            ${bookLists.map(list => `
+            ${bookLists
+              .map(
+                (list) => `
               <option value="${list.id}" ${list.id === this.activeBookListId ? 'selected' : ''}>
                 📚 ${this.escapeHtml(list.name)}
               </option>
-            `).join('')}
+            `
+              )
+              .join('')}
           </select>
-          ${this.activeBookListId ? `
+          ${
+            this.activeBookListId
+              ? `
             <button id="btn-export-current-list" class="btn-icon" title="${i18n.t('navbar.exportCurrentList')}" aria-label="${i18n.t('navbar.exportCurrentList')}">
               ${i18n.t('bookListManager.export')}
             </button>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="navbar-actions">
           <button id="btn-menu" class="btn-icon" aria-label="${i18n.t('navbar.menu')}">
@@ -129,7 +137,7 @@ export class Navbar {
               </p>
               <input type="text" id="input-google-api-key" class="input-full"
                      placeholder="Enter Google Books API key"
-                     value="${await storage.getGoogleBooksApiKey() || ""}">">
+                     value="${(await storage.getGoogleBooksApiKey()) || ''}">">
             </div>
 
             <div class="api-key-section">
@@ -140,7 +148,7 @@ export class Navbar {
               </p>
               <input type="text" id="input-isbndb-api-key" class="input-full"
                      placeholder="Enter ISBNdb API key (optional)"
-                     value="${await storage.getISBNdbApiKey() || ""}">">
+                     value="${(await storage.getISBNdbApiKey()) || ''}">">
             </div>
 
             <div class="api-key-section">
@@ -154,15 +162,15 @@ export class Navbar {
               <label>${i18n.t('apiKeys.llm.endpoint')}</label>
               <input type="text" id="input-llm-endpoint" class="input-full"
                      placeholder="${i18n.t('apiKeys.llm.endpointPlaceholder')}"
-                     value="${await storage.getLLMApiEndpoint() || ""}">">
+                     value="${(await storage.getLLMApiEndpoint()) || ''}">">
               <label>${i18n.t('apiKeys.llm.key')}</label>
               <input type="text" id="input-llm-key" class="input-full"
                      placeholder="${i18n.t('apiKeys.llm.keyPlaceholder')}"
-                     value="${await storage.getLLMApiKey() || ""}">">
+                     value="${(await storage.getLLMApiKey()) || ''}">">
               <label>${i18n.t('apiKeys.llm.model')}</label>
               <input type="text" id="input-llm-model" class="input-full"
                      placeholder="${i18n.t('apiKeys.llm.modelPlaceholder')}"
-                     value="${await storage.getLLMModel() || ""}">">
+                     value="${(await storage.getLLMModel()) || ''}">">
             </div>
 
             <div class="api-key-section">
@@ -175,15 +183,15 @@ export class Navbar {
               <label>${i18n.t('apiKeys.llmText.endpointOptional')}</label>
               <input type="text" id="input-llm-text-endpoint" class="input-full"
                      placeholder="${i18n.t('apiKeys.llm.endpointPlaceholder')}"
-                     value="${await storage.getLLMTextApiEndpoint() || ""}">">
+                     value="${(await storage.getLLMTextApiEndpoint()) || ''}">">
               <label>${i18n.t('apiKeys.llmText.keyOptional')}</label>
               <input type="text" id="input-llm-text-key" class="input-full"
                      placeholder="${i18n.t('apiKeys.llm.keyPlaceholder')}"
-                     value="${await storage.getLLMTextApiKey() || ""}">">
+                     value="${(await storage.getLLMTextApiKey()) || ''}">">
               <label>${i18n.t('apiKeys.llmText.modelOptional')}</label>
               <input type="text" id="input-llm-text-model" class="input-full"
                      placeholder="${i18n.t('apiKeys.llm.modelPlaceholder')}"
-                     value="${await storage.getLLMTextModel() || ""}">">
+                     value="${(await storage.getLLMTextModel()) || ''}">">
             </div>
 
             <div class="help-box">
@@ -208,30 +216,34 @@ export class Navbar {
     // Book list selector
     const selectorElement = document.getElementById('booklist-selector');
     console.log('[Navbar] Book list selector element:', selectorElement);
-    selectorElement?.addEventListener('change', async (e) => {
-      const value = (e.target as HTMLSelectElement).value;
-      console.log("[Navbar] Book list selector changed to:", value);
-      this.activeBookListId = value || null;
+    selectorElement?.addEventListener('change', (e) => {
+      void (async () => {
+        const value = (e.target as HTMLSelectElement).value;
+        console.log('[Navbar] Book list selector changed to:', value);
+        this.activeBookListId = value || null;
 
-      // Re-render navbar to show/hide export button
-      await this.render();
-      this.attachEventListeners();
+        // Re-render navbar to show/hide export button
+        await this.render();
+        this.attachEventListeners();
 
-      if (this.onBookListChange) {
-        this.onBookListChange(this.activeBookListId);
-      }
+        if (this.onBookListChange) {
+          this.onBookListChange(this.activeBookListId);
+        }
+      })();
     });
 
     // Export current book list button
-    document.getElementById('btn-export-current-list')?.addEventListener('click', async () => {
-      if (this.activeBookListId) {
-        try {
-          await exportBookLists([this.activeBookListId]);
-        } catch (error) {
-          console.error('Export current list failed:', error);
-          alert(i18n.t('bookListManager.exportError'));
+    document.getElementById('btn-export-current-list')?.addEventListener('click', () => {
+      void (async () => {
+        if (this.activeBookListId) {
+          try {
+            await exportBookLists([this.activeBookListId]);
+          } catch (error) {
+            console.error('Export current list failed:', error);
+            alert(i18n.t('bookListManager.exportError'));
+          }
         }
-      }
+      })();
     });
 
     // Menu toggle
@@ -244,22 +256,28 @@ export class Navbar {
     });
 
     // Export
-    document.getElementById('btn-export-json')?.addEventListener('click', async () => {
-      const json = await exportAsJSON();
-      downloadFile(json, `books-${Date.now()}.json`, 'application/json');
-      this.hideModal('menu-modal');
+    document.getElementById('btn-export-json')?.addEventListener('click', () => {
+      void (async () => {
+        const json = await exportAsJSON();
+        downloadFile(json, `books-${Date.now()}.json`, 'application/json');
+        this.hideModal('menu-modal');
+      })();
     });
 
-    document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
-      const csv = await exportAsCSV();
-      downloadFile(csv, `books-${Date.now()}.csv`, 'text/csv');
-      this.hideModal('menu-modal');
+    document.getElementById('btn-export-csv')?.addEventListener('click', () => {
+      void (async () => {
+        const csv = await exportAsCSV();
+        downloadFile(csv, `books-${Date.now()}.csv`, 'text/csv');
+        this.hideModal('menu-modal');
+      })();
     });
 
-    document.getElementById('btn-export-md')?.addEventListener('click', async () => {
-      const md = await exportAsMarkdown();
-      downloadFile(md, `books-${Date.now()}.md`, 'text/markdown');
-      this.hideModal('menu-modal');
+    document.getElementById('btn-export-md')?.addEventListener('click', () => {
+      void (async () => {
+        const md = await exportAsMarkdown();
+        downloadFile(md, `books-${Date.now()}.md`, 'text/markdown');
+        this.hideModal('menu-modal');
+      })();
     });
 
     // Import
@@ -267,27 +285,27 @@ export class Navbar {
       document.getElementById('file-import')?.click();
     });
 
-    document.getElementById('file-import')?.addEventListener('change', async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+    document.getElementById('file-import')?.addEventListener('change', (e) => {
+      void (async () => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
 
-      const result = await importFromJSON(file, 'merge');
-      alert(result.message);
+        const result = await importFromJSON(file, 'merge');
+        alert(result.message);
 
-      if (result.success) {
-        window.location.reload();
-      }
+        if (result.success) {
+          window.location.reload();
+        }
+      })();
     });
 
     // Vision Upload
     document.getElementById('btn-vision-upload')?.addEventListener('click', () => {
       this.hideModal('menu-modal');
       const visionModal = new VisionUploadModal(() => {
-        if (this.onDataChange) {
-          this.onDataChange();
-        }
+        void this.onDataChange?.();
       });
-      visionModal.show();
+      void visionModal.show();
     });
 
     // API Key
@@ -307,14 +325,14 @@ export class Navbar {
       this.categoryManagerModal = new CategoryManagerModal(
         () => {
           // Refresh data when category manager closes
-          this.onDataChange?.();
+          void this.onDataChange?.();
         },
         () => {
           // Refresh data immediately when categories are changed (e.g., after deletion)
-          this.onDataChange?.();
+          void this.onDataChange?.();
         }
       );
-      this.categoryManagerModal.show();
+      void this.categoryManagerModal.show();
     });
 
     // Book List Manager
@@ -323,52 +341,41 @@ export class Navbar {
     manageBtnElement?.addEventListener('click', () => {
       console.log('[Navbar] Manage book lists button clicked');
       this.hideModal('menu-modal');
-      this.bookListManagerModal = new BookListManagerModal(async () => {
-        console.log('[Navbar] Book list manager callback triggered');
-        await this.render();
-        this.attachEventListeners();
-        if (this.onDataChange) {
-          await this.onDataChange();
-        }
+      this.bookListManagerModal = new BookListManagerModal(() => {
+        void (async () => {
+          console.log('[Navbar] Book list manager callback triggered');
+          await this.render();
+          this.attachEventListeners();
+          if (this.onDataChange) {
+            await this.onDataChange();
+          }
+        })();
       });
       console.log('[Navbar] Opening book list manager modal');
-      this.bookListManagerModal.open();
+      void this.bookListManagerModal.open();
     });
 
     // Language switcher
     document.getElementById('language-selector')?.addEventListener('change', (e) => {
-      const newLocale = (e.target as HTMLSelectElement).value as "en" | "zh-CN";
+      const newLocale = (e.target as HTMLSelectElement).value as 'en' | 'zh-CN';
       i18n.setLocale(newLocale);
       // Show notification to refresh page
-      alert(i18n.t("navbar.menu.languageChanged"));
+      alert(i18n.t('navbar.menu.languageChanged'));
     });
 
-    document
-      .getElementById("btn-save-api-keys")
-      ?.addEventListener("click", async () => {
-        const googleInput = document.getElementById(
-          "input-google-api-key"
-        ) as HTMLInputElement;
-        const isbndbInput = document.getElementById(
-          "input-isbndb-api-key"
-        ) as HTMLInputElement;
-        const llmEndpointInput = document.getElementById(
-          "input-llm-endpoint"
-        ) as HTMLInputElement;
-        const llmKeyInput = document.getElementById(
-          "input-llm-key"
-        ) as HTMLInputElement;
-        const llmModelInput = document.getElementById(
-          "input-llm-model"
-        ) as HTMLInputElement;
+    document.getElementById('btn-save-api-keys')?.addEventListener('click', () => {
+      void (async () => {
+        const googleInput = document.getElementById('input-google-api-key') as HTMLInputElement;
+        const isbndbInput = document.getElementById('input-isbndb-api-key') as HTMLInputElement;
+        const llmEndpointInput = document.getElementById('input-llm-endpoint') as HTMLInputElement;
+        const llmKeyInput = document.getElementById('input-llm-key') as HTMLInputElement;
+        const llmModelInput = document.getElementById('input-llm-model') as HTMLInputElement;
         const llmTextEndpointInput = document.getElementById(
-          "input-llm-text-endpoint"
+          'input-llm-text-endpoint'
         ) as HTMLInputElement;
-        const llmTextKeyInput = document.getElementById(
-          "input-llm-text-key"
-        ) as HTMLInputElement;
+        const llmTextKeyInput = document.getElementById('input-llm-text-key') as HTMLInputElement;
         const llmTextModelInput = document.getElementById(
-          "input-llm-text-model"
+          'input-llm-text-model'
         ) as HTMLInputElement;
 
         const googleKey = googleInput.value.trim();
@@ -412,14 +419,15 @@ export class Navbar {
           await storage.setLLMTextModel(llmTextModel);
         }
 
-        alert(i18n.t("apiKeys.saved"));
-        this.hideModal("api-key-modal");
-      });
+        alert(i18n.t('apiKeys.saved'));
+        this.hideModal('api-key-modal');
+      })();
+    });
 
     // Clear data
     document.getElementById('btn-clear-data')?.addEventListener('click', () => {
       if (confirm(i18n.t('confirm.clearData'))) {
-        storage.clear();
+        void storage.clear();
         this.hideModal('menu-modal');
         window.location.reload();
       }

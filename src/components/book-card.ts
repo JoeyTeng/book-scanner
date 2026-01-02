@@ -1,8 +1,8 @@
-import type { Book } from '../types';
 import { STATUS_COLORS } from '../config';
+import { i18n } from '../modules/i18n';
 import { storage } from '../modules/storage';
 import { formatISBN } from '../utils/isbn';
-import { i18n } from '../modules/i18n';
+import type { Book } from '../types';
 
 export class BookCard {
   static async render(
@@ -27,17 +27,15 @@ export class BookCard {
       );
 
       // Use different icon based on whether book is in any list
-      const icon = isInAnyList ? "⭐" : "☆";
-      const buttonClass = isInAnyList
-        ? "btn-manage-book-lists in-lists"
-        : "btn-manage-book-lists";
+      const icon = isInAnyList ? '⭐' : '☆';
+      const buttonClass = isInAnyList ? 'btn-manage-book-lists in-lists' : 'btn-manage-book-lists';
 
-      bookListButton = `<button class="btn-small btn-icon ${buttonClass}" data-id="${book.id}" title="${i18n.t("bookCard.manageBookLists")}">${icon}</button>`;
+      bookListButton = `<button class="btn-small btn-icon ${buttonClass}" data-id="${book.id}" title="${i18n.t('bookCard.manageBookLists')}">${icon}</button>`;
 
       // Show comment if exists and in active list
       if (activeBookListId && book.comment) {
         const bookList = await storage.getBookList(activeBookListId);
-        const listName = bookList?.name || "";
+        const listName = bookList?.name || '';
         commentSection = `
           <div class="book-comment">
             <div class="comment-label">📚 ${this.escapeHtml(listName)}:</div>
@@ -49,16 +47,24 @@ export class BookCard {
 
     return `
       <div class="book-card" data-id="${book.id}">
-        ${bulkSelectMode ? `
+        ${
+          bulkSelectMode
+            ? `
           <div class="book-checkbox">
             <input type="checkbox" class="bulk-select-checkbox" data-id="${book.id}">
           </div>
-        ` : ''}
-        ${book.cover ? `
+        `
+            : ''
+        }
+        ${
+          book.cover
+            ? `
           <div class="book-cover">
             <img src="${book.cover}" alt="${book.title}" loading="lazy">
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         <div class="book-info">
           <h3 class="book-title">${this.escapeHtml(book.title)}</h3>
           <p class="book-author">${this.escapeHtml(book.author)}</p>
@@ -70,20 +76,32 @@ export class BookCard {
             <span class="badge" style="background-color: ${statusColor}20; color: ${statusColor};">
               ${statusLabel}
             </span>
-            ${book.categories.map(cat => `
+            ${book.categories
+              .map(
+                (cat) => `
               <span class="badge badge-category">${this.escapeHtml(cat)}</span>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
 
-          ${book.tags.length > 0 ? `
+          ${
+            book.tags.length > 0
+              ? `
             <div class="book-tags">
-              ${book.tags.map(tag => `<span class="tag">#${this.escapeHtml(tag)}</span>`).join('')}
+              ${book.tags.map((tag) => `<span class="tag">#${this.escapeHtml(tag)}</span>`).join('')}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
 
-          ${book.notes ? `
+          ${
+            book.notes
+              ? `
             <p class="book-notes">${this.escapeHtml(book.notes)}</p>
-          ` : ''}
+          `
+              : ''
+          }
 
           ${commentSection}
 
@@ -105,93 +123,113 @@ export class BookCard {
     activeBookListId: string | null = null,
     onBookListChange?: () => void
   ): void {
-    container.querySelectorAll('.btn-edit').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = (btn as HTMLElement).dataset.id!;
-        const book = await storage.getBook(id);
-        if (book) onEdit(book);
+    container.querySelectorAll('.btn-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const id = (btn as HTMLElement).dataset.id!;
+          const book = await storage.getBook(id);
+          if (book) onEdit(book);
+        })();
       });
     });
 
-    container.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = (btn as HTMLElement).dataset.id!;
-        const book = await storage.getBook(id);
-        if (book && confirm(i18n.t('confirm.deleteBook'))) {
-          onDelete(id);
-        }
+    container.querySelectorAll('.btn-delete').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const id = (btn as HTMLElement).dataset.id!;
+          const book = await storage.getBook(id);
+          if (book && confirm(i18n.t('confirm.deleteBook'))) {
+            onDelete(id);
+          }
+        })();
       });
     });
 
     // Bulk selection checkboxes
     if (onBulkSelectChange) {
-      container.querySelectorAll('.bulk-select-checkbox').forEach(checkbox => {
+      container.querySelectorAll('.bulk-select-checkbox').forEach((checkbox) => {
         checkbox.addEventListener('change', () => {
           const selectedCheckboxes = container.querySelectorAll('.bulk-select-checkbox:checked');
-          const selectedIds = Array.from(selectedCheckboxes).map(cb => (cb as HTMLInputElement).dataset.id!);
+          const selectedIds = Array.from(selectedCheckboxes).map(
+            (cb) => (cb as HTMLInputElement).dataset.id!
+          );
           onBulkSelectChange(selectedIds);
         });
       });
     }
 
     // Book list buttons
-    container.querySelectorAll('.btn-add-to-list').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        if (activeBookListId) {
-          await storage.addBookToList(activeBookListId, bookId);
-          if (onBookListChange) onBookListChange();
-        }
+    container.querySelectorAll('.btn-add-to-list').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const bookId = (btn as HTMLElement).dataset.id!;
+          if (activeBookListId) {
+            await storage.addBookToList(activeBookListId, bookId);
+            if (onBookListChange) onBookListChange();
+          }
+        })();
       });
     });
 
-    container.querySelectorAll('.btn-remove-from-list').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        if (activeBookListId) {
-          await storage.removeBookFromList(activeBookListId, bookId);
-          if (onBookListChange) onBookListChange();
-        }
+    container.querySelectorAll('.btn-remove-from-list').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const bookId = (btn as HTMLElement).dataset.id!;
+          if (activeBookListId) {
+            await storage.removeBookFromList(activeBookListId, bookId);
+            if (onBookListChange) onBookListChange();
+          }
+        })();
       });
     });
 
-    container.querySelectorAll('.btn-select-list').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        const { BookListSelectorModal } = await import('./book-list-selector-modal');
-        const modal = new BookListSelectorModal();
-        await modal.show(bookId, async (listId) => {
-          await storage.addBookToList(listId, bookId);
-          if (onBookListChange) onBookListChange();
-        });
+    container.querySelectorAll('.btn-select-list').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const bookId = (btn as HTMLElement).dataset.id!;
+          const { BookListSelectorModal } = await import('./book-list-selector-modal');
+          const modal = new BookListSelectorModal();
+          await modal.show(bookId, (listId) => {
+            void (async () => {
+              await storage.addBookToList(listId, bookId);
+              if (onBookListChange) onBookListChange();
+            })();
+          });
+        })();
       });
     });
 
     // Edit comment buttons
-    container.querySelectorAll('.btn-edit-comment').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        const listId = (btn as HTMLElement).dataset.listId!;
-        const currentComment = await storage.getBookComment(listId, bookId);
+    container.querySelectorAll('.btn-edit-comment').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const bookId = (btn as HTMLElement).dataset.id!;
+          const listId = (btn as HTMLElement).dataset.listId!;
+          const currentComment = await storage.getBookComment(listId, bookId);
 
-        const { BookCommentEditModal } = await import('./book-comment-edit-modal');
-        const modal = new BookCommentEditModal();
-        await modal.show(bookId, listId, currentComment, async (newComment) => {
-          await storage.updateBookComment(listId, bookId, newComment);
-          if (onBookListChange) onBookListChange();
-        });
+          const { BookCommentEditModal } = await import('./book-comment-edit-modal');
+          const modal = new BookCommentEditModal();
+          await modal.show(bookId, listId, currentComment, (newComment) => {
+            void (async () => {
+              await storage.updateBookComment(listId, bookId, newComment);
+              if (onBookListChange) onBookListChange();
+            })();
+          });
+        })();
       });
     });
 
     // Manage book lists button
-    container.querySelectorAll('.btn-manage-book-lists').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const bookId = (btn as HTMLElement).dataset.id!;
-        const { BookListManagementModal } = await import('./book-list-management-modal');
-        const modal = new BookListManagementModal();
-        await modal.show(bookId, () => {
-          if (onBookListChange) onBookListChange();
-        });
+    container.querySelectorAll('.btn-manage-book-lists').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        void (async () => {
+          const bookId = (btn as HTMLElement).dataset.id!;
+          const { BookListManagementModal } = await import('./book-list-management-modal');
+          const modal = new BookListManagementModal();
+          await modal.show(bookId, () => {
+            if (onBookListChange) onBookListChange();
+          });
+        })();
       });
     });
   }

@@ -1,7 +1,7 @@
-import type { ExportData, StorageData } from '../types';
 import { APP_VERSION } from '../config';
-import { migrateData } from '../utils/migration';
 import { storage } from './storage';
+import { migrateData } from '../utils/migration';
+import type { ExportData, StorageData } from '../types';
 
 /**
  * Import data from JSON file
@@ -18,7 +18,7 @@ export async function importFromJSON(
     if (!data.version || !data.books || !Array.isArray(data.books)) {
       return {
         success: false,
-        message: 'Invalid file format. Missing required fields.'
+        message: 'Invalid file format. Missing required fields.',
       };
     }
 
@@ -52,13 +52,13 @@ export async function importFromJSON(
 
     return {
       success: true,
-      message: `Successfully imported ${storageData.books.length} books.`
+      message: `Successfully imported ${storageData.books.length} books.`,
     };
   } catch (error) {
     console.error('Import error:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to import file.'
+      message: error instanceof Error ? error.message : 'Failed to import file.',
     };
   }
 }

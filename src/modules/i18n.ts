@@ -10,8 +10,8 @@ export type Translations = Record<string, string>;
 class I18n {
   private locale: Locale = 'en';
   private translations: Record<Locale, Translations> = {
-    'en': {},
-    'zh-CN': {}
+    en: {},
+    'zh-CN': {},
   };
   private listeners: Array<() => void> = [];
 
@@ -23,7 +23,7 @@ class I18n {
     // Load translations
     const [en, zhCN] = await Promise.all([
       import('../locales/en.js'),
-      import('../locales/zh-CN.js')
+      import('../locales/zh-CN.js'),
     ]);
 
     this.translations['en'] = en.en;
@@ -63,15 +63,12 @@ class I18n {
     const translation = this.translations[this.locale][key];
 
     // Fallback to English if key not found in current locale
-    const text = translation || this.translations["en"][key] || key;
+    const text = translation || this.translations['en'][key] || key;
 
     // Interpolate parameters if provided
     if (params) {
       return Object.keys(params).reduce((result, paramKey) => {
-        return result.replace(
-          new RegExp(`\\{${paramKey}\\}`, "g"),
-          String(params[paramKey])
-        );
+        return result.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]));
       }, text);
     }
 
@@ -91,12 +88,12 @@ class I18n {
    */
   setLocale(locale: Locale): void {
     if (locale !== 'en' && locale !== 'zh-CN') {
-      console.warn(`Invalid locale: ${locale}, using 'en'`);
+      console.warn(`Invalid locale: ${String(locale)}, using 'en'`);
       locale = 'en';
     }
 
     this.locale = locale;
-    localStorage.setItem("locale", locale);
+    localStorage.setItem('locale', locale);
 
     // Notify listeners (for UI updates)
     this.notifyListeners();
@@ -113,7 +110,7 @@ class I18n {
    * Notify all listeners of locale change
    */
   private notifyListeners(): void {
-    this.listeners.forEach(cb => cb());
+    this.listeners.forEach((cb) => cb());
   }
 }
 

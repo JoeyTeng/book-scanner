@@ -41,14 +41,11 @@ export interface ExportedBook {
 export async function exportBookList(listId: string): Promise<void> {
   const list = await storage.getBookList(listId);
   if (!list) {
-    throw new Error("Book list not found");
+    throw new Error('Book list not found');
   }
 
   const exportData = await buildExportData([list]);
-  downloadJson(
-    exportData,
-    sanitizeFilename(`${list.name}_${getDateString()}.json`)
-  );
+  downloadJson(exportData, sanitizeFilename(`${list.name}_${getDateString()}.json`));
 }
 
 /**
@@ -59,7 +56,7 @@ export async function exportBookLists(listIds: string[]): Promise<void> {
   const lists = allLists.filter((list) => listIds.includes(list.id));
 
   if (lists.length === 0) {
-    throw new Error("No book lists found");
+    throw new Error('No book lists found');
   }
 
   const exportData = await buildExportData(lists);
@@ -78,7 +75,7 @@ export async function exportAllBookLists(): Promise<void> {
   const lists = await storage.getBookLists();
 
   if (lists.length === 0) {
-    throw new Error("No book lists to export");
+    throw new Error('No book lists to export');
   }
 
   const exportData = await buildExportData(lists);
@@ -141,7 +138,7 @@ function downloadJson(data: BookListExportFormat, filename: string): void {
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.click();

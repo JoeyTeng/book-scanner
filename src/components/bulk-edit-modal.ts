@@ -1,7 +1,7 @@
-import type { ReadingStatus } from '../types';
-import { storage } from '../modules/storage';
-import { i18n } from '../modules/i18n';
 import { CategoryTagInput } from './category-tag-input';
+import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
+import type { ReadingStatus } from '../types';
 
 export class BulkEditModal {
   private modalElement: HTMLDivElement | null = null;
@@ -136,47 +136,51 @@ export class BulkEditModal {
     });
 
     // Enable/disable category operations
-    this.modalElement?.querySelector('#modify-categories')?.addEventListener('change', async (e) => {
-      const checked = (e.target as HTMLInputElement).checked;
-      const categoryOps = this.modalElement?.querySelector('#category-operations') as HTMLElement;
-      categoryOps.style.display = checked ? 'block' : 'none';
+    this.modalElement?.querySelector('#modify-categories')?.addEventListener('change', (e) => {
+      void (async () => {
+        const checked = (e.target as HTMLInputElement).checked;
+        const categoryOps = this.modalElement?.querySelector('#category-operations') as HTMLElement;
+        categoryOps.style.display = checked ? 'block' : 'none';
 
-      // Update available categories when enabled
-      if (checked) {
-        await this.updateCategoryOperationMode();
-      }
+        // Update available categories when enabled
+        if (checked) {
+          await this.updateCategoryOperationMode();
+        }
+      })();
     });
 
     // Listen to category operation mode changes
     this.modalElement?.querySelectorAll('input[name="category-operation"]').forEach((radio) => {
-      radio.addEventListener('change', async () => {
-        await this.updateCategoryOperationMode();
+      radio.addEventListener('change', () => {
+        void this.updateCategoryOperationMode();
       });
     });
 
     // Enable/disable book list operations
-    this.modalElement?.querySelector('#modify-booklists')?.addEventListener('change', async (e) => {
-      const checked = (e.target as HTMLInputElement).checked;
-      const booklistOps = this.modalElement?.querySelector('#booklist-operations') as HTMLElement;
-      booklistOps.style.display = checked ? 'block' : 'none';
+    this.modalElement?.querySelector('#modify-booklists')?.addEventListener('change', (e) => {
+      void (async () => {
+        const checked = (e.target as HTMLInputElement).checked;
+        const booklistOps = this.modalElement?.querySelector('#booklist-operations') as HTMLElement;
+        booklistOps.style.display = checked ? 'block' : 'none';
 
-      // Update available book lists when enabled
-      if (checked) {
-        await this.updateBookListOperationMode();
-      }
+        // Update available book lists when enabled
+        if (checked) {
+          await this.updateBookListOperationMode();
+        }
+      })();
     });
 
     // Listen to book list operation mode changes
     this.modalElement?.querySelectorAll('input[name="booklist-operation"]').forEach((radio) => {
-      radio.addEventListener('change', async () => {
-        await this.updateBookListOperationMode();
+      radio.addEventListener('change', () => {
+        void this.updateBookListOperationMode();
       });
     });
 
     // Form submission
     this.modalElement?.querySelector('#bulk-edit-form')?.addEventListener('submit', (e) => {
       e.preventDefault();
-      this.handleSubmit();
+      void this.handleSubmit();
     });
   }
 
@@ -230,7 +234,7 @@ export class BulkEditModal {
     } else {
       // Get all book lists for add operation
       const allLists = await storage.getBookLists();
-      availableBookLists = allLists.map(list => ({ id: list.id, name: list.name }));
+      availableBookLists = allLists.map((list) => ({ id: list.id, name: list.name }));
     }
 
     // Render checkboxes
@@ -245,16 +249,12 @@ export class BulkEditModal {
           (list) => `
           <label class="checkbox-item">
             <input type="checkbox" name="selected-booklists" value="${list.id}"
-              ${
-                shouldPreselect && list.id === this.activeBookListId
-                  ? "checked"
-                  : ""
-              }>
+              ${shouldPreselect && list.id === this.activeBookListId ? 'checked' : ''}>
             <span>${this.escapeHtml(list.name)}</span>
           </label>
         `
         )
-        .join("");
+        .join('');
     }
   }
 
@@ -265,7 +265,7 @@ export class BulkEditModal {
     for (const bookId of this.selectedBookIds) {
       const allLists = await storage.getBookLists();
       for (const list of allLists) {
-        if (list.books.some(item => item.bookId === bookId)) {
+        if (list.books.some((item) => item.bookId === bookId)) {
           bookListIds.add(list.id);
         }
       }
@@ -290,9 +290,14 @@ export class BulkEditModal {
   }
 
   private async handleSubmit(): Promise<void> {
-    const changeStatus = (this.modalElement?.querySelector('#change-status') as HTMLInputElement).checked;
-    const modifyCategories = (this.modalElement?.querySelector('#modify-categories') as HTMLInputElement).checked;
-    const modifyBookLists = (this.modalElement?.querySelector('#modify-booklists') as HTMLInputElement).checked;
+    const changeStatus = (this.modalElement?.querySelector('#change-status') as HTMLInputElement)
+      .checked;
+    const modifyCategories = (
+      this.modalElement?.querySelector('#modify-categories') as HTMLInputElement
+    ).checked;
+    const modifyBookLists = (
+      this.modalElement?.querySelector('#modify-booklists') as HTMLInputElement
+    ).checked;
 
     if (!changeStatus && !modifyCategories && !modifyBookLists) {
       alert(i18n.t('alert.selectOneChange'));
@@ -302,7 +307,8 @@ export class BulkEditModal {
     // Get new status if selected
     let newStatus: ReadingStatus | null = null;
     if (changeStatus) {
-      newStatus = (this.modalElement?.querySelector('#input-status') as HTMLSelectElement).value as ReadingStatus;
+      newStatus = (this.modalElement?.querySelector('#input-status') as HTMLSelectElement)
+        .value as ReadingStatus;
     }
 
     // Get category changes if selected
@@ -314,7 +320,7 @@ export class BulkEditModal {
         this.modalElement?.querySelector(
           'input[name="category-operation"]:checked'
         ) as HTMLInputElement
-      ).value as "add" | "remove" | "replace";
+      ).value as 'add' | 'remove' | 'replace';
 
       // Get selected categories from CategoryTagInput
       selectedCategories = this.categoryTagInput?.getSelectedCategories() || [];
@@ -345,7 +351,7 @@ export class BulkEditModal {
         switch (categoryOperation) {
           case 'add':
             // Add new categories, avoid duplicates
-            selectedCategories.forEach(cat => {
+            selectedCategories.forEach((cat) => {
               if (!book.categories.includes(cat)) {
                 book.categories.push(cat);
               }
@@ -353,7 +359,7 @@ export class BulkEditModal {
             break;
           case 'remove':
             // Remove specified categories
-            book.categories = book.categories.filter(cat => !selectedCategories.includes(cat));
+            book.categories = book.categories.filter((cat) => !selectedCategories.includes(cat));
             break;
           case 'replace':
             // Replace all categories
@@ -377,9 +383,7 @@ export class BulkEditModal {
       const selectedBookListCheckboxes = this.modalElement?.querySelectorAll(
         'input[name="selected-booklists"]:checked'
       ) as NodeListOf<HTMLInputElement>;
-      const selectedBookListIds = Array.from(selectedBookListCheckboxes).map(
-        (cb) => cb.value
-      );
+      const selectedBookListIds = Array.from(selectedBookListCheckboxes).map((cb) => cb.value);
 
       if (selectedBookListIds.length === 0) {
         alert(i18n.t('alert.selectOneBookList'));
@@ -394,14 +398,14 @@ export class BulkEditModal {
         if (bookListOperation === 'add') {
           // Add books to list
           for (const bookId of this.selectedBookIds) {
-            if (!bookList.books.some(item => item.bookId === bookId)) {
+            if (!bookList.books.some((item) => item.bookId === bookId)) {
               await storage.addBookToList(bookListId, bookId);
             }
           }
         } else if (bookListOperation === 'remove') {
           // Remove books from list
           for (const bookId of this.selectedBookIds) {
-            if (bookList.books.some(item => item.bookId === bookId)) {
+            if (bookList.books.some((item) => item.bookId === bookId)) {
               await storage.removeBookFromList(bookListId, bookId);
             }
           }

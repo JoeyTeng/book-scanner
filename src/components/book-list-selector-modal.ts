@@ -1,5 +1,5 @@
-import { storage } from '../modules/storage';
 import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
 
 export class BookListSelectorModal {
   private modalElement: HTMLElement | null = null;
@@ -23,7 +23,7 @@ export class BookListSelectorModal {
     const listStatus = await Promise.all(
       bookLists.map(async (list) => ({
         list,
-        isInList: this.bookId ? await storage.isBookInList(list.id, this.bookId) : false
+        isInList: this.bookId ? await storage.isBookInList(list.id, this.bookId) : false,
       }))
     );
 
@@ -36,11 +36,16 @@ export class BookListSelectorModal {
           <button class="btn-close" id="btn-close-selector">&times;</button>
         </div>
         <div class="modal-body">
-          ${bookLists.length === 0 ? `
+          ${
+            bookLists.length === 0
+              ? `
             <p class="text-secondary">${i18n.t('bookListSelector.noLists')}</p>
-          ` : `
+          `
+              : `
             <div class="book-list-options">
-              ${listStatus.map(({ list, isInList }) => `
+              ${listStatus
+                .map(
+                  ({ list, isInList }) => `
                 <button 
                   class="btn-full btn-list-option ${isInList ? 'disabled' : ''}" 
                   data-id="${list.id}"
@@ -48,9 +53,12 @@ export class BookListSelectorModal {
                   📚 ${this.escapeHtml(list.name)}
                   ${isInList ? `<span class="badge-in-list">${i18n.t('bookListSelector.alreadyInList')}</span>` : ''}
                 </button>
-              `).join('')}
+              `
+                )
+                .join('')}
             </div>
-          `}
+          `
+          }
         </div>
       </div>
     `;
@@ -69,7 +77,7 @@ export class BookListSelectorModal {
     });
 
     // Book list option buttons
-    this.modalElement?.querySelectorAll('.btn-list-option:not(.disabled)').forEach(btn => {
+    this.modalElement?.querySelectorAll('.btn-list-option:not(.disabled)').forEach((btn) => {
       btn.addEventListener('click', () => {
         const listId = (btn as HTMLElement).dataset.id!;
         if (this.onSelect) {

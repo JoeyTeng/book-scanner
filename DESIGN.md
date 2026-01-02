@@ -192,11 +192,11 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 
 **关键决策：**
 
-| 决策点 | 选项 A | 选项 B | 最终选择 | 理由 |
-| -------- | -------- | -------- | ---------- | ------ |
-| LLM 调用方式 | 强制 API Key | Manual mode | Both | 降低使用门槛 |
-| OCR vs Vision | 只用 Vision | 分离两种模式 | 分离 | 成本控制 |
-| ISBN 必填 | 是 | 否 | 否 | 支持更多书籍类型（古籍、手稿等） |
+| 决策点        | 选项 A       | 选项 B       | 最终选择 | 理由                             |
+| ------------- | ------------ | ------------ | -------- | -------------------------------- |
+| LLM 调用方式  | 强制 API Key | Manual mode  | Both     | 降低使用门槛                     |
+| OCR vs Vision | 只用 Vision  | 分离两种模式 | 分离     | 成本控制                         |
+| ISBN 必填     | 是           | 否           | 否       | 支持更多书籍类型（古籍、手稿等） |
 
 ### Phase 5: 批量管理与视图优化 (e9c7a33 - e2ccbf0)
 
@@ -362,12 +362,10 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
    ```
 
 2. **空白页面问题**
-
    - 原因：组件渲染时 storage 尚未初始化完成
    - 解决：严格的初始化顺序，await 所有依赖
 
 3. **18 个 TypeScript 错误**
-
    - 原因：忘记在 async storage 调用前加 `await`
    - 工具：系统性检查所有 `storage.*()` 调用
 
@@ -476,15 +474,15 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 
 ### 技术栈演进
 
-| 层级 | 技术选型 | 版本 | 演进历史 | 选择理由 |
-| ------ | --------- | ------ | --------- | --------- |
-| 前端框架 | Vanilla TypeScript | 5.x | 一直保持 | 轻量级，零依赖，快速加载 |
-| 构建工具 | Vite | 6.x | 一直保持 | HMR 快，配置简单 |
-| 存储 | ~~localStorage~~ → IndexedDB | - | Phase 6 迁移 | 容量限制（10MB → 50MB+） |
-| DB 封装 | Dexie.js | 4.0.0 | Phase 6 引入 | 简化 IndexedDB API，TypeScript 友好 |
-| PWA | Service Worker + Manifest | - | Phase 6 引入 | 离线支持和应用安装 |
-| LLM | OpenAI GPT-4, Claude | - | Phase 4 引入 | 智能元数据提取 |
-| API 聚合 | ISBNdb, 豆瓣, 自建 | - | Phase 3 扩展 | 多来源提升成功率 |
+| 层级     | 技术选型                     | 版本  | 演进历史     | 选择理由                            |
+| -------- | ---------------------------- | ----- | ------------ | ----------------------------------- |
+| 前端框架 | Vanilla TypeScript           | 5.x   | 一直保持     | 轻量级，零依赖，快速加载            |
+| 构建工具 | Vite                         | 6.x   | 一直保持     | HMR 快，配置简单                    |
+| 存储     | ~~localStorage~~ → IndexedDB | -     | Phase 6 迁移 | 容量限制（10MB → 50MB+）            |
+| DB 封装  | Dexie.js                     | 4.0.0 | Phase 6 引入 | 简化 IndexedDB API，TypeScript 友好 |
+| PWA      | Service Worker + Manifest    | -     | Phase 6 引入 | 离线支持和应用安装                  |
+| LLM      | OpenAI GPT-4, Claude         | -     | Phase 4 引入 | 智能元数据提取                      |
+| API 聚合 | ISBNdb, 豆瓣, 自建           | -     | Phase 3 扩展 | 多来源提升成功率                    |
 
 ## 核心模块设计
 
@@ -564,46 +562,46 @@ Book Scanner 是一个渐进式 Web 应用（PWA），旨在通过条形码扫�
 // Public API (src/modules/storage.ts)
 class Storage {
   // CRUD operations
-  async getBooks(): Promise<Book[]>
-  async saveBook(book: Book): Promise<void>
-  async deleteBook(id: string): Promise<void>
-  async updateBook(id: string, updates: Partial<Book>): Promise<void>
+  async getBooks(): Promise<Book[]>;
+  async saveBook(book: Book): Promise<void>;
+  async deleteBook(id: string): Promise<void>;
+  async updateBook(id: string, updates: Partial<Book>): Promise<void>;
 
   // Settings
-  async getCategories(): Promise<string[]>
-  async addCategory(name: string): Promise<void>
-  async getApiKey(service: string): Promise<string | null>
+  async getCategories(): Promise<string[]>;
+  async addCategory(name: string): Promise<void>;
+  async getApiKey(service: string): Promise<string | null>;
 
   // Image cache
-  async getCachedImage(url: string): Promise<Blob | null>
-  async cacheImage(url: string, blob: Blob): Promise<void>
+  async getCachedImage(url: string): Promise<Blob | null>;
+  async cacheImage(url: string, blob: Blob): Promise<void>;
 
   // Initialization control
-  waitForInit(): Promise<void>  // Exposes initialization promise
-  private async init(): Promise<void>  // Actual initialization logic
-  private async ensureInit(): Promise<void>  // Guard for all operations
+  waitForInit(): Promise<void>; // Exposes initialization promise
+  private async init(): Promise<void>; // Actual initialization logic
+  private async ensureInit(): Promise<void>; // Guard for all operations
 }
 
 // Database Schema (src/modules/db.ts)
 class BookDatabase extends Dexie {
-  books: Table<Book, string>  // Primary key: id
-  settings: Table<Setting, string>  // Primary key: key
-  imageCache: Table<ImageCache, string>  // Primary key: url
+  books: Table<Book, string>; // Primary key: id
+  settings: Table<Setting, string>; // Primary key: key
+  imageCache: Table<ImageCache, string>; // Primary key: url
 }
 
 // Book type
 interface Book {
-  id: string;  // UUID
+  id: string; // UUID
   title: string;
   author: string;
-  isbn?: string;  // Optional since Phase 4
+  isbn?: string; // Optional since Phase 4
   publisher?: string;
   publishDate?: string;
   coverUrl?: string;
   category: string;
   status: 'wishlist' | 'owned' | 'reading' | 'finished';
   recommendation?: string;
-  addedDate: number;  // Timestamp
+  addedDate: number; // Timestamp
 }
 ```
 
@@ -628,7 +626,7 @@ interface Book {
 
      // All public methods use this guard
      async getBooks(): Promise<Book[]> {
-       await this.ensureInit();  // ← Guard
+       await this.ensureInit(); // ← Guard
        return db.books.toArray();
      }
    }
@@ -659,12 +657,10 @@ interface Book {
    ```typescript
    async function migrateFromLocalStorage() {
      const oldData = localStorage.getItem('books');
-     if (!oldData) return;  // No migration needed
+     if (!oldData) return; // No migration needed
 
      const books = JSON.parse(oldData);
-     await Promise.all(
-       books.map(book => db.books.put(book))
-     );
+     await Promise.all(books.map((book) => db.books.put(book)));
 
      // Optional: Clean up old data
      localStorage.removeItem('books');
@@ -706,27 +702,23 @@ Incoming Request
 **实现（sw.js）：**
 
 ```javascript
-const CACHE_NAME = 'book-scanner-v2';  // Version-based cache
+const CACHE_NAME = 'book-scanner-v2'; // Version-based cache
 const STATIC_ASSETS = ['/', '/index.html', '/main.js', '/style.css'];
 
 // Install: Pre-cache static assets
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-  );
-  self.skipWaiting();  // Activate immediately
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));
+  self.skipWaiting(); // Activate immediately
 });
 
 // Activate: Clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(key => caches.delete(key))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
       )
-    )
   );
 });
 
@@ -746,11 +738,11 @@ self.addEventListener('fetch', (event) => {
 
 **为什么这样设计？**
 
-| 资源类型 | 策略 | 理由 | Trade-off |
-| --------- | ------ | ------ | ---------- |
-| HTML/CSS/JS | Cache-first | 版本化构建，内容不变<br>离线优先，快速启动 | 需要版本号管理<br>热更新需刷新 |
-| 封面图片 | Network-first | 图片可能更新<br>优先最新版本 | 首次加载稍慢<br>需要网络 |
-| API 请求 | Network-only | 实时数据<br>不应缓存 | 离线不可用<br>(但数据已存 IndexedDB) |
+| 资源类型    | 策略          | 理由                                       | Trade-off                            |
+| ----------- | ------------- | ------------------------------------------ | ------------------------------------ |
+| HTML/CSS/JS | Cache-first   | 版本化构建，内容不变<br>离线优先，快速启动 | 需要版本号管理<br>热更新需刷新       |
+| 封面图片    | Network-first | 图片可能更新<br>优先最新版本               | 首次加载稍慢<br>需要网络             |
+| API 请求    | Network-only  | 实时数据<br>不应缓存                       | 离线不可用<br>(但数据已存 IndexedDB) |
 
 ### 4. 组件初始化链（Phase 6 关键重构）
 
@@ -847,14 +839,11 @@ class Navbar {
 // Usage in App
 class App {
   async init() {
-    const navbar = new Navbar('navbar');  // Starts init in background
+    const navbar = new Navbar('navbar'); // Starts init in background
     const searchBar = new SearchBar('search-bar');
 
     // Wait for both to complete
-    await Promise.all([
-      navbar.waitForInit(),
-      searchBar.waitForInit()
-    ]);
+    await Promise.all([navbar.waitForInit(), searchBar.waitForInit()]);
 
     // Now safe to proceed
   }
@@ -931,11 +920,11 @@ interface VisionLLMService {
 
 **Cost-Saving Strategy:**
 
-| Feature | Default Mode | Upgrade Option | Cost Ratio |
-| --------- | ------------- | ---------------- | ------------ |
-| Smart Paste | Text-only | - | 1x (cheap) |
-| OCR (printed text) | Free OCR.space | Text LLM | 1x |
-| OCR (complex scenes) | Free OCR.space | Vision LLM | 10-50x |
+| Feature              | Default Mode   | Upgrade Option | Cost Ratio |
+| -------------------- | -------------- | -------------- | ---------- |
+| Smart Paste          | Text-only      | -              | 1x (cheap) |
+| OCR (printed text)   | Free OCR.space | Text LLM       | 1x         |
+| OCR (complex scenes) | Free OCR.space | Vision LLM     | 10-50x     |
 
 **Manual Mode Implementation:**
 
@@ -957,14 +946,14 @@ Required format:
 
 // Show to user
 modal.show({
-  title: "Manual LLM Mode",
+  title: 'Manual LLM Mode',
   content: `
     <textarea readonly>${generateManualPrompt(userInput)}</textarea>
     <button onclick="copyToClipboard()">Copy Prompt</button>
     <p>1. Copy above prompt to ChatGPT/Claude</p>
     <p>2. Paste result below:</p>
     <textarea id="llm-result"></textarea>
-  `
+  `,
 });
 
 // Parse user-provided result
@@ -1062,7 +1051,7 @@ class Storage {
   }
 
   async getBooks(): Promise<Book[]> {
-    await this.ensureInit();  // Guard
+    await this.ensureInit(); // Guard
     return db.books.toArray();
   }
 }
@@ -1083,9 +1072,9 @@ class PWAInstallPrompt {
   // Show conditions
   canShow(): boolean {
     return (
-      !isInstalled() &&           // Not already installed
-      !isDismissedRecently() &&   // Not dismissed in last 7 days
-      hasBeforeInstallPrompt()    // Browser supports installation
+      !isInstalled() && // Not already installed
+      !isDismissedRecently() && // Not dismissed in last 7 days
+      hasBeforeInstallPrompt() // Browser supports installation
     );
   }
 
@@ -1178,13 +1167,13 @@ Update Filters
 
 **Trade-offs：**
 
-| 维度 | Vanilla TS | React/Vue | 最终选择 |
-| ------ | ----------- | ---------- | --------- |
-| Bundle size | 50-100KB | 200-500KB | Vanilla ✅ |
-| 开发速度 | 中等 | 快 | - |
-| 类型安全 | 强（TS） | 强（TS） | - |
-| 生态支持 | 少 | 丰富 | - |
-| PWA 控制 | 完全 | 框架抽象 | Vanilla ✅ |
+| 维度        | Vanilla TS | React/Vue | 最终选择   |
+| ----------- | ---------- | --------- | ---------- |
+| Bundle size | 50-100KB   | 200-500KB | Vanilla ✅ |
+| 开发速度    | 中等       | 快        | -          |
+| 类型安全    | 强（TS）   | 强（TS）  | -          |
+| 生态支持    | 少         | 丰富      | -          |
+| PWA 控制    | 完全       | 框架抽象  | Vanilla ✅ |
 
 **适用场景：**
 
@@ -1206,12 +1195,12 @@ Update Filters
 
 **备选方案：**
 
-| 方案 | 容量 | 二进制支持 | 查询能力 | 学习曲线 |
-| ------ | ------ | ---------- | --------- | --------- |
-| localStorage | 10MB | ❌ | 简单 | 低 |
-| IndexedDB raw | 50MB-GB | ✅ | 索引+查询 | 高 |
-| Dexie.js | 50MB-GB | ✅ | 简洁 API | 中 |
-| SQLite WASM | 无限 | ✅ | SQL 强大 | 高 |
+| 方案          | 容量    | 二进制支持 | 查询能力  | 学习曲线 |
+| ------------- | ------- | ---------- | --------- | -------- |
+| localStorage  | 10MB    | ❌         | 简单      | 低       |
+| IndexedDB raw | 50MB-GB | ✅         | 索引+查询 | 高       |
+| Dexie.js      | 50MB-GB | ✅         | 简洁 API  | 中       |
+| SQLite WASM   | 无限    | ✅         | SQL 强大  | 高       |
 
 **选择 IndexedDB + Dexie.js 理由：**
 
@@ -1257,20 +1246,20 @@ Update Filters
 
 **为什么混合？**
 
-| 资源 | 更新频率 | 离线重要性 | 策略 | 理由 |
-| ------ | --------- | ---------- | ------ | ------ |
-| HTML/JS/CSS | 版本发布时 | 高 | Cache-first | 版本化构建，内容哈希 |
-| 封面图片 | 偶尔 | 中 | Network-first | 允许更新，失败回退 |
-| API 数据 | 实时 | 低 | Network-only | 不应缓存，已存 IndexedDB |
+| 资源        | 更新频率   | 离线重要性 | 策略          | 理由                     |
+| ----------- | ---------- | ---------- | ------------- | ------------------------ |
+| HTML/JS/CSS | 版本发布时 | 高         | Cache-first   | 版本化构建，内容哈希     |
+| 封面图片    | 偶尔       | 中         | Network-first | 允许更新，失败回退       |
+| API 数据    | 实时       | 低         | Network-only  | 不应缓存，已存 IndexedDB |
 
 **实现细节：**
 
 ```javascript
 // sw.js
 if (url.startsWith(self.origin)) {
-  return cacheFirst(request);  // Same-origin → Cache优先
+  return cacheFirst(request); // Same-origin → Cache优先
 } else {
-  return networkFirst(request);  // External → Network优先
+  return networkFirst(request); // External → Network优先
 }
 ```
 
@@ -1309,12 +1298,12 @@ Layer 4: Manual Mode (Free)
 
 **权衡分析：**
 
-| 模式 | 用户成本 | 操作步骤 | 准确度 | 适用场景 |
-| ------ | --------- | --------- | -------- | --------- |
-| Auto (Vision) | $0.05/本 | 1 步 | 最高 | 复杂图片 |
-| Auto (Text) | $0.001/本 | 1 步 | 高 | 文字提取 |
-| Manual | $0 | 3 步 | 高 | 无 API Key |
-| Skip | $0 | 1 步 | - | 手动输入 |
+| 模式          | 用户成本  | 操作步骤 | 准确度 | 适用场景   |
+| ------------- | --------- | -------- | ------ | ---------- |
+| Auto (Vision) | $0.05/本  | 1 步     | 最高   | 复杂图片   |
+| Auto (Text)   | $0.001/本 | 1 步     | 高     | 文字提取   |
+| Manual        | $0        | 3 步     | 高     | 无 API Key |
+| Skip          | $0        | 1 步     | -      | 手动输入   |
 
 **设计哲学：**
 
@@ -1337,7 +1326,7 @@ Layer 4: Manual Mode (Free)
 
 ```typescript
 interface Book {
-  isbn: string;  // Required
+  isbn: string; // Required
   // ...
 }
 ```
@@ -1346,7 +1335,7 @@ interface Book {
 
 ```typescript
 interface Book {
-  isbn?: string;  // Optional
+  isbn?: string; // Optional
   // ...
 }
 ```
@@ -1419,20 +1408,20 @@ Normal Mode (restored)
 ```typescript
 // Bad: Race condition
 const app = new App();
-app.init();  // async, no await
-app.render();  // ❌ May execute before init complete
+app.init(); // async, no await
+app.render(); // ❌ May execute before init complete
 ```
 
 **解决：Promise-based Init Chain**
 
 ```typescript
 // Good: Explicit dependency order
-await storage.waitForInit();    // 1️⃣ Storage first
+await storage.waitForInit(); // 1️⃣ Storage first
 const app = new App();
-await app.init();               // 2️⃣ Then app
-  await navbar.waitForInit();   // 3️⃣ Then components
-  await searchBar.waitForInit();
-  await bookList.render();      // 4️⃣ Finally render
+await app.init(); // 2️⃣ Then app
+await navbar.waitForInit(); // 3️⃣ Then components
+await searchBar.waitForInit();
+await bookList.render(); // 4️⃣ Finally render
 ```
 
 **关键模式：Init Promise + Guard**
@@ -1467,7 +1456,7 @@ class Module {
 
   // All public methods use guard
   async doSomething() {
-    await this.ensureInit();  // ← Guard
+    await this.ensureInit(); // ← Guard
     // Safe to proceed
   }
 }
@@ -1545,22 +1534,22 @@ private async init() {
 
 ### Lighthouse Score (PWA Audit)
 
-| 指标 | Phase 1 (MVP) | Phase 6 (PWA) | 目标 |
-| ------ | -------------- | -------------- | ------ |
-| Performance | 85 | 95+ | >90 |
-| Accessibility | 92 | 95+ | >90 |
-| Best Practices | 87 | 95+ | >90 |
-| SEO | 90 | 95+ | >90 |
-| PWA | ❌ N/A | ✅ 100 | 100 |
+| 指标           | Phase 1 (MVP) | Phase 6 (PWA) | 目标 |
+| -------------- | ------------- | ------------- | ---- |
+| Performance    | 85            | 95+           | >90  |
+| Accessibility  | 92            | 95+           | >90  |
+| Best Practices | 87            | 95+           | >90  |
+| SEO            | 90            | 95+           | >90  |
+| PWA            | ❌ N/A        | ✅ 100        | 100  |
 
 ### 加载性能
 
-| 指标 | localStorage | IndexedDB | 改进 |
-| ------ | ------------- | ----------- | ------ |
-| FCP (First Contentful Paint) | 1.2s | 0.8s | ⬇️ 33% |
-| LCP (Largest Contentful Paint) | 2.5s | 1.5s | ⬇️ 40% |
-| TTI (Time to Interactive) | 3.0s | 2.0s | ⬇️ 33% |
-| Bundle Size | 95KB | 120KB | ⬆️ 26% (Dexie) |
+| 指标                           | localStorage | IndexedDB | 改进           |
+| ------------------------------ | ------------ | --------- | -------------- |
+| FCP (First Contentful Paint)   | 1.2s         | 0.8s      | ⬇️ 33%         |
+| LCP (Largest Contentful Paint) | 2.5s         | 1.5s      | ⬇️ 40%         |
+| TTI (Time to Interactive)      | 3.0s         | 2.0s      | ⬇️ 33%         |
+| Bundle Size                    | 95KB         | 120KB     | ⬆️ 26% (Dexie) |
 
 **为什么 IndexedDB 更快？**
 
@@ -1649,10 +1638,10 @@ private async init() {
 
 ```typescript
 interface BookList {
-  id: string;              // UUID
+  id: string; // UUID
   name: string;
   description?: string;
-  bookIds: string[];       // 引用，不复制数据
+  bookIds: string[]; // 引用，不复制数据
   createdAt: number;
   updatedAt: number;
 }
@@ -1754,7 +1743,7 @@ interface BookList {
     bookConflicts: Array<{
       importBook: Book;
       existingBook: Book;
-      conflicts: string[];  // ["title", "author"]
+      conflicts: string[]; // ["title", "author"]
     }>;
     bookListConflict: {
       importedName: string;
@@ -1788,7 +1777,7 @@ interface BookList {
 interface ImportSnapshot {
   modifiedLists: Array<{
     id: string;
-    fullDataBefore: BookList;  // 完整对象，非部分字段
+    fullDataBefore: BookList; // 完整对象，非部分字段
   }>;
   replacedLists: Array<{
     id: string;
@@ -1858,14 +1847,14 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 
    ```typescript
    const strategies = {
-     title: 'keep',          // 书名通常更准确
-     author: 'keep',         // 作者信息更完整
+     title: 'keep', // 书名通常更准确
+     author: 'keep', // 作者信息更完整
      publisher: 'non-empty', // 优先非空值
-     publishDate: 'newer',   // 优先更新日期
-     isbn: 'keep',           // ISBN 不应改变
-     categories: 'merge',    // 合并分类列表
-     status: 'keep',         // 保留用户设置
-     rating: 'higher',       // 优先更高评分
+     publishDate: 'newer', // 优先更新日期
+     isbn: 'keep', // ISBN 不应改变
+     categories: 'merge', // 合并分类列表
+     status: 'keep', // 保留用户设置
+     rating: 'higher', // 优先更高评分
    };
    ```
 
@@ -1955,10 +1944,10 @@ Phase 3.2 的"全书覆盖"策略太粗糙，用户可能希望：
 
   ```typescript
   const strategyI18nMap = {
-    'keep': 'keep',
-    'replace': 'replace',
+    keep: 'keep',
+    replace: 'replace',
     'non-empty': 'nonEmpty',
-    'newer': 'newer',
+    newer: 'newer',
     // ...
   };
   ```
@@ -2068,16 +2057,16 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 
 **演进历程总结：**
 
-| Phase | 时间 | 核心功能 | 技术突破 |
-| ------- | ------ | --------- | --------- |
-| Phase 1 | 初始 | 条形码扫描 + ISBN 查询 | MVP 验证 |
-| Phase 2 | 早期 | 移动端优化 | iPhone 对焦、视口适配 |
-| Phase 3 | 早期 | 多入口（OCR/标题搜索） | API 聚合层 |
-| Phase 4 | 早期 | AI 能力集成 | LLM Text/Vision 分层 |
-| Phase 5 | 早期 | 批量管理与视图优化 | 元数据刷新、列表视图 |
-| Phase 6 | 中期 | PWA 改造 | IndexedDB 迁移、Service Worker |
-| Phase 7 | 2025-12-29 | Category 管理增强 | Tag Input、智能排序、事件委托 |
-| Phase 8 | 2025-12-30 至 2026-01-01 | 书单功能（三阶段） | 引用架构、冲突解决、Git-style diff |
+| Phase   | 时间                     | 核心功能               | 技术突破                           |
+| ------- | ------------------------ | ---------------------- | ---------------------------------- |
+| Phase 1 | 初始                     | 条形码扫描 + ISBN 查询 | MVP 验证                           |
+| Phase 2 | 早期                     | 移动端优化             | iPhone 对焦、视口适配              |
+| Phase 3 | 早期                     | 多入口（OCR/标题搜索） | API 聚合层                         |
+| Phase 4 | 早期                     | AI 能力集成            | LLM Text/Vision 分层               |
+| Phase 5 | 早期                     | 批量管理与视图优化     | 元数据刷新、列表视图               |
+| Phase 6 | 中期                     | PWA 改造               | IndexedDB 迁移、Service Worker     |
+| Phase 7 | 2025-12-29               | Category 管理增强      | Tag Input、智能排序、事件委托      |
+| Phase 8 | 2025-12-30 至 2026-01-01 | 书单功能（三阶段）     | 引用架构、冲突解决、Git-style diff |
 
 **当前版本特性：**
 
@@ -2148,11 +2137,11 @@ Book Scanner 项目通过 8 个阶段的迭代，从一个简单的条形码扫�
 
 **理由：**
 
-| 资源类型 | 策略 | 原因 |
-| --------- | ------ | ------ |
-| HTML/CSS/JS | Cache-first | 静态资源，版本化管理，快速启动 |
-| 封面图片 | Network-first | 可能更新，优先获取最新，失败回退缓存 |
-| API 请求 | Network-only | 实时数据，不应缓存 |
+| 资源类型    | 策略          | 原因                                 |
+| ----------- | ------------- | ------------------------------------ |
+| HTML/CSS/JS | Cache-first   | 静态资源，版本化管理，快速启动       |
+| 封面图片    | Network-first | 可能更新，优先获取最新，失败回退缓存 |
+| API 请求    | Network-only  | 实时数据，不应缓存                   |
 
 **Alternative considered：**
 
@@ -2196,7 +2185,7 @@ try {
 
 // Image caching
 try {
-  const blob = await fetch(url).then(r => r.blob());
+  const blob = await fetch(url).then((r) => r.blob());
   await db.imageCache.put({ url, blob, cachedAt: Date.now() });
 } catch (error) {
   // Silently fail, show placeholder image
@@ -2250,10 +2239,12 @@ try {
 ### 2. CSP (Content Security Policy)
 
 ```html
-<meta http-equiv="Content-Security-Policy"
-      content="default-src 'self';
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self';
                img-src 'self' https:;
-               script-src 'self';">
+               script-src 'self';"
+/>
 ```
 
 ### 3. 数据验证
@@ -2428,7 +2419,7 @@ npm run deploy
        // 动态加载语言包
        const [en, zhCN] = await Promise.all([
          import('../locales/en.js'),
-         import('../locales/zh-CN.js')
+         import('../locales/zh-CN.js'),
        ]);
 
        // 自动检测浏览器语言
@@ -2437,9 +2428,7 @@ npm run deploy
 
      t(key: string, params?: Record<string, any>): string {
        // 三级 fallback: 当前语言 → 英文 → key 本身
-       const text = this.translations[this.locale]?.[key] ||
-                    this.translations['en']?.[key] ||
-                    key;
+       const text = this.translations[this.locale]?.[key] || this.translations['en']?.[key] || key;
 
        // 参数插值：{variable} → 实际值
        return params ? this.interpolate(text, params) : text;
@@ -2475,7 +2464,7 @@ npm run deploy
    const message = i18n.t('bookForm.found', { count: results.length });
 
    // HTML 模板中
-   `<h2>${i18n.t('navbar.title')}</h2>`
+   `<h2>${i18n.t('navbar.title')}</h2>`;
    ```
 
 **覆盖范围：**
@@ -2643,9 +2632,9 @@ const [en, zhCN, ja] = await Promise.all([
      // 检查是否为旧格式（string[]）
      if (typeof oldCategories.value[0] === 'string') {
        // 转换为新格式
-       const newCategories: CategoryMetadata[] = oldCategories.value.map(name => ({
+       const newCategories: CategoryMetadata[] = oldCategories.value.map((name) => ({
          name: name,
-         lastUsedAt: Date.now()  // 默认为迁移时间
+         lastUsedAt: Date.now(), // 默认为迁移时间
        }));
        await db.settings.put({ key: 'categories', value: newCategories });
      }
@@ -2789,7 +2778,7 @@ const [en, zhCN, ja] = await Promise.all([
       setTimeout(() => {
         inputElement.scrollIntoView({
           behavior: 'smooth',
-          block: 'center'
+          block: 'center',
         });
       }, 300);
     });

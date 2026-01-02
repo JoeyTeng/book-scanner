@@ -9,8 +9,8 @@ export async function getCrossrefBookByISBN(isbn: string): Promise<BookDataSourc
     const url = `https://api.crossref.org/works?filter=isbn:${isbn}&rows=1`;
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'BookScanner/1.0 (mailto:example@example.com)'
-      }
+        'User-Agent': 'BookScanner/1.0 (mailto:example@example.com)',
+      },
     });
 
     if (!response.ok) return null;
@@ -35,8 +35,8 @@ export async function searchCrossrefByTitle(title: string): Promise<BookDataSour
     const url = `https://api.crossref.org/works?query.title=${encodeURIComponent(title)}&rows=10&filter=type:book`;
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'BookScanner/1.0 (mailto:example@example.com)'
-      }
+        'User-Agent': 'BookScanner/1.0 (mailto:example@example.com)',
+      },
     });
 
     if (!response.ok) return [];
@@ -63,11 +63,13 @@ function parseCrossrefItem(item: any): BookDataSource | null {
     isbn: item.ISBN ? item.ISBN[0] : '',
     title: item.title[0] || '',
     author: item.author
-      ? item.author.map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).join(', ')
+      ? item.author
+          .map((a: any) => `${String(a.given || '')} ${String(a.family || '')}`.trim())
+          .join(', ')
       : '',
     publisher: item.publisher || '',
     publishDate: item.published?.['date-parts']?.[0]?.[0]?.toString() || '',
     cover: '',
-    source: 'Crossref'
+    source: 'Crossref',
   };
 }

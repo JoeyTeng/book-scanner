@@ -1,5 +1,5 @@
-import type { BookDataSource } from '../../types';
 import { storage } from '../storage';
+import type { BookDataSource } from '../../types';
 
 /**
  * Search ISBNdb by ISBN
@@ -13,8 +13,8 @@ export async function getISBNdbBookByISBN(isbn: string): Promise<BookDataSource 
     const url = `https://api2.isbndb.com/book/${isbn}`;
     const response = await fetch(url, {
       headers: {
-        'Authorization': apiKey
-      }
+        Authorization: apiKey,
+      },
     });
 
     if (!response.ok) return null;
@@ -42,8 +42,8 @@ export async function searchISBNdbByTitle(title: string): Promise<BookDataSource
     const url = `https://api2.isbndb.com/books/${encodeURIComponent(title)}?page=1&pageSize=10`;
     const response = await fetch(url, {
       headers: {
-        'Authorization': apiKey
-      }
+        Authorization: apiKey,
+      },
     });
 
     if (!response.ok) return [];
@@ -69,10 +69,10 @@ function parseISBNdbBook(book: any): BookDataSource | null {
   return {
     isbn: book.isbn13 || book.isbn || '',
     title: book.title || '',
-    author: Array.isArray(book.authors) ? book.authors.join(', ') : (book.authors || ''),
+    author: Array.isArray(book.authors) ? book.authors.join(', ') : book.authors || '',
     publisher: book.publisher || '',
     publishDate: book.date_published || '',
     cover: book.image || '',
-    source: 'ISBNdb'
+    source: 'ISBNdb',
   };
 }

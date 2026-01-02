@@ -1,5 +1,5 @@
-import { storage } from '../modules/storage';
 import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
 
 const MAX_COMMENT_LENGTH = 500;
 
@@ -41,48 +41,42 @@ export class BookCommentEditModal {
     this.modalElement.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">
-          <h2>${i18n.t("bookCommentEdit.title")}</h2>
+          <h2>${i18n.t('bookCommentEdit.title')}</h2>
           <button class="btn-close" id="btn-close-comment-edit">&times;</button>
         </div>
         <div class="modal-body">
           <div class="book-info-preview">
             <div class="book-title">${this.escapeHtml(book.title)}</div>
-            <div class="book-list-name">📚 ${this.escapeHtml(
-              bookList.name
-            )}</div>
+            <div class="book-list-name">📚 ${this.escapeHtml(bookList.name)}</div>
           </div>
           <div class="form-group">
-            <label for="comment-textarea">${i18n.t(
-              "bookCommentEdit.commentLabel"
-            )}</label>
+            <label for="comment-textarea">${i18n.t('bookCommentEdit.commentLabel')}</label>
             <textarea
               id="comment-textarea"
               class="form-control"
               rows="6"
-              placeholder="${i18n.t("bookCommentEdit.commentPlaceholder")}"
-            >${this.currentComment || ""}</textarea>
+              placeholder="${i18n.t('bookCommentEdit.commentPlaceholder')}"
+            >${this.currentComment || ''}</textarea>
             <div class="char-counter">
               <span id="char-count">${
-                (this.currentComment || "").length
+                (this.currentComment || '').length
               }</span>/<span>${MAX_COMMENT_LENGTH}</span>
               <span class="over-limit-warning" id="over-limit-warning" style="display: none;">
-                ${i18n.t("bookCommentEdit.overLimit")}
+                ${i18n.t('bookCommentEdit.overLimit')}
               </span>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btn-cancel-comment">${i18n.t(
-            "common.cancel"
+            'common.cancel'
           )}</button>
           <button class="btn btn-danger" id="btn-delete-comment" ${
-            !this.currentComment ? 'style="display: none;"' : ""
+            !this.currentComment ? 'style="display: none;"' : ''
           }>
-            ${i18n.t("bookCommentEdit.deleteComment")}
+            ${i18n.t('bookCommentEdit.deleteComment')}
           </button>
-          <button class="btn btn-primary" id="btn-save-comment">${i18n.t(
-            "common.save"
-          )}</button>
+          <button class="btn btn-primary" id="btn-save-comment">${i18n.t('common.save')}</button>
         </div>
       </div>
     `;
@@ -102,7 +96,9 @@ export class BookCommentEditModal {
   private attachEventListeners(): void {
     const textarea = this.modalElement?.querySelector('#comment-textarea') as HTMLTextAreaElement;
     const charCount = this.modalElement?.querySelector('#char-count') as HTMLSpanElement;
-    const overLimitWarning = this.modalElement?.querySelector('#over-limit-warning') as HTMLSpanElement;
+    const overLimitWarning = this.modalElement?.querySelector(
+      '#over-limit-warning'
+    ) as HTMLSpanElement;
     const saveButton = this.modalElement?.querySelector('#btn-save-comment') as HTMLButtonElement;
 
     // Character counter
@@ -132,7 +128,7 @@ export class BookCommentEditModal {
     });
 
     // Delete button
-    this.modalElement?.querySelector('#btn-delete-comment')?.addEventListener('click', async () => {
+    this.modalElement?.querySelector('#btn-delete-comment')?.addEventListener('click', () => {
       if (confirm(i18n.t('bookCommentEdit.confirmDelete'))) {
         if (this.onSave) {
           this.onSave(undefined);

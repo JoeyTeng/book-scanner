@@ -21,17 +21,17 @@ export class OCRService {
       this.worker = await createWorker('chi_sim+eng', 1, {
         logger: (m) => {
           if (
-            m.status === "loading tesseract core" ||
-            m.status === "initializing tesseract" ||
-            m.status === "loading language traineddata" ||
-            m.status === "initializing api"
+            m.status === 'loading tesseract core' ||
+            m.status === 'initializing tesseract' ||
+            m.status === 'loading language traineddata' ||
+            m.status === 'initializing api'
           ) {
             const progress = m.progress || 0;
             if (onProgress) {
               onProgress(progress);
             }
           }
-        }
+        },
       });
 
       // Configure OCR parameters for better Chinese recognition
@@ -52,10 +52,7 @@ export class OCRService {
   /**
    * Recognize text from image
    */
-  async recognizeImage(
-    imageFile: File,
-    _onProgress?: (progress: number) => void
-  ): Promise<string> {
+  async recognizeImage(imageFile: File, _onProgress?: (progress: number) => void): Promise<string> {
     if (!this.worker || !this.isInitialized) {
       throw new Error('OCR worker not initialized');
     }
@@ -77,7 +74,7 @@ export class OCRService {
   parseXiaohongshuContent(text: string): ParsedOCRResult {
     // Split into lines and clean
     let lines = text
-      .split("\n")
+      .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
@@ -88,11 +85,9 @@ export class OCRService {
 
     // Filter out noise
     lines = lines
-      .filter((line) => !line.includes("小红书"))
-      .filter((line) => !line.includes("Xiaohongshu"))
-      .filter(
-        (line) => !line.match(/^\d+\s*(赞|收藏|评论|like|favorite|comment)/i)
-      )
+      .filter((line) => !line.includes('小红书'))
+      .filter((line) => !line.includes('Xiaohongshu'))
+      .filter((line) => !line.match(/^\d+\s*(赞|收藏|评论|like|favorite|comment)/i))
       .filter((line) => !line.match(/^@/))
       .filter((line) => !line.match(/^\d+\s*分钟前/))
       .filter((line) => !line.match(/^[\d:]+$/)) // Time stamps like 12:34
@@ -104,17 +99,17 @@ export class OCRService {
     }
 
     // Try to extract book title with priority
-    let bookTitle = "";
+    let bookTitle = '';
     let titleLineIndex = 0;
 
     // Priority 1: Find text with book title marks 《》 (may span multiple lines)
     // Also try common OCR mistakes: << >>, < >, 〈 〉
-    const fullText = lines.join("");
+    const fullText = lines.join('');
     const bookMarkPatterns = [
-      /《([^》]+)》/,           // Standard book marks
-      /<<([^>>]+)>>/,          // OCR mistake: English brackets
-      /<([^>]+)>/,             // OCR mistake: single angle bracket
-      /〈([^〉]+)〉/,           // OCR mistake: different Unicode brackets
+      /《([^》]+)》/, // Standard book marks
+      /<<([^>>]+)>>/, // OCR mistake: English brackets
+      /<([^>]+)>/, // OCR mistake: single angle bracket
+      /〈([^〉]+)〉/, // OCR mistake: different Unicode brackets
     ];
 
     for (const pattern of bookMarkPatterns) {
@@ -125,8 +120,8 @@ export class OCRService {
         // Find which line contains the closing bracket
         const closingChars = ['》', '>>', '>', '〉'];
         for (let i = 0; i < lines.length; i++) {
-          const joinedText = lines.slice(0, i + 1).join("");
-          if (closingChars.some(char => joinedText.includes(char))) {
+          const joinedText = lines.slice(0, i + 1).join('');
+          if (closingChars.some((char) => joinedText.includes(char))) {
             titleLineIndex = i;
             break;
           }
@@ -141,7 +136,7 @@ export class OCRService {
       titleLineIndex = 0;
 
       // Clean up hashtag if exists
-      bookTitle = bookTitle.replace(/^#/, "").trim();
+      bookTitle = bookTitle.replace(/^#/, '').trim();
     }
 
     // Remove unnecessary spaces in book title
@@ -150,12 +145,12 @@ export class OCRService {
     // Extract recommendation (remaining text after title)
     const recommendation = lines
       .slice(titleLineIndex + 1)
-      .join("\n")
+      .join('\n')
       .trim();
 
     return {
       bookTitle: bookTitle || undefined,
-      recommendation: recommendation || undefined
+      recommendation: recommendation || undefined,
     };
   }
 
@@ -164,7 +159,7 @@ export class OCRService {
    */
   private cleanSpaces(text: string): string {
     // Remove spaces between Chinese characters
-    return text.replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, "$1$2");
+    return text.replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, '$1$2');
   }
 
   /**

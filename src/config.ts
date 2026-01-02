@@ -8,19 +8,19 @@ export const DEFAULT_CATEGORIES = [
   'Science',
   'Art',
   'Wishlist',
-  'Other'
+  'Other',
 ];
 
 export const STATUS_LABELS = {
   want: 'Want to Read',
   reading: 'Reading',
-  read: 'Read'
+  read: 'Read',
 };
 
 export const STATUS_COLORS = {
   want: '#FFC107',
   reading: '#28A745',
-  read: '#6C757D'
+  read: '#6C757D',
 };
 
 export const BARCODE_FORMATS = [
@@ -31,7 +31,7 @@ export const BARCODE_FORMATS = [
   'CODE_128',
   'CODE_39',
   'ITF',
-  'QR_CODE'
+  'QR_CODE',
 ];
 
 export const GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes';

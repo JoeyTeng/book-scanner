@@ -1,6 +1,6 @@
-import type { CategoryMetadata } from '../types';
-import { storage } from '../modules/storage';
 import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
+import type { CategoryMetadata } from '../types';
 
 // Extended type with bookCount (dynamically added by getCategoriesSorted)
 interface CategoryWithCount extends CategoryMetadata {
@@ -61,7 +61,7 @@ export class CategoryTagInput {
   setAvailableCategories(categoryNames: string[] | null): void {
     if (categoryNames === null) {
       // Reset to all categories
-      storage.getCategoriesSorted().then((allCategories) => {
+      void storage.getCategoriesSorted().then((allCategories) => {
         this.availableCategories = allCategories;
         this.updateFilteredCategories();
         this.updateDropdownDisplay();
@@ -134,29 +134,25 @@ export class CategoryTagInput {
   private updateTagsDisplay(): void {
     if (!this.container) return;
 
-    const tagsContainer = this.container.querySelector(".tags-container");
-    const input = tagsContainer?.querySelector(
-      ".tag-input"
-    ) as HTMLInputElement;
+    const tagsContainer = this.container.querySelector('.tags-container');
+    const input = tagsContainer?.querySelector('.tag-input') as HTMLInputElement;
     if (!tagsContainer || !input) return;
 
     // Remove old tag chips
-    tagsContainer
-      .querySelectorAll(".tag-chip")
-      .forEach((chip) => chip.remove());
+    tagsContainer.querySelectorAll('.tag-chip').forEach((chip) => chip.remove());
 
     // Add new tag chips before input
     this.selectedCategories.forEach((cat) => {
-      const chip = document.createElement("span");
-      chip.className = "tag-chip";
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
       chip.innerHTML = `
         ${cat}
         <button type="button" class="tag-remove" data-category="${cat}">&times;</button>
       `;
 
-      const removeBtn = chip.querySelector(".tag-remove");
+      const removeBtn = chip.querySelector('.tag-remove');
       if (removeBtn) {
-        removeBtn.addEventListener("click", () => this.removeCategory(cat));
+        removeBtn.addEventListener('click', () => this.removeCategory(cat));
       }
 
       tagsContainer.insertBefore(chip, input);
@@ -164,9 +160,7 @@ export class CategoryTagInput {
 
     // Update input placeholder
     input.placeholder =
-      this.selectedCategories.length === 0
-        ? i18n.t("categoryInput.placeholder")
-        : "";
+      this.selectedCategories.length === 0 ? i18n.t('categoryInput.placeholder') : '';
   }
 
   private updateDropdownDisplay(): void {
@@ -226,7 +220,7 @@ export class CategoryTagInput {
           if (category) {
             this.selectCategory(category);
           } else if (createNew) {
-            this.createAndSelectCategory(createNew);
+            void this.createAndSelectCategory(createNew);
           }
         });
       });
@@ -284,8 +278,12 @@ export class CategoryTagInput {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        this.handleCreateOrSelect();
-      } else if (e.key === 'Backspace' && this.inputValue === '' && this.selectedCategories.length > 0) {
+        void this.handleCreateOrSelect();
+      } else if (
+        e.key === 'Backspace' &&
+        this.inputValue === '' &&
+        this.selectedCategories.length > 0
+      ) {
         // Remove last tag on backspace when input is empty
         this.removeCategory(this.selectedCategories[this.selectedCategories.length - 1]);
       }
@@ -326,14 +324,12 @@ export class CategoryTagInput {
   private selectCategory(categoryName: string): void {
     if (!this.selectedCategories.includes(categoryName)) {
       this.selectedCategories.push(categoryName);
-      this.inputValue = "";
+      this.inputValue = '';
 
       // Clear actual input element value and keep focus for continuous input
-      const input = this.container?.querySelector(
-        ".tag-input"
-      ) as HTMLInputElement;
+      const input = this.container?.querySelector('.tag-input') as HTMLInputElement;
       if (input) {
-        input.value = "";
+        input.value = '';
         input.focus();
       }
 
@@ -357,17 +353,13 @@ export class CategoryTagInput {
   }
 
   private removeCategory(categoryName: string): void {
-    this.selectedCategories = this.selectedCategories.filter(
-      (cat) => cat !== categoryName
-    );
+    this.selectedCategories = this.selectedCategories.filter((cat) => cat !== categoryName);
 
     // Ensure input is cleared
-    this.inputValue = "";
-    const input = this.container?.querySelector(
-      ".tag-input"
-    ) as HTMLInputElement;
+    this.inputValue = '';
+    const input = this.container?.querySelector('.tag-input') as HTMLInputElement;
     if (input) {
-      input.value = "";
+      input.value = '';
       input.focus(); // Keep focus in input for continuous editing
     }
 
