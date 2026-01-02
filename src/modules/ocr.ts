@@ -1,4 +1,4 @@
-import { createWorker, Worker } from 'tesseract.js';
+import { createWorker, Worker, PSM } from 'tesseract.js';
 
 export interface ParsedOCRResult {
   bookTitle?: string;
@@ -36,7 +36,7 @@ export class OCRService {
 
       // Configure OCR parameters for better Chinese recognition
       await this.worker.setParameters({
-        tessedit_pageseg_mode: 1 as any, // Automatic page segmentation with OSD
+        tessedit_pageseg_mode: PSM.AUTO_OSD, // Automatic page segmentation with OSD
         preserve_interword_spaces: '1', // Better word spacing
         tessedit_char_whitelist: '', // Allow all characters
         classify_bln_numeric_mode: '0', // Better punctuation recognition
