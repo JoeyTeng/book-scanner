@@ -7,8 +7,8 @@ type MigrationInput = {
   version?: string;
   settings?: {
     categories?: CategoryEntry[];
-  } & Record<string, unknown>;
-} & Record<string, unknown>;
+  };
+};
 
 type MigrationFunction = (data: MigrationInput) => MigrationInput;
 
@@ -70,7 +70,7 @@ export function migrateData(data: MigrationInput): StorageData {
 
   // If already at current version, return as-is
   if (currentVersion === APP_VERSION) {
-    return data as StorageData;
+    return data as unknown as StorageData;
   }
 
   // Apply migrations sequentially
@@ -92,7 +92,7 @@ export function migrateData(data: MigrationInput): StorageData {
     }
   }
 
-  return data as StorageData;
+  return data as unknown as StorageData;
 }
 
 /**
