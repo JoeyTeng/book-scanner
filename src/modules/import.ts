@@ -37,7 +37,7 @@ export async function importFromJSON(
 
     if ('exportedAt' in data) {
       // ExportData format
-      const exportData = data as ExportData;
+      const exportData = data as unknown as ExportData;
       storageData = {
         version: exportData.version,
         books: exportData.books,
@@ -49,7 +49,7 @@ export async function importFromJSON(
       };
     } else {
       // StorageData format
-      storageData = data as StorageData;
+      storageData = data as unknown as StorageData;
     }
 
     // Migrate if needed
