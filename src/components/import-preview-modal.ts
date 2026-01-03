@@ -1,11 +1,6 @@
 import { DiffViewer, type FieldDiff } from './diff-viewer';
 import { i18n } from '../modules/i18n';
-import type {
-  BookConflict,
-  BookConflictResolution,
-  ConflictInfo,
-  ImportStrategy,
-} from '../modules/book-list-import';
+import type { BookConflict, ConflictInfo, ImportStrategy } from '../modules/book-list-import';
 
 const listActions: Array<ImportStrategy['defaultListAction']> = [
   'rename',
@@ -313,14 +308,15 @@ export class ImportPreviewModal {
 
   private hasFieldConflicts(conflict: BookConflict): boolean {
     const { existingBook, importedBook } = conflict;
+    const hasIsbn = Boolean(existingBook.isbn || importedBook.isbn);
+    const hasPublisher = Boolean(existingBook.publisher || importedBook.publisher);
+    const hasPublishDate = Boolean(existingBook.publishDate || importedBook.publishDate);
+    const hasCover = Boolean(existingBook.cover || importedBook.coverUrl);
     return (
-      ((existingBook.isbn || importedBook.isbn) && existingBook.isbn !== importedBook.isbn) ||
-      ((existingBook.publisher || importedBook.publisher) &&
-        existingBook.publisher !== importedBook.publisher) ||
-      ((existingBook.publishDate || importedBook.publishDate) &&
-        existingBook.publishDate !== importedBook.publishDate) ||
-      ((existingBook.cover || importedBook.coverUrl) &&
-        !!existingBook.cover !== !!importedBook.coverUrl)
+      (hasIsbn && existingBook.isbn !== importedBook.isbn) ||
+      (hasPublisher && existingBook.publisher !== importedBook.publisher) ||
+      (hasPublishDate && existingBook.publishDate !== importedBook.publishDate) ||
+      (hasCover && !!existingBook.cover !== !!importedBook.coverUrl)
     );
   }
 
@@ -948,26 +944,26 @@ export class ImportPreviewModal {
       const bookResolution = this.strategy.bookResolutions?.get(bookKey);
 
       // Check each field for conflicts
-      const fields: ConflictField[] = [
+      const fields: Array<{ key: FieldStrategyKey; local: string; imported: string }> = [
         {
           key: 'isbn',
-          local: conflict.existingBook.isbn,
-          imported: conflict.importedBook.isbn,
+          local: conflict.existingBook.isbn || '',
+          imported: conflict.importedBook.isbn || '',
         },
         {
           key: 'publisher',
-          local: conflict.existingBook.publisher,
-          imported: conflict.importedBook.publisher,
+          local: conflict.existingBook.publisher || '',
+          imported: conflict.importedBook.publisher || '',
         },
         {
           key: 'publishDate',
-          local: conflict.existingBook.publishDate,
-          imported: conflict.importedBook.publishDate,
+          local: conflict.existingBook.publishDate || '',
+          imported: conflict.importedBook.publishDate || '',
         },
         {
           key: 'cover',
-          local: conflict.existingBook.cover,
-          imported: conflict.importedBook.coverUrl,
+          local: conflict.existingBook.cover || '',
+          imported: conflict.importedBook.coverUrl || '',
         },
       ];
 
