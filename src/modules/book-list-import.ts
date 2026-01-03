@@ -134,7 +134,7 @@ export async function parseImportFile(file: File): Promise<BookListExportFormat>
       throw new Error(`Unsupported version: ${String(data.version)}`);
     }
 
-    return data as BookListExportFormat;
+    return data as unknown as BookListExportFormat;
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error('Invalid JSON file');
