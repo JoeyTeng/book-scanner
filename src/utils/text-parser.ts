@@ -1,5 +1,8 @@
 import type { Book } from '../types';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 /**
  * Parse pasted text and extract book information
  * Supports multiple formats:
@@ -12,12 +15,15 @@ export function parseSmartPaste(text: string): Partial<Book> {
 
   // Try JSON format first
   try {
-    const json = JSON.parse(text);
-    if (json.title) result.title = json.title;
-    if (json.author) result.author = json.author;
-    if (json.isbn) result.isbn = json.isbn;
-    if (json.publisher) result.publisher = json.publisher;
-    if (json.publishDate) result.publishDate = json.publishDate;
+    const parsed = JSON.parse(text) as unknown;
+    if (isRecord(parsed)) {
+      const { title, author, isbn, publisher, publishDate } = parsed;
+      if (typeof title === 'string') result.title = title;
+      if (typeof author === 'string') result.author = author;
+      if (typeof isbn === 'string') result.isbn = isbn;
+      if (typeof publisher === 'string') result.publisher = publisher;
+      if (typeof publishDate === 'string') result.publishDate = publishDate;
+    }
     return result;
   } catch {
     // Not JSON, continue with other formats
