@@ -1,18 +1,31 @@
 import { APP_VERSION } from '../config';
-import type { StorageData } from '../types';
+import type { CategoryMetadata, StorageData } from '../types';
 
-type MigrationFunction = (data: any) => any;
+type CategoryEntry = string | CategoryMetadata;
+
+type MigrationInput = {
+  version?: string;
+  settings?: {
+    categories?: CategoryEntry[];
+  };
+};
+
+type MigrationFunction = (data: MigrationInput) => MigrationInput;
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
 
 const migrations: Record<string, MigrationFunction> = {
-  '1.0.0': (data: any) => {
+  '1.0.0': (data) => {
     // Initial version, no migration needed
     return data;
   },
-  '1.1.0': (data: any) => {
+  '1.1.0': (data) => {
     // Add recommendation field to books (optional, defaults to undefined)
     // Add Wishlist category if not exists
-    if (!data.settings.categories.includes('Wishlist')) {
-      data.settings.categories.push('Wishlist');
+    const categories = data.settings?.categories;
+    if (isStringArray(categories) && !categories.includes('Wishlist')) {
+      categories.push('Wishlist');
     }
     return data;
   },
@@ -52,12 +65,12 @@ function getNextVersion(current: string): string | null {
 /**
  * Migrate data from old version to current version
  */
-export function migrateData(data: any): StorageData {
+export function migrateData(data: MigrationInput): StorageData {
   let currentVersion = data.version || '1.0.0';
 
   // If already at current version, return as-is
   if (currentVersion === APP_VERSION) {
-    return data as StorageData;
+    return data as unknown as StorageData;
   }
 
   // Apply migrations sequentially
@@ -79,12 +92,12 @@ export function migrateData(data: any): StorageData {
     }
   }
 
-  return data as StorageData;
+  return data as unknown as StorageData;
 }
 
 /**
  * Check if data needs migration
  */
-export function needsMigration(data: any): boolean {
+export function needsMigration(data: MigrationInput): boolean {
   return !data.version || data.version !== APP_VERSION;
 }

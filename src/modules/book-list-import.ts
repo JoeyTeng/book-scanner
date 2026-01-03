@@ -7,6 +7,9 @@ import type { BookListExportFormat, ExportedBook } from './book-list-export';
  * Conflict detection and resolution for book list imports
  */
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 export interface ConflictInfo {
   listNameConflicts: ListNameConflict[];
   bookConflicts: BookConflict[];
@@ -111,10 +114,18 @@ export const DEFAULT_STRATEGY: ImportStrategy = {
 export async function parseImportFile(file: File): Promise<BookListExportFormat> {
   try {
     const text = await file.text();
-    const data = JSON.parse(text);
+    const data = JSON.parse(text) as unknown;
+
+    if (!isRecord(data)) {
+      throw new Error('Invalid export format');
+    }
 
     // Validate structure
-    if (!data.version || !data.exportedAt || !Array.isArray(data.lists)) {
+    if (
+      typeof data.version !== 'number' ||
+      typeof data.exportedAt !== 'string' ||
+      !Array.isArray(data.lists)
+    ) {
       throw new Error('Invalid export format');
     }
 
@@ -123,7 +134,7 @@ export async function parseImportFile(file: File): Promise<BookListExportFormat>
       throw new Error(`Unsupported version: ${String(data.version)}`);
     }
 
-    return data as BookListExportFormat;
+    return data as unknown as BookListExportFormat;
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error('Invalid JSON file');

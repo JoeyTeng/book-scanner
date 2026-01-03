@@ -1,6 +1,44 @@
 import { DiffViewer, type FieldDiff } from './diff-viewer';
 import { i18n } from '../modules/i18n';
-import type { ConflictInfo, ImportStrategy } from '../modules/book-list-import';
+import type { BookConflict, ConflictInfo, ImportStrategy } from '../modules/book-list-import';
+
+const listActions: Array<ImportStrategy['defaultListAction']> = [
+  'rename',
+  'merge',
+  'replace',
+  'skip',
+];
+const bookActions: Array<ImportStrategy['defaultBookAction']> = ['merge', 'skip', 'duplicate'];
+const commentMergeActions: Array<ImportStrategy['defaultCommentMerge']> = [
+  'local',
+  'import',
+  'both',
+];
+const fieldMergeActions: Array<ImportStrategy['defaultFieldMerge']> = [
+  'detailed',
+  'non-empty',
+  'local',
+  'import',
+];
+const fieldStrategyKeys = ['isbn', 'publisher', 'publishDate', 'cover'] as const;
+const fieldStrategyValues = ['unresolved', 'local', 'import', 'non-empty'] as const;
+
+type FieldStrategyKey = (typeof fieldStrategyKeys)[number];
+type FieldStrategyValue = (typeof fieldStrategyValues)[number];
+type ConflictField = FieldDiff & { key: FieldStrategyKey };
+
+const isListAction = (value: string): value is ImportStrategy['defaultListAction'] =>
+  listActions.includes(value as ImportStrategy['defaultListAction']);
+const isBookAction = (value: string): value is ImportStrategy['defaultBookAction'] =>
+  bookActions.includes(value as ImportStrategy['defaultBookAction']);
+const isCommentMergeAction = (value: string): value is ImportStrategy['defaultCommentMerge'] =>
+  commentMergeActions.includes(value as ImportStrategy['defaultCommentMerge']);
+const isFieldMergeAction = (value: string): value is ImportStrategy['defaultFieldMerge'] =>
+  fieldMergeActions.includes(value as ImportStrategy['defaultFieldMerge']);
+const isFieldStrategyKey = (value: string): value is FieldStrategyKey =>
+  fieldStrategyKeys.includes(value as FieldStrategyKey);
+const isFieldStrategyValue = (value: string): value is FieldStrategyValue =>
+  fieldStrategyValues.includes(value as FieldStrategyValue);
 
 /**
  * Import Preview Modal
@@ -268,16 +306,17 @@ export class ImportPreviewModal {
     `;
   }
 
-  private hasFieldConflicts(conflict: any): boolean {
+  private hasFieldConflicts(conflict: BookConflict): boolean {
     const { existingBook, importedBook } = conflict;
+    const hasIsbn = Boolean(existingBook.isbn || importedBook.isbn);
+    const hasPublisher = Boolean(existingBook.publisher || importedBook.publisher);
+    const hasPublishDate = Boolean(existingBook.publishDate || importedBook.publishDate);
+    const hasCover = Boolean(existingBook.cover || importedBook.coverUrl);
     return (
-      ((existingBook.isbn || importedBook.isbn) && existingBook.isbn !== importedBook.isbn) ||
-      ((existingBook.publisher || importedBook.publisher) &&
-        existingBook.publisher !== importedBook.publisher) ||
-      ((existingBook.publishDate || importedBook.publishDate) &&
-        existingBook.publishDate !== importedBook.publishDate) ||
-      ((existingBook.cover || importedBook.coverUrl) &&
-        !!existingBook.cover !== !!importedBook.coverUrl)
+      (hasIsbn && existingBook.isbn !== importedBook.isbn) ||
+      (hasPublisher && existingBook.publisher !== importedBook.publisher) ||
+      (hasPublishDate && existingBook.publishDate !== importedBook.publishDate) ||
+      (hasCover && !!existingBook.cover !== !!importedBook.coverUrl)
     );
   }
 
@@ -390,13 +429,7 @@ export class ImportPreviewModal {
     const isDetailedMode = this.strategy.defaultFieldMerge === 'detailed';
 
     // Prepare field data
-    const fields: Array<{
-      key: string;
-      label: string;
-      local: string;
-      imported: string;
-      hasConflict: boolean;
-    }> = [
+    const fields: ConflictField[] = [
       {
         key: 'isbn',
         label: 'ISBN',
@@ -444,10 +477,8 @@ export class ImportPreviewModal {
       const fieldsHtml = fields
         .map((field) => {
           const hasConflict = field.hasConflict;
-          const fieldStrategy =
-            bookResolution?.fieldStrategies?.[
-              field.key as keyof typeof bookResolution.fieldStrategies
-            ] || 'unresolved';
+          const fieldStrategy: FieldStrategyValue =
+            bookResolution?.fieldStrategies?.[field.key] ?? 'unresolved';
           const isUnresolved = fieldStrategy === 'unresolved';
 
           return `
@@ -602,12 +633,16 @@ export class ImportPreviewModal {
     }
 
     listActionSelect?.addEventListener('change', (e) => {
-      this.strategy.defaultListAction = (e.target as HTMLSelectElement).value as any;
+      const action = (e.target as HTMLSelectElement).value;
+      if (!isListAction(action)) return;
+      this.strategy.defaultListAction = action;
       this.updateConflictPreview();
     });
 
     bookActionSelect?.addEventListener('change', (e) => {
-      this.strategy.defaultBookAction = (e.target as HTMLSelectElement).value as any;
+      const action = (e.target as HTMLSelectElement).value;
+      if (!isBookAction(action)) return;
+      this.strategy.defaultBookAction = action;
       this.updateConflictPreview();
     });
 
@@ -627,7 +662,8 @@ export class ImportPreviewModal {
     // Enable/disable field merge selector based on book action
     bookActionSelect?.addEventListener('change', (e) => {
       const action = (e.target as HTMLSelectElement).value;
-      this.strategy.defaultBookAction = action as any;
+      if (!isBookAction(action)) return;
+      this.strategy.defaultBookAction = action;
       if (fieldMergeSelect) {
         fieldMergeSelect.disabled = action !== 'merge';
         const hintSpan = fieldMergeSelect.parentElement?.querySelector('.strategy-hint');
@@ -641,11 +677,16 @@ export class ImportPreviewModal {
     });
 
     commentMergeSelect?.addEventListener('change', (e) => {
-      this.strategy.defaultCommentMerge = (e.target as HTMLSelectElement).value as any;
+      const action = (e.target as HTMLSelectElement).value;
+      if (isCommentMergeAction(action)) {
+        this.strategy.defaultCommentMerge = action;
+      }
     });
 
     fieldMergeSelect?.addEventListener('change', (e) => {
-      this.strategy.defaultFieldMerge = (e.target as HTMLSelectElement).value as any;
+      const action = (e.target as HTMLSelectElement).value;
+      if (!isFieldMergeAction(action)) return;
+      this.strategy.defaultFieldMerge = action;
       // Re-render to update conflict details based on new strategy
       this.updateConflictPreview();
     });
@@ -661,8 +702,11 @@ export class ImportPreviewModal {
       select.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
         const conflictIndex = parseInt(target.dataset.conflictIndex || '0');
-        const field = target.dataset.field as any;
-        const value = target.value as any;
+        const field = target.dataset.field;
+        const value = target.value;
+        if (!field || !isFieldStrategyKey(field) || !isFieldStrategyValue(value)) {
+          return;
+        }
 
         // Initialize bookResolutions if not exists
         if (!this.strategy.bookResolutions) {
@@ -687,7 +731,7 @@ export class ImportPreviewModal {
         if (!resolution.fieldStrategies) {
           resolution.fieldStrategies = {};
         }
-        (resolution.fieldStrategies as any)[field] = value;
+        resolution.fieldStrategies[field] = value;
       });
     });
 
@@ -749,7 +793,7 @@ export class ImportPreviewModal {
         },
       ];
 
-      const fieldKeyMap: Record<string, string> = {
+      const fieldKeyMap: Record<string, FieldStrategyKey> = {
         ISBN: 'isbn',
         [i18n.t('bookForm.label.publisher')]: 'publisher',
         [i18n.t('bookForm.label.publishDate')]: 'publishDate',
@@ -767,10 +811,7 @@ export class ImportPreviewModal {
         if (!field.hasConflict) return;
 
         const fieldKey = fieldKeyMap[field.label];
-        const fieldStrategy =
-          bookResolution?.fieldStrategies?.[
-            fieldKey as keyof typeof bookResolution.fieldStrategies
-          ] || 'unresolved';
+        const fieldStrategy = bookResolution?.fieldStrategies?.[fieldKey] || 'unresolved';
 
         // Only initialize DiffViewer for unresolved fields
         if (fieldStrategy === 'unresolved') {
@@ -795,8 +836,11 @@ export class ImportPreviewModal {
       .forEach((select) => {
         select.addEventListener('change', (e) => {
           const target = e.target as HTMLSelectElement;
-          const field = target.dataset.field as any;
-          const value = target.value as any;
+          const field = target.dataset.field;
+          const value = target.value;
+          if (!field || !isFieldStrategyKey(field) || !isFieldStrategyValue(value)) {
+            return;
+          }
 
           if (!this.strategy.bookResolutions) {
             this.strategy.bookResolutions = new Map();
@@ -821,7 +865,7 @@ export class ImportPreviewModal {
           if (!resolution.fieldStrategies) {
             resolution.fieldStrategies = {};
           }
-          (resolution.fieldStrategies as any)[field] = value;
+          resolution.fieldStrategies[field] = value;
 
           // Re-render this conflict to update diff/preview based on strategy
           this.updateConflictPreview();
@@ -847,14 +891,18 @@ export class ImportPreviewModal {
     return this.countUnresolvedConflicts() === 0;
   }
 
-  private countUnresolvedInBook(conflict: any): number {
+  private countUnresolvedInBook(conflict: BookConflict): number {
     let count = 0;
     const bookKey =
       conflict.importedBook.isbn ||
       `${String(conflict.importedBook.title)}|${String(conflict.importedBook.author)}`;
     const bookResolution = this.strategy.bookResolutions?.get(bookKey);
 
-    const fields = [
+    const fields: Array<{
+      key: FieldStrategyKey;
+      local?: string;
+      imported?: string;
+    }> = [
       { key: 'isbn', local: conflict.existingBook.isbn, imported: conflict.importedBook.isbn },
       {
         key: 'publisher',
@@ -876,10 +924,7 @@ export class ImportPreviewModal {
     fields.forEach((field) => {
       const hasConflict = (field.local || field.imported) && field.local !== field.imported;
       if (hasConflict) {
-        const strategy =
-          bookResolution?.fieldStrategies?.[
-            field.key as keyof typeof bookResolution.fieldStrategies
-          ];
+        const strategy = bookResolution?.fieldStrategies?.[field.key];
         if (!strategy || strategy === 'unresolved') {
           count++;
         }
@@ -899,36 +944,33 @@ export class ImportPreviewModal {
       const bookResolution = this.strategy.bookResolutions?.get(bookKey);
 
       // Check each field for conflicts
-      const fields = [
+      const fields: Array<{ key: FieldStrategyKey; local: string; imported: string }> = [
         {
           key: 'isbn',
-          local: conflict.existingBook.isbn,
-          imported: conflict.importedBook.isbn,
+          local: conflict.existingBook.isbn || '',
+          imported: conflict.importedBook.isbn || '',
         },
         {
           key: 'publisher',
-          local: conflict.existingBook.publisher,
-          imported: conflict.importedBook.publisher,
+          local: conflict.existingBook.publisher || '',
+          imported: conflict.importedBook.publisher || '',
         },
         {
           key: 'publishDate',
-          local: conflict.existingBook.publishDate,
-          imported: conflict.importedBook.publishDate,
+          local: conflict.existingBook.publishDate || '',
+          imported: conflict.importedBook.publishDate || '',
         },
         {
           key: 'cover',
-          local: conflict.existingBook.cover,
-          imported: conflict.importedBook.coverUrl,
+          local: conflict.existingBook.cover || '',
+          imported: conflict.importedBook.coverUrl || '',
         },
       ];
 
       fields.forEach((field) => {
         const hasConflict = (field.local || field.imported) && field.local !== field.imported;
         if (hasConflict) {
-          const strategy =
-            bookResolution?.fieldStrategies?.[
-              field.key as keyof typeof bookResolution.fieldStrategies
-            ];
+          const strategy = bookResolution?.fieldStrategies?.[field.key];
           if (!strategy || strategy === 'unresolved') {
             count++;
           }

@@ -8,7 +8,7 @@ interface BookDB extends Book {
 
 interface SettingsDB {
   key: string;
-  value: any;
+  value: unknown;
 }
 
 interface CacheDB {
@@ -55,12 +55,13 @@ class BookScannerDB extends Dexie {
       })
       .upgrade(async (trans) => {
         // Migrate all book lists from bookIds to books structure
-        const bookLists = await trans.table('bookLists').toArray();
+        type BookListDBLegacy = BookListDB & { bookIds?: string[] };
+        const bookLists = (await trans.table('bookLists').toArray()) as BookListDBLegacy[];
 
         for (const list of bookLists) {
           // Check if list has old bookIds format
-          if ('bookIds' in list && Array.isArray(list.bookIds)) {
-            const bookIds = list.bookIds as string[];
+          if (Array.isArray(list.bookIds)) {
+            const bookIds = list.bookIds;
             const books = bookIds.map((bookId) => ({
               bookId,
               comment: undefined,
@@ -90,7 +91,7 @@ export async function migrateFromLocalStorage(storageKey: string): Promise<void>
     const stored = localStorage.getItem(storageKey);
     if (!stored) return;
 
-    const data: StorageData = JSON.parse(stored);
+    const data = JSON.parse(stored) as StorageData;
 
     // Migrate books
     if (data.books && data.books.length > 0) {

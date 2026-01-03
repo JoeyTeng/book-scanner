@@ -372,7 +372,7 @@ export class BookListManagerModal {
     }
   }
 
-  private async handleImport(): Promise<void> {
+  private handleImport(): void {
     // Create file input
     const fileInput = document.createElement('input');
     fileInput.type = 'file';

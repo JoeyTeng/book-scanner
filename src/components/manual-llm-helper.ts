@@ -164,20 +164,22 @@ export class ManualLLMHelper {
         jsonText = codeBlockMatch[1];
       }
 
-      const parsed = JSON.parse(jsonText);
+      const parsed = JSON.parse(jsonText) as unknown;
 
       // Handle both single book and multiple books response
       let result: ParsedBookInfo | ParsedBookInfo[];
 
-      if (parsed.books && Array.isArray(parsed.books)) {
+      if (this.isBookListResult(parsed)) {
         // Multiple books format
-        result = parsed.books;
+        result = parsed.books as ParsedBookInfo[];
       } else if (Array.isArray(parsed)) {
         // Array of books
-        result = parsed;
-      } else {
+        result = parsed as ParsedBookInfo[];
+      } else if (this.isRecord(parsed)) {
         // Single book
-        result = parsed;
+        result = parsed as ParsedBookInfo;
+      } else {
+        throw new Error('Invalid result format');
       }
 
       // Clean up empty strings
@@ -203,6 +205,14 @@ export class ManualLLMHelper {
         delete book[key as keyof ParsedBookInfo];
       }
     });
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private isBookListResult(value: unknown): value is { books: unknown[] } {
+    return this.isRecord(value) && Array.isArray(value.books);
   }
 
   private escapeHtml(text: string): string {

@@ -99,7 +99,7 @@ export class SearchBar {
       const filters: SearchFilters = {
         query: searchInput.value,
         category: categorySelect.value === 'all' ? undefined : categorySelect.value,
-        status: statusSelect.value as any,
+        status: statusSelect.value as SearchFilters['status'],
       };
 
       const sortField = sortFieldSelect.value as SortField;
@@ -297,7 +297,7 @@ export class SearchBar {
       const filters: SearchFilters = {
         query: searchInput.value,
         category: categorySelect.value === 'all' ? undefined : categorySelect.value,
-        status: statusSelect.value as any,
+        status: statusSelect.value as SearchFilters['status'],
       };
 
       const sortField = sortFieldSelect.value as SortField;

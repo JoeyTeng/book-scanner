@@ -4,8 +4,15 @@
  */
 import { i18n } from '../modules/i18n';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+type StandaloneNavigator = Navigator & { standalone?: boolean };
+
 export class PWAInstallPrompt {
-  private deferredPrompt: any = null;
+  private deferredPrompt: BeforeInstallPromptEvent | null = null;
   private promptElement: HTMLElement | null = null;
 
   constructor() {
@@ -14,11 +21,11 @@ export class PWAInstallPrompt {
 
   private init(): void {
     // Listen for the beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
+    window.addEventListener('beforeinstallprompt', (event: Event) => {
       // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
+      event.preventDefault();
       // Stash the event so it can be triggered later
-      this.deferredPrompt = e;
+      this.deferredPrompt = event as BeforeInstallPromptEvent;
       // Show the install prompt
       this.showPrompt();
     });
@@ -80,7 +87,7 @@ export class PWAInstallPrompt {
     }
 
     // Show the install prompt
-    this.deferredPrompt.prompt();
+    await this.deferredPrompt.prompt();
 
     // Wait for the user to respond to the prompt
     const { outcome } = await this.deferredPrompt.userChoice;
@@ -104,7 +111,7 @@ export class PWAInstallPrompt {
     // Check if running in standalone mode (already installed)
     return (
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+      (window.navigator as StandaloneNavigator).standalone === true
     );
   }
 

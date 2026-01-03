@@ -2,6 +2,27 @@ import { APP_VERSION, STORAGE_KEY, DEFAULT_CATEGORIES } from '../config';
 import { db, migrateFromLocalStorage } from './db';
 import type { Book, StorageData, CategoryMetadata, BookList } from '../types';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+const isUnknownArray = (value: unknown): value is unknown[] => Array.isArray(value);
+const isStringArray = (value: unknown): value is string[] =>
+  isUnknownArray(value) && value.every((item) => typeof item === 'string');
+const isCategoryMetadata = (value: unknown): value is CategoryMetadata =>
+  isRecord(value) && typeof value.name === 'string' && typeof value.lastUsedAt === 'number';
+const isCategoryMetadataArray = (value: unknown): value is CategoryMetadata[] =>
+  isUnknownArray(value) && value.every(isCategoryMetadata);
+const normalizeCategoryMetadata = (value: unknown): CategoryMetadata[] => {
+  if (isCategoryMetadataArray(value)) {
+    return value;
+  }
+  if (isStringArray(value)) {
+    return value.map((name) => ({ name, lastUsedAt: Date.now() }));
+  }
+  return [];
+};
+const getStringSetting = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
 /**
  * Storage class backed by IndexedDB for better performance and larger capacity
  */
@@ -23,9 +44,9 @@ class Storage {
 
       // Ensure default categories exist and migrate old format
       const setting = await db.settings.get('categories');
-      const categories = setting?.value || [];
+      const categoriesValue = setting?.value;
 
-      if (categories.length === 0) {
+      if (!isUnknownArray(categoriesValue) || categoriesValue.length === 0) {
         // Initialize with default categories
         const defaultCategoryMetadata: CategoryMetadata[] = DEFAULT_CATEGORIES.map((name) => ({
           name,
@@ -35,14 +56,12 @@ class Storage {
           key: 'categories',
           value: defaultCategoryMetadata,
         });
-      } else if (categories.length > 0 && typeof categories[0] === 'string') {
+      } else if (isStringArray(categoriesValue)) {
         // Migrate old format (string[]) to new format (CategoryMetadata[])
-        const migratedCategories: CategoryMetadata[] = (categories as unknown as string[]).map(
-          (name) => ({
-            name,
-            lastUsedAt: Date.now(),
-          })
-        );
+        const migratedCategories: CategoryMetadata[] = categoriesValue.map((name) => ({
+          name,
+          lastUsedAt: Date.now(),
+        }));
         await db.settings.put({
           key: 'categories',
           value: migratedCategories,
@@ -157,9 +176,14 @@ class Storage {
     await this.ensureInit();
     try {
       const setting = await db.settings.get('categories');
-      const categoryMetadata: CategoryMetadata[] = setting?.value || [];
-      const categoryNames = categoryMetadata.map((c) => c.name);
-      return categoryNames;
+      const value = setting?.value;
+      if (isCategoryMetadataArray(value)) {
+        return value.map((c) => c.name);
+      }
+      if (isStringArray(value)) {
+        return value;
+      }
+      return [];
     } catch (error) {
       console.error('Failed to get categories:', error);
       return [...DEFAULT_CATEGORIES];
@@ -173,7 +197,7 @@ class Storage {
     await this.ensureInit();
     try {
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
 
       // Get book count for each category
       const books = await this.getBooks();
@@ -212,7 +236,7 @@ class Storage {
     await this.ensureInit();
     try {
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
 
       if (!categories.find((c) => c.name === category)) {
         categories.push({
@@ -235,7 +259,7 @@ class Storage {
     await this.ensureInit();
     try {
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
 
       const category = categories.find((c) => c.name === name);
       if (category) {
@@ -269,7 +293,7 @@ class Storage {
     try {
       // 1. Update category metadata
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
 
       const category = categories.find((c) => c.name === oldName);
       if (category) {
@@ -299,7 +323,7 @@ class Storage {
     try {
       // 1. Remove from category metadata
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
 
       const filtered = categories.filter((c) => c.name !== name);
       await db.settings.put({ key: 'categories', value: filtered });
@@ -351,7 +375,7 @@ class Storage {
 
       // 2. Remove from category metadata (after books are updated successfully)
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
       const filtered = categories.filter((c) => !namesToDelete.has(c.name));
       await db.settings.put({ key: 'categories', value: filtered });
     } catch (error) {
@@ -366,7 +390,7 @@ class Storage {
   async getGoogleBooksApiKey(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('googleBooksApiKey');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -383,7 +407,7 @@ class Storage {
   async getISBNdbApiKey(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('isbndbApiKey');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -400,7 +424,7 @@ class Storage {
   async getLLMApiEndpoint(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('llmApiEndpoint');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -417,7 +441,7 @@ class Storage {
   async getLLMApiKey(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('llmApiKey');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -434,7 +458,7 @@ class Storage {
   async getLLMModel(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('llmModel');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -451,7 +475,7 @@ class Storage {
   async getLLMTextApiEndpoint(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('llmTextApiEndpoint');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -468,7 +492,7 @@ class Storage {
   async getLLMTextApiKey(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('llmTextApiKey');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -485,7 +509,7 @@ class Storage {
   async getLLMTextModel(): Promise<string | undefined> {
     await this.ensureInit();
     const setting = await db.settings.get('llmTextModel');
-    return setting?.value;
+    return getStringSetting(setting?.value);
   }
 
   /**
@@ -597,7 +621,7 @@ class Storage {
 
         // Merge categories
         const setting = await db.settings.get('categories');
-        const categories: CategoryMetadata[] = setting?.value || [];
+        const categories = normalizeCategoryMetadata(setting?.value);
         let categoriesUpdated = false;
 
         imported.settings.categories.forEach((cat) => {
@@ -625,7 +649,7 @@ class Storage {
     try {
       const books = await db.books.toArray();
       const setting = await db.settings.get('categories');
-      const categories: CategoryMetadata[] = setting?.value || [];
+      const categories = normalizeCategoryMetadata(setting?.value);
       const googleBooksApiKey = await this.getGoogleBooksApiKey();
       const isbndbApiKey = await this.getISBNdbApiKey();
       const llmApiEndpoint = await this.getLLMApiEndpoint();

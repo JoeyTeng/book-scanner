@@ -86,9 +86,7 @@ function myersDiff(oldWords: string[], newWords: string[]): DiffChange[] {
   const changes: DiffChange[] = [];
 
   // Build edit graph
-  const dp: number[][] = Array(m + 1)
-    .fill(0)
-    .map(() => Array(n + 1).fill(0));
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array<number>(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -159,9 +157,7 @@ function characterDiff(oldWord: string, newWord: string): CharDiff {
 
   const m = oldChars.length;
   const n = newChars.length;
-  const dp: number[][] = Array(m + 1)
-    .fill(0)
-    .map(() => Array(n + 1).fill(0));
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array<number>(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {

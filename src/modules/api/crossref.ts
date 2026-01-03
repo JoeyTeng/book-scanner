@@ -1,5 +1,30 @@
 import type { BookDataSource } from '../../types';
 
+interface CrossrefAuthor {
+  given?: string;
+  family?: string;
+}
+
+interface CrossrefPublished {
+  'date-parts'?: number[][];
+}
+
+interface CrossrefItem {
+  title?: string[];
+  ISBN?: string[];
+  author?: CrossrefAuthor[];
+  publisher?: string;
+  published?: CrossrefPublished;
+}
+
+interface CrossrefMessage {
+  items?: CrossrefItem[];
+}
+
+interface CrossrefResponse {
+  message?: CrossrefMessage;
+}
+
 /**
  * Search Crossref by ISBN (DOI-based academic publications)
  * Completely free, no API key required
@@ -15,7 +40,7 @@ export async function getCrossrefBookByISBN(isbn: string): Promise<BookDataSourc
 
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = (await response.json()) as CrossrefResponse;
     const items = data.message?.items;
 
     if (!items || items.length === 0) return null;
@@ -41,7 +66,7 @@ export async function searchCrossrefByTitle(title: string): Promise<BookDataSour
 
     if (!response.ok) return [];
 
-    const data = await response.json();
+    const data = (await response.json()) as CrossrefResponse;
     const items = data.message?.items || [];
 
     return items
@@ -56,15 +81,16 @@ export async function searchCrossrefByTitle(title: string): Promise<BookDataSour
 /**
  * Parse Crossref item to BookDataSource
  */
-function parseCrossrefItem(item: any): BookDataSource | null {
-  if (!item.title || !item.title[0]) return null;
+function parseCrossrefItem(item: CrossrefItem): BookDataSource | null {
+  const title = item.title?.[0];
+  if (!title) return null;
 
   return {
     isbn: item.ISBN ? item.ISBN[0] : '',
-    title: item.title[0] || '',
+    title,
     author: item.author
       ? item.author
-          .map((a: any) => `${String(a.given || '')} ${String(a.family || '')}`.trim())
+          .map((author) => `${String(author.given || '')} ${String(author.family || '')}`.trim())
           .join(', ')
       : '',
     publisher: item.publisher || '',

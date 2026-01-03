@@ -6,8 +6,13 @@ import { OCRService, ParsedOCRResult } from '../modules/ocr';
 import { storage } from '../modules/storage';
 import { Book } from '../types';
 
+type OCRModalElement = HTMLElement & {
+  _selectedFile?: File;
+  _llmParsedBook?: ParsedBookInfo;
+};
+
 export class OCRModal {
-  private modal: HTMLElement;
+  private modal: OCRModalElement;
   private ocrService: OCRService;
   private onRecognized?: (result: ParsedOCRResult) => void;
   private onSearchMetadata?: (title: string, recommendation?: string) => void;
@@ -22,8 +27,8 @@ export class OCRModal {
     void this.updateLLMButtonVisibility();
   }
 
-  private createModal(): HTMLElement {
-    const modal = document.createElement('div');
+  private createModal(): OCRModalElement {
+    const modal = document.createElement('div') as OCRModalElement;
     modal.className = 'modal';
     modal.id = 'ocr-modal';
     modal.innerHTML = `
@@ -186,11 +191,11 @@ export class OCRModal {
     reader.readAsDataURL(file);
 
     // Store file for later recognition
-    (this.modal as any)._selectedFile = file;
+    this.modal._selectedFile = file;
   }
 
   private async startRecognition(): Promise<void> {
-    const file = (this.modal as any)._selectedFile as File;
+    const file = this.modal._selectedFile;
     if (!file) return;
 
     this.hideElement('#ocr-recognize');
@@ -247,7 +252,7 @@ export class OCRModal {
   }
 
   private async startLLMVisionRecognition(): Promise<void> {
-    const file = (this.modal as any)._selectedFile as File;
+    const file = this.modal._selectedFile;
     if (!file) return;
 
     this.hideElement('#ocr-recognize');
@@ -292,7 +297,7 @@ export class OCRModal {
       if (recommendationInput) recommendationInput.value = book.notes || '';
 
       // Store parsed book info for later use
-      (this.modal as any)._llmParsedBook = book;
+      this.modal._llmParsedBook = book;
     } catch (error) {
       console.error('LLM Vision error:', error);
       alert(
@@ -484,7 +489,7 @@ export class OCRModal {
     // Reset file input
     const fileInput = this.modal.querySelector('#ocr-file-input') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
-    delete (this.modal as any)._selectedFile;
+    delete this.modal._selectedFile;
   }
 
   close(): void {

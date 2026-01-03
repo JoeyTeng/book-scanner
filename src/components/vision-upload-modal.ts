@@ -26,7 +26,7 @@ export class VisionUploadModal {
     }
   }
 
-  private async render(): Promise<void> {
+  private render(): Promise<void> {
     const isConfigured = Boolean(llmService.isConfigured());
     this.isLLMConfigured = isConfigured;
     this.modalElement = document.createElement('div');
@@ -98,6 +98,8 @@ export class VisionUploadModal {
     document.body.style.overflow = 'hidden';
 
     this.attachEventListeners();
+
+    return Promise.resolve();
   }
 
   private attachEventListeners(): void {
@@ -169,7 +171,7 @@ export class VisionUploadModal {
     }
   }
 
-  private async showBooksPreview(parsedBooks: ParsedBookInfo[]): Promise<void> {
+  private showBooksPreview(parsedBooks: ParsedBookInfo[]): Promise<void> {
     const booksList = this.modalElement?.querySelector('#books-list') as HTMLElement;
 
     booksList.innerHTML = parsedBooks
@@ -221,6 +223,8 @@ export class VisionUploadModal {
     this.modalElement?.querySelector('#btn-cancel-preview')?.addEventListener('click', () => {
       this.hide();
     });
+
+    return Promise.resolve();
   }
 
   private async addBooks(parsedBooks: ParsedBookInfo[]): Promise<void> {

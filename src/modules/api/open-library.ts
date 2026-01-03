@@ -1,6 +1,19 @@
 import { OPEN_LIBRARY_API_URL } from '../../config';
 import type { BookDataSource } from '../../types';
 
+interface OpenLibraryResponse {
+  docs?: OpenLibraryDoc[];
+}
+
+interface OpenLibraryDoc {
+  title?: string;
+  author_name?: string[];
+  publisher?: string[];
+  first_publish_year?: number;
+  cover_i?: number;
+  isbn?: string[];
+}
+
 export async function searchOpenLibrary(query: string): Promise<BookDataSource[]> {
   try {
     const url = `${OPEN_LIBRARY_API_URL}/search.json?q=${encodeURIComponent(query)}&limit=5`;
@@ -10,7 +23,7 @@ export async function searchOpenLibrary(query: string): Promise<BookDataSource[]
       throw new Error(`Open Library API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as OpenLibraryResponse;
 
     if (!data.docs || data.docs.length === 0) {
       return [];
@@ -32,7 +45,7 @@ export async function searchOpenLibraryByTitle(title: string): Promise<BookDataS
       throw new Error(`Open Library API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as OpenLibraryResponse;
 
     if (!data.docs || data.docs.length === 0) {
       return [];
@@ -45,8 +58,8 @@ export async function searchOpenLibraryByTitle(title: string): Promise<BookDataS
   }
 }
 
-function parseOpenLibraryDocs(docs: any[]): BookDataSource[] {
-  return docs.map((doc: any) => ({
+function parseOpenLibraryDocs(docs: OpenLibraryDoc[]): BookDataSource[] {
+  return docs.map((doc) => ({
     title: doc.title,
     author: doc.author_name ? doc.author_name.join(', ') : undefined,
     publisher: doc.publisher ? doc.publisher[0] : undefined,
