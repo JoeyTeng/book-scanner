@@ -185,10 +185,8 @@ export class BulkEditModal {
   }
 
   private async updateCategoryOperationMode(): Promise<void> {
-    const operation = (
-      this.modalElement?.querySelector(
-        'input[name="category-operation"]:checked'
-      ) as HTMLInputElement
+    const operation = this.modalElement?.querySelector<HTMLInputElement>(
+      'input[name="category-operation"]:checked'
     )?.value;
 
     if (!this.categoryTagInput) return;
@@ -217,10 +215,8 @@ export class BulkEditModal {
   }
 
   private async updateBookListOperationMode(): Promise<void> {
-    const operation = (
-      this.modalElement?.querySelector(
-        'input[name="booklist-operation"]:checked'
-      ) as HTMLInputElement
+    const operation = this.modalElement?.querySelector<HTMLInputElement>(
+      'input[name="booklist-operation"]:checked'
     )?.value;
 
     const container = this.modalElement?.querySelector('#booklist-selector-container');
@@ -374,11 +370,9 @@ export class BulkEditModal {
 
     // Update book lists
     if (modifyBookLists) {
-      const bookListOperation = (
-        this.modalElement?.querySelector(
-          'input[name="booklist-operation"]:checked'
-        ) as HTMLInputElement
-      )?.value as 'add' | 'remove';
+      const bookListOperation = this.modalElement?.querySelector<HTMLInputElement>(
+        'input[name="booklist-operation"]:checked'
+      )?.value as 'add' | 'remove' | undefined;
 
       const selectedBookListCheckboxes = this.modalElement?.querySelectorAll(
         'input[name="selected-booklists"]:checked'
