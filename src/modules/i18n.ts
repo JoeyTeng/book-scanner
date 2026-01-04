@@ -93,8 +93,9 @@ class I18n {
       locale = 'en';
     }
 
-    this.locale = locale;
-    localStorage.setItem('locale', locale);
+    const normalizedLocale: Locale = locale === 'en' || locale === 'zh-CN' ? locale : 'en';
+    this.locale = normalizedLocale;
+    localStorage.setItem('locale', normalizedLocale);
 
     // Notify listeners (for UI updates)
     this.notifyListeners();
