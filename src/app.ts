@@ -160,7 +160,7 @@ export class App {
 
       // Pre-fill title
       setTimeout(() => {
-        const titleInput = document.querySelector('#input-title') as HTMLInputElement;
+        const titleInput = document.querySelector<HTMLInputElement>('#input-title');
         if (titleInput) titleInput.value = title;
       }, 100);
     } else {
@@ -194,7 +194,7 @@ export class App {
             if (recommendation) {
               const wishlistCheckbox = document.querySelector(
                 'input[name="category"][value="Wishlist"]'
-              ) as HTMLInputElement;
+              );
               if (wishlistCheckbox) wishlistCheckbox.checked = true;
             }
           }, 100);
@@ -218,13 +218,13 @@ export class App {
     // Pre-fill title if recognized
     if (title) {
       setTimeout(() => {
-        const titleInput = document.querySelector('#input-title') as HTMLInputElement;
+        const titleInput = document.querySelector<HTMLInputElement>('#input-title');
         if (titleInput) titleInput.value = title;
 
         // Auto-select Wishlist category
         const wishlistCheckbox = document.querySelector(
           'input[name="category"][value="Wishlist"]'
-        ) as HTMLInputElement;
+        );
         if (wishlistCheckbox) wishlistCheckbox.checked = true;
       }, 100);
     }
