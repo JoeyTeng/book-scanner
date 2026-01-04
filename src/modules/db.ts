@@ -104,58 +104,59 @@ export async function migrateFromLocalStorage(storageKey: string): Promise<void>
 
     // Migrate settings
     if (data.settings) {
+      const settings = data.settings as Partial<StorageData['settings']>;
       // Only migrate if settings don't exist yet
       const existingCategories = await db.settings.get('categories');
       if (!existingCategories) {
         await db.settings.put({
           key: 'categories',
-          value: data.settings.categories || [],
+          value: settings.categories || [],
         });
       }
 
       // Migrate API keys only if they don't exist
-      if (data.settings.googleBooksApiKey) {
+      if (settings.googleBooksApiKey) {
         const existing = await db.settings.get('googleBooksApiKey');
         if (!existing) {
           await db.settings.put({
             key: 'googleBooksApiKey',
-            value: data.settings.googleBooksApiKey,
+            value: settings.googleBooksApiKey,
           });
         }
       }
-      if (data.settings.isbndbApiKey) {
+      if (settings.isbndbApiKey) {
         const existing = await db.settings.get('isbndbApiKey');
         if (!existing) {
           await db.settings.put({
             key: 'isbndbApiKey',
-            value: data.settings.isbndbApiKey,
+            value: settings.isbndbApiKey,
           });
         }
       }
-      if (data.settings.llmApiEndpoint) {
+      if (settings.llmApiEndpoint) {
         const existing = await db.settings.get('llmApiEndpoint');
         if (!existing) {
           await db.settings.put({
             key: 'llmApiEndpoint',
-            value: data.settings.llmApiEndpoint,
+            value: settings.llmApiEndpoint,
           });
         }
       }
-      if (data.settings.llmApiKey) {
+      if (settings.llmApiKey) {
         const existing = await db.settings.get('llmApiKey');
         if (!existing) {
           await db.settings.put({
             key: 'llmApiKey',
-            value: data.settings.llmApiKey,
+            value: settings.llmApiKey,
           });
         }
       }
-      if (data.settings.llmModel) {
+      if (settings.llmModel) {
         const existing = await db.settings.get('llmModel');
         if (!existing) {
           await db.settings.put({
             key: 'llmModel',
-            value: data.settings.llmModel,
+            value: settings.llmModel,
           });
         }
       }

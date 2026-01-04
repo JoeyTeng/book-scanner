@@ -625,12 +625,12 @@ class Storage {
         const categories = normalizeCategoryMetadata(setting?.value);
         let categoriesUpdated = false;
 
-        imported.settings.categories.forEach((cat) => {
+        for (const cat of imported.settings.categories) {
           if (!categories.find((c) => c.name === cat.name)) {
             categories.push(cat);
             categoriesUpdated = true;
           }
-        });
+        }
 
         if (categoriesUpdated) {
           await db.settings.put({ key: 'categories', value: categories });
