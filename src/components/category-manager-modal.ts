@@ -133,8 +133,6 @@ export class CategoryManagerModal {
     this.updateFilteredCategories();
     this.renderCategoryList();
     this.attachEventListeners(); // Only call once during initialization
-
-    return Promise.resolve();
   }
 
   private attachEventListeners(): void {
