@@ -38,12 +38,27 @@ export default tseslint.config(
       // Disallow explicit any (common in API parsing)
       '@typescript-eslint/no-explicit-any': 'error',
 
+      // Enforce type-only imports
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'separate-type-imports',
+        },
+      ],
+
       // Relax unsafe any operations
       '@typescript-eslint/no-unsafe-assignment': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
+
+      // Remove redundant type assertions
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+
+      // Surface unnecessary checks for later cleanup
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
 
       // Allow non-null assertion (developer knows better)
       '@typescript-eslint/no-non-null-assertion': 'off',
@@ -52,6 +67,9 @@ export default tseslint.config(
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/require-await': 'error',
+
+      // Prefer unknown for catch callback
+      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'warn',
 
       // Allow flexible template expressions
       '@typescript-eslint/restrict-template-expressions': [
