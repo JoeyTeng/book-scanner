@@ -137,9 +137,8 @@ export class CategoryManagerModal {
 
   private attachEventListeners(): void {
     // Search input - bind once
-    const searchInput = this.modalElement?.querySelector(
-      '#category-search-input'
-    ) as HTMLInputElement;
+    const searchInput =
+      this.modalElement?.querySelector<HTMLInputElement>('#category-search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         this.searchQuery = (e.target as HTMLInputElement).value;
@@ -366,9 +365,8 @@ export class CategoryManagerModal {
   }
 
   private async handleAddCategory(): Promise<void> {
-    const searchInput = this.modalElement?.querySelector(
-      '#category-search-input'
-    ) as HTMLInputElement;
+    const searchInput =
+      this.modalElement?.querySelector<HTMLInputElement>('#category-search-input');
     const categoryName = searchInput?.value.trim();
 
     if (!categoryName) return;
@@ -403,9 +401,9 @@ export class CategoryManagerModal {
 
     // Focus the input
     setTimeout(() => {
-      const input = this.modalElement?.querySelector(
+      const input = this.modalElement?.querySelector<HTMLInputElement>(
         `#edit-input-${categoryName.replace(/[^a-zA-Z0-9]/g, '_')}`
-      ) as HTMLInputElement;
+      );
       input?.focus();
       input?.select();
     }, 0);
@@ -417,9 +415,9 @@ export class CategoryManagerModal {
   }
 
   private async saveEditing(oldName: string): Promise<void> {
-    const input = this.modalElement?.querySelector(
+    const input = this.modalElement?.querySelector<HTMLInputElement>(
       `#edit-input-${oldName.replace(/[^a-zA-Z0-9]/g, '_')}`
-    ) as HTMLInputElement;
+    );
     const newName = input?.value.trim();
 
     if (!newName) {

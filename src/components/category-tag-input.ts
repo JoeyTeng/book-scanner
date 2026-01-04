@@ -135,7 +135,7 @@ export class CategoryTagInput {
     if (!this.container) return;
 
     const tagsContainer = this.container.querySelector('.tags-container');
-    const input = tagsContainer?.querySelector('.tag-input') as HTMLInputElement;
+    const input = tagsContainer?.querySelector<HTMLInputElement>('.tag-input');
     if (!tagsContainer || !input) return;
 
     // Remove old tag chips
@@ -258,7 +258,7 @@ export class CategoryTagInput {
   private attachInputEventListeners(): void {
     if (!this.container) return;
 
-    const input = this.container.querySelector('.tag-input') as HTMLInputElement;
+    const input = this.container.querySelector<HTMLInputElement>('.tag-input');
     if (!input) return;
 
     // Input focus - open dropdown
@@ -327,7 +327,7 @@ export class CategoryTagInput {
       this.inputValue = '';
 
       // Clear actual input element value and keep focus for continuous input
-      const input = this.container?.querySelector('.tag-input') as HTMLInputElement;
+      const input = this.container?.querySelector<HTMLInputElement>('.tag-input');
       if (input) {
         input.value = '';
         input.focus();
@@ -357,7 +357,7 @@ export class CategoryTagInput {
 
     // Ensure input is cleared
     this.inputValue = '';
-    const input = this.container?.querySelector('.tag-input') as HTMLInputElement;
+    const input = this.container?.querySelector<HTMLInputElement>('.tag-input');
     if (input) {
       input.value = '';
       input.focus(); // Keep focus in input for continuous editing
