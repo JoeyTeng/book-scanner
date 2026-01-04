@@ -192,7 +192,7 @@ export class App {
 
             // Auto-select Wishlist if recommendation exists
             if (recommendation) {
-              const wishlistCheckbox = document.querySelector(
+              const wishlistCheckbox = document.querySelector<HTMLInputElement>(
                 'input[name="category"][value="Wishlist"]'
               );
               if (wishlistCheckbox) wishlistCheckbox.checked = true;
@@ -222,7 +222,7 @@ export class App {
         if (titleInput) titleInput.value = title;
 
         // Auto-select Wishlist category
-        const wishlistCheckbox = document.querySelector(
+        const wishlistCheckbox = document.querySelector<HTMLInputElement>(
           'input[name="category"][value="Wishlist"]'
         );
         if (wishlistCheckbox) wishlistCheckbox.checked = true;
