@@ -35,15 +35,15 @@ export default tseslint.config(
       'no-console': 'off',
 
       // === TypeScript ===
-      // Warn on explicit any (common in API parsing)
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Disallow explicit any (common in API parsing)
+      '@typescript-eslint/no-explicit-any': 'error',
 
       // Relax unsafe any operations
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
-      '@typescript-eslint/no-unsafe-call': 'warn',
-      '@typescript-eslint/no-unsafe-return': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
 
       // Allow non-null assertion (developer knows better)
       '@typescript-eslint/no-non-null-assertion': 'off',
@@ -51,7 +51,7 @@ export default tseslint.config(
       // Strict Promise handling (best practice)
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/require-await': 'warn', // Warn instead of error (interface consistency)
+      '@typescript-eslint/require-await': 'error',
 
       // Allow flexible template expressions
       '@typescript-eslint/restrict-template-expressions': [
