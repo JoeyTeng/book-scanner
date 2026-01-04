@@ -1,10 +1,12 @@
 import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
 import { searchBookByTitle } from '../modules/api/aggregator';
 import { i18n } from '../modules/i18n';
-import { llmService, ParsedBookInfo } from '../modules/llm';
-import { OCRService, ParsedOCRResult } from '../modules/ocr';
+import { llmService } from '../modules/llm';
+import { OCRService } from '../modules/ocr';
 import { storage } from '../modules/storage';
-import { Book } from '../types';
+import type { ParsedBookInfo } from '../modules/llm';
+import type { ParsedOCRResult } from '../modules/ocr';
+import type { Book } from '../types';
 
 type OCRModalElement = HTMLElement & {
   _selectedFile?: File;

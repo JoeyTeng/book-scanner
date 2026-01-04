@@ -1,5 +1,5 @@
 import { i18n } from '../modules/i18n';
-import { ParsedBookInfo } from '../modules/llm';
+import type { ParsedBookInfo } from '../modules/llm';
 
 interface ManualLLMConfig {
   title: string;
