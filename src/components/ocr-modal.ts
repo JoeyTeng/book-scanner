@@ -110,9 +110,10 @@ export class OCRModal {
 
     // File input change
     fileInput?.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement;
-      if (target.files && target.files[0]) {
-        this.handleFileSelected(target.files[0]);
+      const target = e.target as HTMLInputElement | null;
+      const file = target?.files?.[0];
+      if (file) {
+        this.handleFileSelected(file);
       }
     });
 
@@ -130,9 +131,9 @@ export class OCRModal {
       e.preventDefault();
       uploadArea.classList.remove('drag-over');
 
-      const files = e.dataTransfer?.files;
-      if (files && files[0]) {
-        this.handleFileSelected(files[0]);
+      const file = e.dataTransfer?.files?.[0];
+      if (file) {
+        this.handleFileSelected(file);
       }
     });
 
