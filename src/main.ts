@@ -20,7 +20,7 @@ if ('serviceWorker' in navigator) {
           60 * 60 * 1000
         ); // Check every hour
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Service Worker registration failed:', error);
       });
   });
