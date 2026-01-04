@@ -91,7 +91,7 @@ export async function migrateFromLocalStorage(storageKey: string): Promise<void>
     const stored = localStorage.getItem(storageKey);
     if (!stored) return;
 
-    const data = JSON.parse(stored) as StorageData;
+    const data = JSON.parse(stored) as Partial<StorageData>;
 
     // Migrate books
     if (data.books && data.books.length > 0) {

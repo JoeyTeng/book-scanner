@@ -555,58 +555,59 @@ class Storage {
         await db.books.bulkAdd(imported.books);
 
         // Import settings
-        if (imported.settings.categories) {
+        const settings = imported.settings as Partial<StorageData['settings']>;
+        if (settings.categories) {
           await db.settings.put({
             key: 'categories',
-            value: imported.settings.categories,
+            value: settings.categories,
           });
         }
-        if (imported.settings.googleBooksApiKey) {
+        if (settings.googleBooksApiKey) {
           await db.settings.put({
             key: 'googleBooksApiKey',
-            value: imported.settings.googleBooksApiKey,
+            value: settings.googleBooksApiKey,
           });
         }
-        if (imported.settings.isbndbApiKey) {
+        if (settings.isbndbApiKey) {
           await db.settings.put({
             key: 'isbndbApiKey',
-            value: imported.settings.isbndbApiKey,
+            value: settings.isbndbApiKey,
           });
         }
-        if (imported.settings.llmApiEndpoint) {
+        if (settings.llmApiEndpoint) {
           await db.settings.put({
             key: 'llmApiEndpoint',
-            value: imported.settings.llmApiEndpoint,
+            value: settings.llmApiEndpoint,
           });
         }
-        if (imported.settings.llmApiKey) {
+        if (settings.llmApiKey) {
           await db.settings.put({
             key: 'llmApiKey',
-            value: imported.settings.llmApiKey,
+            value: settings.llmApiKey,
           });
         }
-        if (imported.settings.llmModel) {
+        if (settings.llmModel) {
           await db.settings.put({
             key: 'llmModel',
-            value: imported.settings.llmModel,
+            value: settings.llmModel,
           });
         }
-        if (imported.settings.llmTextApiEndpoint) {
+        if (settings.llmTextApiEndpoint) {
           await db.settings.put({
             key: 'llmTextApiEndpoint',
-            value: imported.settings.llmTextApiEndpoint,
+            value: settings.llmTextApiEndpoint,
           });
         }
-        if (imported.settings.llmTextApiKey) {
+        if (settings.llmTextApiKey) {
           await db.settings.put({
             key: 'llmTextApiKey',
-            value: imported.settings.llmTextApiKey,
+            value: settings.llmTextApiKey,
           });
         }
-        if (imported.settings.llmTextModel) {
+        if (settings.llmTextModel) {
           await db.settings.put({
             key: 'llmTextModel',
-            value: imported.settings.llmTextModel,
+            value: settings.llmTextModel,
           });
         }
       } else {
