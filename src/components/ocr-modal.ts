@@ -131,7 +131,8 @@ export class OCRModal {
       e.preventDefault();
       uploadArea.classList.remove('drag-over');
 
-      const file = e.dataTransfer?.files?.[0];
+      const dataTransfer = e.dataTransfer;
+      const file = dataTransfer?.files?.[0];
       if (file) {
         this.handleFileSelected(file);
       }
