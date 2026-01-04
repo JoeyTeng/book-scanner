@@ -40,7 +40,7 @@ async function initApp() {
 
     const app = new App();
     await app.init();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to initialize app:', error);
     // Show error to user
     document.body.innerHTML = `
