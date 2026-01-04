@@ -62,6 +62,41 @@ export interface BookList {
   updatedAt: number;
 }
 
+export type BackupFormat = 'metadata' | 'full';
+
+export interface BackupPayload {
+  books: Book[];
+  bookLists: BookList[];
+  settings: Record<string, unknown>;
+}
+
+export interface BackupAssetMeta {
+  path: string;
+  url: string;
+  sha256: string;
+  bytes: number;
+  timestamp: number;
+}
+
+export interface BackupChecksum {
+  algorithm: 'sha256';
+  dataHash: string;
+  assetsHash?: string;
+}
+
+export interface BackupData {
+  format: BackupFormat;
+  schemaVersion: number;
+  appVersion: string;
+  createdAt: number;
+  checksum: BackupChecksum;
+  data: BackupPayload;
+  assets?: {
+    version: number;
+    items: BackupAssetMeta[];
+  };
+}
+
 export interface BookListExport {
   bookList: BookList;
   books: Book[];

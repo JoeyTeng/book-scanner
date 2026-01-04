@@ -7,6 +7,7 @@ export const en = {
   'navbar.menu': 'Menu',
   'navbar.exportCurrentList': 'Export current list',
   'navbar.menu.dataManagement': 'Data Management',
+  'navbar.menu.backupRestore': 'Backup / Restore',
   'navbar.menu.exportJSON': 'Export as JSON',
   'navbar.menu.exportCSV': 'Export as CSV',
   'navbar.menu.exportMarkdown': 'Export as Markdown',
@@ -23,6 +24,41 @@ export const en = {
   'navbar.menu.dangerZone': 'Danger Zone',
   'navbar.menu.clearData': 'Clear All Data',
   'navbar.menu.close': 'Close',
+
+  // Data Management Modal
+  'dataManagement.title': 'Backup & Restore',
+  'dataManagement.metadata.title': 'Metadata Backup / Restore (JSON)',
+  'dataManagement.metadata.description':
+    'Backs up books, book lists, and settings without cached images.',
+  'dataManagement.metadata.backup': 'Backup Metadata (JSON)',
+  'dataManagement.metadata.restore': 'Restore Metadata (JSON)',
+  'dataManagement.full.title': 'Full Backup / Restore (ZIP)',
+  'dataManagement.full.description': 'Includes cached images for a complete data recovery.',
+  'dataManagement.full.backup': 'Full Backup (ZIP)',
+  'dataManagement.full.restore': 'Full Restore (ZIP)',
+  'dataManagement.mergeTodo': 'Advanced Merge Restore (TODO)',
+  'dataManagement.mergeHint': 'Current restore only supports overwrite.',
+  'dataManagement.restore.warningTitle': 'Overwrite Mode Only',
+  'dataManagement.restore.warningBody': 'Restore will overwrite current data and cached images.',
+  'dataManagement.backup.failed': 'Backup failed. Please try again.',
+  'dataManagement.restore.success':
+    'Restore complete: {books} books, {lists} lists, {assets} cached images.',
+  'dataManagement.error.invalidJson': 'Invalid JSON file.',
+  'dataManagement.error.invalidStructure': 'Invalid backup file structure.',
+  'dataManagement.error.unsupportedSchema': 'Unsupported backup schema version.',
+  'dataManagement.error.invalidFormat': 'Backup type does not match this restore option.',
+  'dataManagement.error.checksumMismatch': 'Backup checksum mismatch.',
+  'dataManagement.error.assetsMissing': 'Backup assets are missing.',
+  'dataManagement.error.assetsHashMismatch': 'Backup assets hash mismatch.',
+  'dataManagement.error.assetsChecksumMismatch': 'Backup asset checksum mismatch.',
+  'dataManagement.error.archiveMissing': 'Backup archive is missing backup.json.',
+  'dataManagement.error.archiveInvalid': 'Backup archive is invalid or corrupted.',
+  'dataManagement.error.restoreFailed': 'Restore failed. Please try again.',
+  'dataManagement.future.title': 'Future Integrations',
+  'dataManagement.future.description': 'Planned destinations and importers.',
+  'dataManagement.future.zotero': 'Zotero Import/Export (Coming Soon)',
+  'dataManagement.future.googleDrive': 'Google Drive Backup (Coming Soon)',
+  'dataManagement.future.github': 'GitHub Backup (Coming Soon)',
 
   // API Keys Modal
   'apiKeys.title': 'API Keys Settings',
@@ -240,6 +276,9 @@ export const en = {
   // Confirmations
   'confirm.clearData': 'Are you sure you want to delete all data? This action cannot be undone.',
   'confirm.deleteBook': 'Are you sure you want to delete this book?',
+  'confirm.restoreMetadata':
+    'Restore metadata backup? This will overwrite current data and clear cached images.',
+  'confirm.restoreFull': 'Restore full backup? This will overwrite all data and cached images.',
 
   // External Links
   'external.dangdang': 'Dangdang',

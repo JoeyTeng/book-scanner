@@ -1,21 +1,11 @@
-import { APP_VERSION } from '../config';
+import { exportMetadataBackupJson } from './backup';
 import { storage } from './storage';
-import type { ExportData } from '../types';
 
 /**
- * Export data as JSON
+ * Export metadata backup as JSON
  */
 export async function exportAsJSON(): Promise<string> {
-  const data = await storage.exportData();
-
-  const exportData: ExportData = {
-    version: APP_VERSION,
-    exportedAt: Date.now(),
-    books: data.books,
-    categories: data.settings.categories,
-  };
-
-  return JSON.stringify(exportData, null, 2);
+  return exportMetadataBackupJson();
 }
 
 /**
@@ -97,8 +87,7 @@ export async function exportAsMarkdown(): Promise<string> {
 /**
  * Download file with given content
  */
-export function downloadFile(content: string, filename: string, type: string): void {
-  const blob = new Blob([content], { type });
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
 
@@ -109,6 +98,18 @@ export function downloadFile(content: string, filename: string, type: string): v
   document.body.removeChild(link);
 
   URL.revokeObjectURL(url);
+}
+
+function toArrayBuffer(data: Uint8Array): ArrayBuffer {
+  return data.slice().buffer;
+}
+
+export function downloadFile(content: string, filename: string, type: string): void {
+  downloadBlob(new Blob([content], { type }), filename);
+}
+
+export function downloadBytes(content: Uint8Array, filename: string, type: string): void {
+  downloadBlob(new Blob([toArrayBuffer(content)], { type }), filename);
 }
 
 // Helper functions
