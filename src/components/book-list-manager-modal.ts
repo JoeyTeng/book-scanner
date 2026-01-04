@@ -169,7 +169,7 @@ export class BookListManagerModal {
 
     // Add book list button
     const addButton = this.modalElement?.querySelector('#btn-add-booklist');
-    const nameInput = this.modalElement?.querySelector('#booklist-name-input') as HTMLInputElement;
+    const nameInput = this.modalElement?.querySelector<HTMLInputElement>('#booklist-name-input');
 
     addButton?.addEventListener('click', () => {
       void this.handleAdd();
@@ -230,7 +230,7 @@ export class BookListManagerModal {
   }
 
   private async handleAdd(): Promise<void> {
-    const nameInput = this.modalElement?.querySelector('#booklist-name-input') as HTMLInputElement;
+    const nameInput = this.modalElement?.querySelector<HTMLInputElement>('#booklist-name-input');
     const name = nameInput?.value.trim();
 
     if (!name) {
@@ -247,7 +247,7 @@ export class BookListManagerModal {
 
     try {
       await storage.createBookList(name);
-      nameInput.value = '';
+      nameInput!.value = '';
       await this.renderBookLists();
 
       if (this.onBookListsChanged) {
@@ -468,7 +468,7 @@ export class BookListManagerModal {
   }
 
   private updateBatchActionsToolbar(): void {
-    const toolbar = this.modalElement?.querySelector('#batch-actions-toolbar') as HTMLElement;
+    const toolbar = this.modalElement?.querySelector<HTMLElement>('#batch-actions-toolbar');
     const countSpan = this.modalElement?.querySelector('#selection-count');
     const exportBtn = this.modalElement?.querySelector('#btn-export-selected');
     const deleteBtn = this.modalElement?.querySelector('#btn-delete-selected');

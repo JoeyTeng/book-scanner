@@ -37,10 +37,10 @@ export async function importFromJSON(
 
     if ('exportedAt' in data) {
       // ExportData format
-      const exportData = data as unknown as ExportData;
+      const exportData = data as unknown as Partial<ExportData>;
       storageData = {
-        version: exportData.version,
-        books: exportData.books,
+        version: exportData.version as StorageData['version'],
+        books: exportData.books as StorageData['books'],
         settings: {
           categories: exportData.categories || [],
           googleBooksApiKey: await storage.getGoogleBooksApiKey(),

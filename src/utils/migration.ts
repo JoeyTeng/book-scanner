@@ -15,7 +15,7 @@ type MigrationFunction = (data: MigrationInput) => MigrationInput;
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
 
-const migrations: Record<string, MigrationFunction> = {
+const migrations: Partial<Record<string, MigrationFunction>> = {
   '1.0.0': (data) => {
     // Initial version, no migration needed
     return data;
@@ -82,8 +82,9 @@ export function migrateData(data: MigrationInput): StorageData {
       break;
     }
 
-    if (migrations[nextVersion]) {
-      data = migrations[nextVersion](data);
+    const migration = migrations[nextVersion];
+    if (migration) {
+      data = migration(data);
       data.version = nextVersion;
       currentVersion = nextVersion;
     } else {

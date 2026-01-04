@@ -90,14 +90,14 @@ export class BarcodeScanner {
   private async applyAdvancedConstraints(): Promise<void> {
     try {
       // Get the video element created by html5-qrcode
-      const videoElement = document.querySelector('#scanner-reader video') as HTMLVideoElement;
+      const videoElement = document.querySelector<HTMLVideoElement>('#scanner-reader video');
 
       if (!videoElement || !videoElement.srcObject) {
         return;
       }
 
       const stream = videoElement.srcObject as MediaStream;
-      const videoTrack = stream.getVideoTracks()[0];
+      const videoTrack = stream.getVideoTracks()[0] as MediaStreamTrack | undefined;
 
       if (!videoTrack) {
         return;

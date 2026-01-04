@@ -30,8 +30,8 @@ class I18n {
     this.translations['zh-CN'] = zhCN.zhCN;
 
     // Load saved locale or detect from browser
-    const saved = localStorage.getItem('locale') as Locale;
-    if (saved && (saved === 'en' || saved === 'zh-CN')) {
+    const saved = localStorage.getItem('locale');
+    if (saved === 'en' || saved === 'zh-CN') {
       this.locale = saved;
     } else {
       this.locale = this.detectBrowserLocale();
@@ -87,14 +87,15 @@ class I18n {
    * Set locale and persist to localStorage
    * @param locale New locale
    */
-  setLocale(locale: Locale): void {
+  setLocale(locale: string): void {
     if (locale !== 'en' && locale !== 'zh-CN') {
       console.warn(`Invalid locale: ${String(locale)}, using 'en'`);
       locale = 'en';
     }
 
-    this.locale = locale;
-    localStorage.setItem('locale', locale);
+    const normalizedLocale: Locale = locale === 'en' || locale === 'zh-CN' ? locale : 'en';
+    this.locale = normalizedLocale;
+    localStorage.setItem('locale', normalizedLocale);
 
     // Notify listeners (for UI updates)
     this.notifyListeners();

@@ -51,7 +51,7 @@ function computeDiff(oldStr: string, newStr: string): { old: DiffPart[]; new: Di
       oldParts.push({ value: change.value, type: 'delete' });
     } else if (change.type === 'insert') {
       newParts.push({ value: change.value, type: 'insert' });
-    } else if (change.type === 'replace') {
+    } else {
       // For replaced words, do character-level diff
       const charDiff = characterDiff(change.oldValue!, change.newValue!);
       oldParts.push({
@@ -119,7 +119,7 @@ function myersDiff(oldWords: string[], newWords: string[]): DiffChange[] {
   const merged: DiffChange[] = [];
   for (let k = 0; k < changes.length; k++) {
     const curr = changes[k];
-    const next = changes[k + 1];
+    const next = changes[k + 1] as DiffChange | undefined;
 
     if (
       curr.type === 'delete' &&

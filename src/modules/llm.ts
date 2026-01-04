@@ -216,7 +216,7 @@ Extract EVERY book mentioned or shown in the image. If a field is not visible, u
         return null;
       }
 
-      const parsed = JSON.parse(content) as { books: ParsedBookInfo[] };
+      const parsed = JSON.parse(content) as { books?: ParsedBookInfo[] };
 
       if (!parsed.books || !Array.isArray(parsed.books)) {
         console.error('Invalid response format from Vision API');

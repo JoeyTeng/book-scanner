@@ -475,7 +475,7 @@ export class Navbar {
 
   setActiveBookList(bookListId: string | null): void {
     this.activeBookListId = bookListId;
-    const selector = document.getElementById('booklist-selector') as HTMLSelectElement;
+    const selector = document.getElementById('booklist-selector') as HTMLSelectElement | null;
     if (selector) {
       selector.value = bookListId || '';
     }

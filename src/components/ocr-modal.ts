@@ -85,24 +85,24 @@ export class OCRModal {
   }
 
   private async updateLLMButtonVisibility(): Promise<void> {
-    const llmVisionBtn = this.modal.querySelector('#ocr-llm-vision');
+    const llmVisionBtn = this.modal.querySelector<HTMLElement>('#ocr-llm-vision');
     if (llmVisionBtn && !(await llmService.isConfigured())) {
-      (llmVisionBtn as HTMLElement).style.display = 'none';
+      llmVisionBtn.style.display = 'none';
     }
   }
 
   private attachEventListeners(): void {
     // Close button
-    const closeBtn = this.modal.querySelector('#ocr-close') as HTMLElement;
+    const closeBtn = this.modal.querySelector<HTMLElement>('#ocr-close');
     closeBtn?.addEventListener('click', () => this.close());
 
     // Cancel button
-    const cancelBtn = this.modal.querySelector('#ocr-cancel') as HTMLElement;
+    const cancelBtn = this.modal.querySelector<HTMLElement>('#ocr-cancel');
     cancelBtn?.addEventListener('click', () => this.close());
 
     // Upload area click
-    const uploadArea = this.modal.querySelector('#ocr-upload') as HTMLElement;
-    const fileInput = this.modal.querySelector('#ocr-file-input') as HTMLInputElement;
+    const uploadArea = this.modal.querySelector<HTMLElement>('#ocr-upload');
+    const fileInput = this.modal.querySelector<HTMLInputElement>('#ocr-file-input');
 
     uploadArea?.addEventListener('click', () => {
       fileInput?.click();
@@ -110,9 +110,10 @@ export class OCRModal {
 
     // File input change
     fileInput?.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement;
-      if (target.files && target.files[0]) {
-        this.handleFileSelected(target.files[0]);
+      const target = e.target as HTMLInputElement | null;
+      const file = target?.files?.[0];
+      if (file) {
+        this.handleFileSelected(file);
       }
     });
 
@@ -130,34 +131,35 @@ export class OCRModal {
       e.preventDefault();
       uploadArea.classList.remove('drag-over');
 
-      const files = e.dataTransfer?.files;
-      if (files && files[0]) {
-        this.handleFileSelected(files[0]);
+      const dataTransfer = e.dataTransfer;
+      const file = dataTransfer?.files[0];
+      if (file) {
+        this.handleFileSelected(file);
       }
     });
 
     // Recognize button
-    const recognizeBtn = this.modal.querySelector('#ocr-recognize') as HTMLElement;
+    const recognizeBtn = this.modal.querySelector<HTMLElement>('#ocr-recognize');
     recognizeBtn?.addEventListener('click', () => {
       void this.startRecognition();
     });
 
     // Manual LLM button
-    const manualLLMBtn = this.modal.querySelector('#ocr-manual-llm') as HTMLElement;
+    const manualLLMBtn = this.modal.querySelector<HTMLElement>('#ocr-manual-llm');
     manualLLMBtn?.addEventListener('click', () => this.showManualLLMHelper());
 
     // LLM Vision button
-    const llmVisionBtn = this.modal.querySelector('#ocr-llm-vision') as HTMLElement;
+    const llmVisionBtn = this.modal.querySelector<HTMLElement>('#ocr-llm-vision');
     llmVisionBtn?.addEventListener('click', () => {
       void this.startLLMVisionRecognition();
     });
 
     // Search metadata button
-    const searchBtn = this.modal.querySelector('#ocr-search') as HTMLElement;
+    const searchBtn = this.modal.querySelector<HTMLElement>('#ocr-search');
     searchBtn?.addEventListener('click', () => this.handleSearchMetadata());
 
     // Confirm button
-    const confirmBtn = this.modal.querySelector('#ocr-confirm') as HTMLElement;
+    const confirmBtn = this.modal.querySelector<HTMLElement>('#ocr-confirm');
     confirmBtn?.addEventListener('click', () => this.handleConfirm());
 
     // Close on backdrop click
@@ -177,7 +179,7 @@ export class OCRModal {
     // Show preview
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const imgElement = this.modal.querySelector('#ocr-image') as HTMLImageElement;
+      const imgElement = this.modal.querySelector<HTMLImageElement>('#ocr-image');
       if (imgElement && e.target?.result) {
         imgElement.src = e.target.result as string;
       }
@@ -233,10 +235,9 @@ export class OCRModal {
       this.showElement('#ocr-search');
       this.showElement('#ocr-confirm');
 
-      const titleInput = this.modal.querySelector('#ocr-title') as HTMLInputElement;
-      const recommendationInput = this.modal.querySelector(
-        '#ocr-recommendation'
-      ) as HTMLTextAreaElement;
+      const titleInput = this.modal.querySelector<HTMLInputElement>('#ocr-title');
+      const recommendationInput =
+        this.modal.querySelector<HTMLTextAreaElement>('#ocr-recommendation');
 
       if (titleInput) titleInput.value = result.bookTitle || '';
       if (recommendationInput) recommendationInput.value = result.recommendation || '';
@@ -290,10 +291,9 @@ export class OCRModal {
       this.showElement('#ocr-search');
       this.showElement('#ocr-confirm');
 
-      const titleInput = this.modal.querySelector('#ocr-title') as HTMLInputElement;
-      const recommendationInput = this.modal.querySelector(
-        '#ocr-recommendation'
-      ) as HTMLTextAreaElement;
+      const titleInput = this.modal.querySelector<HTMLInputElement>('#ocr-title');
+      const recommendationInput =
+        this.modal.querySelector<HTMLTextAreaElement>('#ocr-recommendation');
 
       if (titleInput) titleInput.value = book.title || '';
       if (recommendationInput) recommendationInput.value = book.notes || '';
@@ -455,14 +455,14 @@ export class OCRModal {
   }
 
   private showElement(selector: string): void {
-    const element = this.modal.querySelector(selector) as HTMLElement;
+    const element = this.modal.querySelector<HTMLElement>(selector);
     if (element) {
       element.style.display = '';
     }
   }
 
   private hideElement(selector: string): void {
-    const element = this.modal.querySelector(selector) as HTMLElement;
+    const element = this.modal.querySelector<HTMLElement>(selector);
     if (element) {
       element.style.display = 'none';
     }
@@ -489,7 +489,7 @@ export class OCRModal {
     this.hideElement('#ocr-confirm');
 
     // Reset file input
-    const fileInput = this.modal.querySelector('#ocr-file-input') as HTMLInputElement;
+    const fileInput = this.modal.querySelector<HTMLInputElement>('#ocr-file-input');
     if (fileInput) fileInput.value = '';
     delete this.modal._selectedFile;
   }

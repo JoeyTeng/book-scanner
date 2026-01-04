@@ -106,7 +106,7 @@ export class ScannerModal {
 
     // Camera selector change handler
     if (this.cameras.length > 1) {
-      const cameraSelect = this.modalElement.querySelector('#camera-select') as HTMLSelectElement;
+      const cameraSelect = this.modalElement.querySelector<HTMLSelectElement>('#camera-select');
       cameraSelect?.addEventListener('change', () => {
         void (async () => {
           this.selectedCameraId = cameraSelect.value;

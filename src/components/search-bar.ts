@@ -51,10 +51,10 @@ export class SearchBar {
   setActiveBookList(id: string | null): void {
     if (this.activeBookListId !== id) {
       // Save current filter values before changing book list
-      const searchInput = this.element.querySelector('#search-input') as HTMLInputElement;
-      const categorySelect = this.element.querySelector('#filter-category') as HTMLSelectElement;
-      const statusSelect = this.element.querySelector('#filter-status') as HTMLSelectElement;
-      const sortFieldSelect = this.element.querySelector('#sort-field') as HTMLSelectElement;
+      const searchInput = this.element.querySelector<HTMLInputElement>('#search-input');
+      const categorySelect = this.element.querySelector<HTMLSelectElement>('#filter-category');
+      const statusSelect = this.element.querySelector<HTMLSelectElement>('#filter-status');
+      const sortFieldSelect = this.element.querySelector<HTMLSelectElement>('#sort-field');
 
       const currentValues = {
         search: searchInput?.value || '',
@@ -70,12 +70,10 @@ export class SearchBar {
       // Re-render to show/hide scope toggle
       void this.render().then(() => {
         // Restore filter values
-        const newSearchInput = this.element.querySelector('#search-input') as HTMLInputElement;
-        const newCategorySelect = this.element.querySelector(
-          '#filter-category'
-        ) as HTMLSelectElement;
-        const newStatusSelect = this.element.querySelector('#filter-status') as HTMLSelectElement;
-        const newSortFieldSelect = this.element.querySelector('#sort-field') as HTMLSelectElement;
+        const newSearchInput = this.element.querySelector<HTMLInputElement>('#search-input');
+        const newCategorySelect = this.element.querySelector<HTMLSelectElement>('#filter-category');
+        const newStatusSelect = this.element.querySelector<HTMLSelectElement>('#filter-status');
+        const newSortFieldSelect = this.element.querySelector<HTMLSelectElement>('#sort-field');
 
         if (newSearchInput) newSearchInput.value = currentValues.search;
         if (newCategorySelect) newCategorySelect.value = currentValues.category;
@@ -90,10 +88,10 @@ export class SearchBar {
   }
 
   private triggerFilterChange(): void {
-    const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const categorySelect = document.getElementById('filter-category') as HTMLSelectElement;
-    const statusSelect = document.getElementById('filter-status') as HTMLSelectElement;
-    const sortFieldSelect = document.getElementById('sort-field') as HTMLSelectElement;
+    const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+    const categorySelect = document.getElementById('filter-category') as HTMLSelectElement | null;
+    const statusSelect = document.getElementById('filter-status') as HTMLSelectElement | null;
+    const sortFieldSelect = document.getElementById('sort-field') as HTMLSelectElement | null;
 
     if (searchInput && categorySelect && statusSelect && sortFieldSelect) {
       const filters: SearchFilters = {
@@ -115,7 +113,7 @@ export class SearchBar {
   updateBulkEditButton(mode: boolean, selectedCount: number = 0, totalCount: number = 0): void {
     this.allSelected = selectedCount > 0 && selectedCount === totalCount;
 
-    const button = this.element.querySelector('#btn-bulk-edit') as HTMLButtonElement;
+    const button = this.element.querySelector<HTMLButtonElement>('#btn-bulk-edit');
     if (button) {
       if (mode) {
         button.textContent =
@@ -130,7 +128,7 @@ export class SearchBar {
     }
 
     // Update select all button visibility and text
-    const selectAllBtn = this.element.querySelector('#btn-select-all') as HTMLButtonElement;
+    const selectAllBtn = this.element.querySelector<HTMLButtonElement>('#btn-select-all');
     if (selectAllBtn) {
       if (mode) {
         selectAllBtn.style.display = 'inline-block';
@@ -145,10 +143,10 @@ export class SearchBar {
 
   async refresh(): Promise<void> {
     // Save current filter values before re-rendering
-    const searchInput = this.element.querySelector('#search-input') as HTMLInputElement;
-    const categorySelect = this.element.querySelector('#filter-category') as HTMLSelectElement;
-    const statusSelect = this.element.querySelector('#filter-status') as HTMLSelectElement;
-    const sortFieldSelect = this.element.querySelector('#sort-field') as HTMLSelectElement;
+    const searchInput = this.element.querySelector<HTMLInputElement>('#search-input');
+    const categorySelect = this.element.querySelector<HTMLSelectElement>('#filter-category');
+    const statusSelect = this.element.querySelector<HTMLSelectElement>('#filter-status');
+    const sortFieldSelect = this.element.querySelector<HTMLSelectElement>('#sort-field');
 
     const currentValues = {
       search: searchInput?.value || '',
@@ -162,10 +160,10 @@ export class SearchBar {
     this.attachEventListeners();
 
     // Restore filter values
-    const newSearchInput = this.element.querySelector('#search-input') as HTMLInputElement;
-    const newCategorySelect = this.element.querySelector('#filter-category') as HTMLSelectElement;
-    const newStatusSelect = this.element.querySelector('#filter-status') as HTMLSelectElement;
-    const newSortFieldSelect = this.element.querySelector('#sort-field') as HTMLSelectElement;
+    const newSearchInput = this.element.querySelector<HTMLInputElement>('#search-input');
+    const newCategorySelect = this.element.querySelector<HTMLSelectElement>('#filter-category');
+    const newStatusSelect = this.element.querySelector<HTMLSelectElement>('#filter-status');
+    const newSortFieldSelect = this.element.querySelector<HTMLSelectElement>('#sort-field');
 
     if (newSearchInput) newSearchInput.value = currentValues.search;
     if (newCategorySelect) {
@@ -362,7 +360,7 @@ export class SearchBar {
       scopeOptions.forEach((option) => {
         option.addEventListener('click', (e) => {
           e.stopPropagation();
-          const newScope = (option as HTMLElement).dataset.scope as 'current' | 'all';
+          const newScope = (option as HTMLElement).dataset.scope as 'current' | 'all' | undefined;
           if (newScope && newScope !== this.searchScope) {
             // Save current filter values before scope change
             const currentValues = {
@@ -377,18 +375,13 @@ export class SearchBar {
             // Re-render to update UI without re-attaching all listeners
             void this.render().then(() => {
               // Restore filter values after re-render
-              const newSearchInput = this.element.querySelector(
-                '#search-input'
-              ) as HTMLInputElement;
-              const newCategorySelect = this.element.querySelector(
-                '#filter-category'
-              ) as HTMLSelectElement;
-              const newStatusSelect = this.element.querySelector(
-                '#filter-status'
-              ) as HTMLSelectElement;
-              const newSortFieldSelect = this.element.querySelector(
-                '#sort-field'
-              ) as HTMLSelectElement;
+              const newSearchInput = this.element.querySelector<HTMLInputElement>('#search-input');
+              const newCategorySelect =
+                this.element.querySelector<HTMLSelectElement>('#filter-category');
+              const newStatusSelect =
+                this.element.querySelector<HTMLSelectElement>('#filter-status');
+              const newSortFieldSelect =
+                this.element.querySelector<HTMLSelectElement>('#sort-field');
 
               if (newSearchInput) newSearchInput.value = currentValues.search;
               if (newCategorySelect) newCategorySelect.value = currentValues.category;
