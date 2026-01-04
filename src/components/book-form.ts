@@ -374,14 +374,11 @@ export class BookForm {
     });
 
     // Enable/disable refresh buttons based on input values
-    const isbnInput = this.modalElement?.querySelector('#input-isbn') as HTMLInputElement;
-    const titleInput = this.modalElement?.querySelector('#input-title') as HTMLInputElement;
-    const isbnRefreshBtn = this.modalElement?.querySelector(
-      '#btn-refresh-isbn'
-    ) as HTMLButtonElement;
-    const titleRefreshBtn = this.modalElement?.querySelector(
-      '#btn-refresh-title'
-    ) as HTMLButtonElement;
+    const isbnInput = this.modalElement?.querySelector<HTMLInputElement>('#input-isbn');
+    const titleInput = this.modalElement?.querySelector<HTMLInputElement>('#input-title');
+    const isbnRefreshBtn = this.modalElement?.querySelector<HTMLButtonElement>('#btn-refresh-isbn');
+    const titleRefreshBtn =
+      this.modalElement?.querySelector<HTMLButtonElement>('#btn-refresh-title');
 
     if (isbnInput && isbnRefreshBtn) {
       isbnInput.addEventListener('input', () => {
@@ -402,12 +399,12 @@ export class BookForm {
         const field = target.dataset.field!;
         const value = target.dataset.value!;
 
-        const input = this.modalElement?.querySelector(
+        const input = this.modalElement?.querySelector<HTMLInputElement>(
           `#input-${field
             .toLowerCase()
             .replace(/([A-Z])/g, '-$1')
             .toLowerCase()}`
-        ) as HTMLInputElement;
+        );
         if (input) {
           input.value = value;
         }
@@ -691,20 +688,16 @@ export class BookForm {
     if (!this.book) return;
 
     // Get current value from form input (may be updated but not yet saved)
+    const isbnInput = this.modalElement?.querySelector<HTMLInputElement>('#input-isbn');
+    const titleInput = this.modalElement?.querySelector<HTMLInputElement>('#input-title');
     const query =
-      method === 'isbn'
-        ? (this.modalElement?.querySelector('#input-isbn') as HTMLInputElement)?.value ||
-          this.book.isbn
-        : (this.modalElement?.querySelector('#input-title') as HTMLInputElement)?.value ||
-          this.book.title;
+      method === 'isbn' ? isbnInput?.value || this.book.isbn : titleInput?.value || this.book.title;
 
     if (!query) return;
 
     try {
       // Show loading state
-      const button = this.modalElement?.querySelector(
-        `#btn-refresh-${method}`
-      ) as HTMLButtonElement;
+      const button = this.modalElement?.querySelector<HTMLButtonElement>(`#btn-refresh-${method}`);
       if (!button) return;
 
       const originalText = button.textContent;
@@ -734,9 +727,7 @@ export class BookForm {
       console.error('Failed to fetch from API:', error);
 
       // Restore button state
-      const button = this.modalElement?.querySelector(
-        `#btn-refresh-${method}`
-      ) as HTMLButtonElement;
+      const button = this.modalElement?.querySelector<HTMLButtonElement>(`#btn-refresh-${method}`);
       if (button) {
         button.disabled = false;
         button.textContent = method === 'isbn' ? '🔄 Refresh by ISBN' : '🔄 Refresh by Title';
@@ -877,7 +868,7 @@ export class BookForm {
         if (newValue) {
           // Convert field name to input ID (e.g., 'publishDate' -> 'publish-date', 'isbn' -> 'isbn')
           const inputId = `#input-${field.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-          const input = this.modalElement?.querySelector(inputId) as HTMLInputElement;
+          const input = this.modalElement?.querySelector<HTMLInputElement>(inputId);
 
           if (input) {
             // Temporarily remove readonly for ISBN field

@@ -89,17 +89,18 @@ export class BookCommentEditModal {
 
     // Focus on textarea
     setTimeout(() => {
-      (this.modalElement?.querySelector('#comment-textarea') as HTMLTextAreaElement)?.focus();
+      const textarea = this.modalElement?.querySelector<HTMLTextAreaElement>('#comment-textarea');
+      textarea?.focus();
     }, 100);
   }
 
   private attachEventListeners(): void {
-    const textarea = this.modalElement?.querySelector('#comment-textarea') as HTMLTextAreaElement;
+    const textarea = this.modalElement?.querySelector<HTMLTextAreaElement>('#comment-textarea');
     const charCount = this.modalElement?.querySelector('#char-count') as HTMLSpanElement;
     const overLimitWarning = this.modalElement?.querySelector(
       '#over-limit-warning'
     ) as HTMLSpanElement;
-    const saveButton = this.modalElement?.querySelector('#btn-save-comment') as HTMLButtonElement;
+    const saveButton = this.modalElement?.querySelector<HTMLButtonElement>('#btn-save-comment');
 
     // Character counter
     textarea?.addEventListener('input', () => {
@@ -109,11 +110,11 @@ export class BookCommentEditModal {
       if (length > MAX_COMMENT_LENGTH) {
         textarea.classList.add('over-limit');
         overLimitWarning.style.display = 'inline';
-        saveButton.disabled = true;
+        saveButton!.disabled = true;
       } else {
         textarea.classList.remove('over-limit');
         overLimitWarning.style.display = 'none';
-        saveButton.disabled = false;
+        saveButton!.disabled = false;
       }
     });
 
@@ -139,7 +140,7 @@ export class BookCommentEditModal {
 
     // Save button
     saveButton?.addEventListener('click', () => {
-      const comment = textarea.value.trim();
+      const comment = textarea!.value.trim();
       if (this.onSave) {
         this.onSave(comment || undefined);
       }

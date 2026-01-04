@@ -99,7 +99,7 @@ export class BookSelectorModal {
   }
 
   private handleSelect(index: number): void {
-    const selected = this.results[index];
+    const selected = this.results[index] as BookDataSource | undefined;
     if (selected && this.onSelect) {
       this.onSelect(selected);
     }
