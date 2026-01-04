@@ -203,8 +203,8 @@ export class ImportPreviewModal {
   }
 
   private updateConfirmButtonState(): void {
-    const confirmBtn = this.element.querySelector('.btn-confirm') as HTMLButtonElement;
-    const warningSpan = this.element.querySelector('.unresolved-warning') as HTMLElement;
+    const confirmBtn = this.element.querySelector<HTMLButtonElement>('.btn-confirm');
+    const warningSpan = this.element.querySelector<HTMLElement>('.unresolved-warning');
 
     if (!confirmBtn || !warningSpan) return;
 
@@ -605,12 +605,11 @@ export class ImportPreviewModal {
     });
 
     // Strategy selectors
-    const listActionSelect = this.element.querySelector('#list-action-select') as HTMLSelectElement;
-    const bookActionSelect = this.element.querySelector('#book-action-select') as HTMLSelectElement;
-    const commentMergeSelect = this.element.querySelector(
-      '#comment-merge-select'
-    ) as HTMLSelectElement;
-    const fieldMergeSelect = this.element.querySelector('#field-merge-select') as HTMLSelectElement;
+    const listActionSelect = this.element.querySelector<HTMLSelectElement>('#list-action-select');
+    const bookActionSelect = this.element.querySelector<HTMLSelectElement>('#book-action-select');
+    const commentMergeSelect =
+      this.element.querySelector<HTMLSelectElement>('#comment-merge-select');
+    const fieldMergeSelect = this.element.querySelector<HTMLSelectElement>('#field-merge-select');
 
     // Initialize disabled state based on current default values
     if (commentMergeSelect) {
@@ -815,9 +814,9 @@ export class ImportPreviewModal {
 
         // Only initialize DiffViewer for unresolved fields
         if (fieldStrategy === 'unresolved') {
-          const container = this.element.querySelector(
+          const container = this.element.querySelector<HTMLElement>(
             `.conflict-details[data-conflict-index="${index}"] .diff-viewer-container[data-field="${fieldKey}"]`
-          ) as HTMLElement;
+          );
 
           if (container) {
             container.innerHTML = '';
