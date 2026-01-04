@@ -1,4 +1,5 @@
-import { createWorker, Worker, PSM } from 'tesseract.js';
+import { createWorker, PSM } from 'tesseract.js';
+import type { Worker } from 'tesseract.js';
 
 export interface ParsedOCRResult {
   bookTitle?: string;

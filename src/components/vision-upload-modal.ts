@@ -1,9 +1,10 @@
-import { searchBookByTitle } from '../modules/api/aggregator';
-import { llmService, ParsedBookInfo } from '../modules/llm';
-import { storage } from '../modules/storage';
-import { Book } from '../types';
 import { ManualLLMHelper, MANUAL_LLM_PROMPTS } from './manual-llm-helper';
+import { searchBookByTitle } from '../modules/api/aggregator';
 import { i18n } from '../modules/i18n';
+import { llmService } from '../modules/llm';
+import { storage } from '../modules/storage';
+import type { ParsedBookInfo } from '../modules/llm';
+import type { Book } from '../types';
 
 export class VisionUploadModal {
   private modalElement: HTMLDivElement | null = null;
