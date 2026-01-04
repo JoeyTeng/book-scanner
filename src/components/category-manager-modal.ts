@@ -28,7 +28,7 @@ export class CategoryManagerModal {
 
   async show(): Promise<void> {
     await this.loadCategories();
-    await this.render();
+    this.render();
   }
 
   hide(): void {
@@ -69,7 +69,7 @@ export class CategoryManagerModal {
     }
   }
 
-  private render(): Promise<void> {
+  private render(): void {
     this.modalElement = document.createElement('div');
     this.modalElement.className = 'modal';
     this.modalElement.innerHTML = `
