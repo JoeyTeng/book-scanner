@@ -44,10 +44,11 @@ describe('backup helpers', () => {
   });
 
   it('roundtrips full backup zip', async () => {
+    const note = '中文 ✓';
     const payload: BackupPayload = {
       books: [],
       bookLists: [],
-      settings: { categories: [] },
+      settings: { categories: [], note },
     };
 
     const assets: BackupAssetMeta[] = [
@@ -76,5 +77,6 @@ describe('backup helpers', () => {
     expect(unpacked.backup.format).toBe('full');
     expect(unpacked.backup.assets?.items).toHaveLength(1);
     expect(unpacked.assets['assets/demo.bin']).toEqual(files['assets/demo.bin']);
+    expect((unpacked.backup.data.settings.note as string) || '').toBe(note);
   });
 });

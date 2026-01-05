@@ -226,7 +226,7 @@ export function packFullBackupZip(
   }
 
   const files: Record<string, Uint8Array> = {
-    [BACKUP_JSON_FILENAME]: strToU8(backupText, true),
+    [BACKUP_JSON_FILENAME]: strToU8(backupText),
   };
 
   for (const [path, data] of Object.entries(assets)) {
