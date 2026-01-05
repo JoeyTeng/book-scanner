@@ -1,74 +1,29 @@
-import { APP_VERSION } from '../config';
-import { storage } from './storage';
-import { migrateData } from '../utils/migration';
-import type { ExportData, StorageData } from '../types';
+import { importMetadataBackupJson } from './backup';
 
 /**
- * Import data from JSON file
+ * Import metadata backup from JSON file
  */
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
 export async function importFromJSON(
   file: File,
-  mode: 'merge' | 'replace' = 'merge'
+  mode: 'merge' | 'replace' = 'replace'
 ): Promise<{ success: boolean; message: string }> {
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text) as unknown;
-
-    if (!isRecord(data)) {
-      return {
-        success: false,
-        message: 'Invalid file format. Missing required fields.',
-      };
-    }
-
-    // Validate structure
-    if (typeof data.version !== 'string' || !Array.isArray(data.books)) {
-      return {
-        success: false,
-        message: 'Invalid file format. Missing required fields.',
-      };
-    }
-
-    // Check if it's ExportData or StorageData format
-    let storageData: StorageData;
-
-    if ('exportedAt' in data) {
-      // ExportData format
-      const exportData = data as unknown as Partial<ExportData>;
-      storageData = {
-        version: exportData.version as StorageData['version'],
-        books: exportData.books as StorageData['books'],
-        settings: {
-          categories: exportData.categories || [],
-          googleBooksApiKey: await storage.getGoogleBooksApiKey(),
-          isbndbApiKey: await storage.getISBNdbApiKey(),
-        },
-      };
-    } else {
-      // StorageData format
-      storageData = data as unknown as StorageData;
-    }
-
-    // Migrate if needed
-    if (storageData.version !== APP_VERSION) {
-      storageData = migrateData(storageData);
-    }
-
-    // Import
-    await storage.importData(storageData, mode);
-
-    return {
-      success: true,
-      message: `Successfully imported ${storageData.books.length} books.`,
-    };
-  } catch (error) {
-    console.error('Import error:', error);
+  if (mode === 'merge') {
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to import file.',
+      message: 'Merge restore is not supported yet.',
     };
   }
+
+  const result = await importMetadataBackupJson(file);
+  if (result.success) {
+    return {
+      success: true,
+      message: `Successfully restored ${result.summary.books} books.`,
+    };
+  }
+
+  return {
+    success: false,
+    message: `Restore failed: ${result.error}`,
+  };
 }

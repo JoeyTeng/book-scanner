@@ -1,6 +1,6 @@
 import { APP_VERSION, STORAGE_KEY, DEFAULT_CATEGORIES } from '../config';
 import { db, migrateFromLocalStorage } from './db';
-import type { Book, StorageData, CategoryMetadata, BookList } from '../types';
+import type { BackupPayload, Book, BookList, CategoryMetadata, StorageData } from '../types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -527,6 +527,7 @@ class Storage {
     await this.ensureInit();
     try {
       await db.books.clear();
+      await db.bookLists.clear();
       await db.settings.clear();
       await db.imageCache.clear();
       // Restore default categories
@@ -643,6 +644,43 @@ class Storage {
   }
 
   /**
+   * Replace all data with backup payload
+   */
+  async replaceBackupData(payload: BackupPayload, options: { clearCache: boolean }): Promise<void> {
+    await this.ensureInit();
+    try {
+      await db.transaction('rw', db.books, db.bookLists, db.settings, db.imageCache, async () => {
+        await db.books.clear();
+        await db.bookLists.clear();
+        await db.settings.clear();
+        if (options.clearCache) {
+          await db.imageCache.clear();
+        }
+
+        if (payload.books.length > 0) {
+          await db.books.bulkAdd(payload.books);
+        }
+
+        if (payload.bookLists.length > 0) {
+          await db.bookLists.bulkAdd(payload.bookLists);
+        }
+
+        const settingsEntries = Object.entries(payload.settings).map(([key, value]) => ({
+          key,
+          value,
+        }));
+
+        if (settingsEntries.length > 0) {
+          await db.settings.bulkAdd(settingsEntries);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to replace backup data:', error);
+      throw new Error('Failed to replace backup data');
+    }
+  }
+
+  /**
    * Export all data
    */
   async exportData(): Promise<StorageData> {
@@ -678,6 +716,35 @@ class Storage {
     } catch (error) {
       console.error('Failed to export data:', error);
       throw new Error('Failed to export data');
+    }
+  }
+
+  /**
+   * Export full backup payload
+   */
+  async exportBackupPayload(): Promise<BackupPayload> {
+    await this.ensureInit();
+    try {
+      const [books, bookLists, settingsEntries] = await Promise.all([
+        db.books.toArray(),
+        db.bookLists.toArray(),
+        db.settings.toArray(),
+      ]);
+
+      const settings = Object.fromEntries(
+        settingsEntries
+          .map((entry) => [entry.key, entry.value] as const)
+          .sort(([a], [b]) => a.localeCompare(b))
+      );
+
+      return {
+        books,
+        bookLists,
+        settings,
+      };
+    } catch (error) {
+      console.error('Failed to export backup payload:', error);
+      throw new Error('Failed to export backup payload');
     }
   }
 

@@ -1,10 +1,10 @@
 import { BookListManagerModal } from './book-list-manager-modal';
 import { CategoryManagerModal } from './category-manager-modal';
+import { DataManagementModal } from './data-management-modal';
 import { VisionUploadModal } from './vision-upload-modal';
 import { exportBookLists } from '../modules/book-list-export';
-import { exportAsJSON, exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
+import { exportAsCSV, exportAsMarkdown, downloadFile } from '../modules/export';
 import { i18n } from '../modules/i18n';
-import { importFromJSON } from '../modules/import';
 import { storage } from '../modules/storage';
 
 export class Navbar {
@@ -13,6 +13,7 @@ export class Navbar {
   private initPromise: Promise<void>;
   private categoryManagerModal?: CategoryManagerModal;
   private bookListManagerModal?: BookListManagerModal;
+  private dataManagementModal?: DataManagementModal;
   private onBookListChange?: (bookListId: string | null) => void;
   private activeBookListId: string | null = null;
 
@@ -87,11 +88,9 @@ export class Navbar {
           <div class="modal-body">
             <div class="menu-section">
               <h3>${i18n.t('navbar.menu.dataManagement')}</h3>
-              <button id="btn-export-json" class="btn-full">${i18n.t('navbar.menu.exportJSON')}</button>
+              <button id="btn-backup-restore" class="btn-full">${i18n.t('navbar.menu.backupRestore')}</button>
               <button id="btn-export-csv" class="btn-full">${i18n.t('navbar.menu.exportCSV')}</button>
               <button id="btn-export-md" class="btn-full">${i18n.t('navbar.menu.exportMarkdown')}</button>
-              <button id="btn-import" class="btn-full">${i18n.t('navbar.menu.import')}</button>
-              <input type="file" id="file-import" accept=".json" style="display: none;">
             </div>
 
             <div class="menu-section">
@@ -255,13 +254,12 @@ export class Navbar {
       this.hideModal('menu-modal');
     });
 
-    // Export
-    document.getElementById('btn-export-json')?.addEventListener('click', () => {
-      void (async () => {
-        const json = await exportAsJSON();
-        downloadFile(json, `books-${Date.now()}.json`, 'application/json');
-        this.hideModal('menu-modal');
-      })();
+    document.getElementById('btn-backup-restore')?.addEventListener('click', () => {
+      this.hideModal('menu-modal');
+      if (!this.dataManagementModal) {
+        this.dataManagementModal = new DataManagementModal();
+      }
+      this.dataManagementModal.show();
     });
 
     document.getElementById('btn-export-csv')?.addEventListener('click', () => {
@@ -277,25 +275,6 @@ export class Navbar {
         const md = await exportAsMarkdown();
         downloadFile(md, `books-${Date.now()}.md`, 'text/markdown');
         this.hideModal('menu-modal');
-      })();
-    });
-
-    // Import
-    document.getElementById('btn-import')?.addEventListener('click', () => {
-      document.getElementById('file-import')?.click();
-    });
-
-    document.getElementById('file-import')?.addEventListener('change', (e) => {
-      void (async () => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-
-        const result = await importFromJSON(file, 'merge');
-        alert(result.message);
-
-        if (result.success) {
-          window.location.reload();
-        }
       })();
     });
 
