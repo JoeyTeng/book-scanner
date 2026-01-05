@@ -39,8 +39,6 @@ export class DataManagementModal {
             <button id="btn-backup-metadata" class="btn-full">${i18n.t('dataManagement.metadata.backup')}</button>
             <button id="btn-restore-metadata" class="btn-full btn-danger">${i18n.t('dataManagement.metadata.restore')}</button>
             <input type="file" id="file-restore-metadata" accept=".json" style="display: none;">
-            <button class="btn-full" disabled>${i18n.t('dataManagement.mergeTodo')}</button>
-            <p class="hint-text">${i18n.t('dataManagement.mergeHint')}</p>
           </div>
 
           <div class="menu-section">
@@ -55,13 +53,6 @@ export class DataManagementModal {
             </div>
           </div>
 
-          <div class="menu-section">
-            <h3>${i18n.t('dataManagement.future.title')}</h3>
-            <p class="help-text">${i18n.t('dataManagement.future.description')}</p>
-            <button class="btn-full" disabled>${i18n.t('dataManagement.future.zotero')}</button>
-            <button class="btn-full" disabled>${i18n.t('dataManagement.future.googleDrive')}</button>
-            <button class="btn-full" disabled>${i18n.t('dataManagement.future.github')}</button>
-          </div>
         </div>
       </div>
     `;
