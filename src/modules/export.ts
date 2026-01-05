@@ -122,7 +122,7 @@ function escapeCSV(str: string): string {
 }
 
 function escapeMD(str: string): string {
-  return str.replace(/\|/g, '\\|');
+  return str.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 }
 
 function capitalizeFirst(str: string): string {
