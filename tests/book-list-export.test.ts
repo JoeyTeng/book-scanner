@@ -132,6 +132,18 @@ describe('book list export', () => {
     expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('throws when exporting a single list that does not exist', async () => {
+    storageMock.getBookList.mockResolvedValue(undefined);
+
+    await expect(exportBookList('missing')).rejects.toThrow('Book list not found');
+  });
+
+  it('throws when exporting selected lists that do not match', async () => {
+    storageMock.getBookLists.mockResolvedValue([makeList('list-a', 'A')]);
+
+    await expect(exportBookLists(['list-x'])).rejects.toThrow('No book lists found');
+  });
+
   it('throws when exporting all lists with no data', async () => {
     storageMock.getBookLists.mockResolvedValue([]);
 
