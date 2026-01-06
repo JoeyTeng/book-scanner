@@ -136,7 +136,7 @@ export class VisionUploadModal {
         const previewName = this.modalElement?.querySelector('#preview-name') as HTMLElement;
 
         previewImg.src = URL.createObjectURL(file);
-        previewName.textContent = file.name;
+        previewName.replaceChildren(document.createTextNode(file.name));
         preview.style.display = 'block';
 
         // Start parsing
