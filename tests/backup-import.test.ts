@@ -3,6 +3,7 @@ import { zipSync } from 'fflate';
 import type { BackupAssetMeta, BackupPayload } from '../src/types';
 
 const storageMock = vi.hoisted(() => ({
+  exportBackupPayload: vi.fn().mockResolvedValue({ books: [], bookLists: [], settings: {} }),
   replaceBackupData: vi.fn().mockResolvedValue(undefined),
   waitForInit: vi.fn().mockResolvedValue(undefined),
 }));
@@ -10,6 +11,7 @@ const storageMock = vi.hoisted(() => ({
 const dbMock = vi.hoisted(() => ({
   imageCache: {
     bulkAdd: vi.fn().mockResolvedValue(undefined),
+    toArray: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -23,9 +25,12 @@ vi.mock('../src/modules/db', () => ({
 
 import {
   buildBackupData,
+  exportFullBackupZip,
+  exportMetadataBackupJson,
   importFullBackupZip,
   importMetadataBackupJson,
   packFullBackupZip,
+  unpackFullBackupZip,
 } from '../src/modules/backup';
 
 function makeJsonFile(text: string): File {
@@ -52,6 +57,38 @@ function basePayload(): BackupPayload {
     books: [],
     bookLists: [],
     settings: { categories: [] },
+  };
+}
+
+function makeBook(id: string): BackupPayload['books'][number] {
+  return {
+    id,
+    isbn: `isbn-${id}`,
+    title: `Title ${id}`,
+    author: 'Author',
+    categories: [],
+    tags: [],
+    status: 'read',
+    notes: '',
+    addedAt: 1,
+    updatedAt: 2,
+    source: [],
+  };
+}
+
+function makeBookList(id: string, bookId: string): BackupPayload['bookLists'][number] {
+  return {
+    id,
+    name: `List ${id}`,
+    description: 'Desc',
+    books: [
+      {
+        bookId,
+        addedAt: 3,
+      },
+    ],
+    createdAt: 4,
+    updatedAt: 5,
   };
 }
 
@@ -229,5 +266,157 @@ describe('backup import', () => {
     if (!result.success) {
       expect(result.error).toBe('invalid-format');
     }
+  });
+
+  it('rejects invalid archive bytes', async () => {
+    const result = await importFullBackupZip(makeZipFile(new Uint8Array([1, 2, 3])));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('archive-invalid');
+    }
+  });
+
+  it('rejects invalid backup structure', async () => {
+    const invalidBackup = {
+      format: 'full',
+      schemaVersion: 1,
+      appVersion: '1.0.0',
+      createdAt: 1,
+      checksum: {
+        algorithm: 'sha256',
+        dataHash: 'hash',
+        assetsHash: 'assets',
+      },
+      data: {
+        books: [],
+      },
+      assets: {
+        version: 1,
+        items: [],
+      },
+    };
+    const zipBytes = zipSync({
+      'backup.json': new TextEncoder().encode(JSON.stringify(invalidBackup)),
+    });
+    const result = await importFullBackupZip(makeZipFile(zipBytes));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('invalid-structure');
+    }
+  });
+
+  it('rejects assets hash mismatch', async () => {
+    const payload = basePayload();
+    const assetBytes = new Uint8Array([9, 9, 9]);
+    const sha256 = await sha256Hex(assetBytes);
+    const path = `assets/${sha256}.bin`;
+    const assets: BackupAssetMeta[] = [
+      {
+        path,
+        url: 'https://example.com/original',
+        sha256,
+        bytes: assetBytes.byteLength,
+        timestamp: 123,
+      },
+    ];
+
+    const backup = await buildBackupData('full', payload, { assets });
+    if (!backup.assets) {
+      throw new Error('Missing assets block');
+    }
+    backup.assets.items.push({
+      path: 'assets/extra.bin',
+      url: 'https://example.com/extra',
+      sha256: 'extra',
+      bytes: 1,
+      timestamp: 456,
+    });
+
+    const zipBytes = packFullBackupZip(backup, { [path]: assetBytes });
+    const result = await importFullBackupZip(makeZipFile(zipBytes));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('assets-hash-mismatch');
+    }
+  });
+});
+
+describe('backup export', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('exports metadata backup with normalized payload', async () => {
+    const payload: BackupPayload = {
+      books: [makeBook('b'), makeBook('a')],
+      bookLists: [makeBookList('b', 'b'), makeBookList('a', 'a')],
+      settings: {
+        llmApiKey: 'k',
+        categories: [],
+        isbndbApiKey: 'a',
+      },
+    };
+    storageMock.exportBackupPayload.mockResolvedValue(payload);
+
+    const json = await exportMetadataBackupJson();
+    const parsed = JSON.parse(json) as { data: BackupPayload; format: string };
+
+    expect(parsed.format).toBe('metadata');
+    expect(parsed.data.books.map((book) => book.id)).toEqual(['a', 'b']);
+    expect(parsed.data.bookLists.map((list) => list.id)).toEqual(['a', 'b']);
+    expect(Object.keys(parsed.data.settings)).toEqual(['categories', 'isbndbApiKey', 'llmApiKey']);
+    expect(storageMock.waitForInit).toHaveBeenCalledTimes(1);
+    expect(storageMock.exportBackupPayload).toHaveBeenCalledTimes(1);
+  });
+
+  it('exports full backup zip with assets and utf8 metadata', async () => {
+    const note = '中文 ✓';
+    const payload: BackupPayload = {
+      books: [],
+      bookLists: [],
+      settings: { categories: [], note },
+    };
+    const bytesA = new Uint8Array([1, 2]);
+    const bytesB = new Uint8Array([3, 4, 5]);
+    const entryB = {
+      url: 'https://example.com/b',
+      blob: new Blob([bytesB]),
+      timestamp: 200,
+    };
+    const entryA = {
+      url: 'https://example.com/a',
+      blob: new Blob([bytesA]),
+      timestamp: 100,
+    };
+
+    storageMock.exportBackupPayload.mockResolvedValue(payload);
+    dbMock.imageCache.toArray.mockResolvedValue([entryB, entryA]);
+
+    const zipBytes = await exportFullBackupZip();
+    const unpacked = unpackFullBackupZip(zipBytes);
+
+    expect(unpacked.backup.format).toBe('full');
+    expect(unpacked.backup.data.settings.note).toBe(note);
+
+    const assets = unpacked.backup.assets?.items ?? [];
+    expect(assets.map((item) => item.url)).toEqual([
+      'https://example.com/a',
+      'https://example.com/b',
+    ]);
+
+    const shaA = await sha256Hex(bytesA);
+    const shaB = await sha256Hex(bytesB);
+    const pathA = `assets/${shaA}.bin`;
+    const pathB = `assets/${shaB}.bin`;
+
+    expect(assets.map((item) => item.path)).toEqual([pathA, pathB]);
+    expect(unpacked.assets[pathA]).toEqual(bytesA);
+    expect(unpacked.assets[pathB]).toEqual(bytesB);
+    expect(storageMock.waitForInit).toHaveBeenCalledTimes(1);
+    expect(storageMock.exportBackupPayload).toHaveBeenCalledTimes(1);
+    expect(dbMock.imageCache.toArray).toHaveBeenCalledTimes(1);
   });
 });
