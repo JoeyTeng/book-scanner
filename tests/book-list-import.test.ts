@@ -322,6 +322,203 @@ describe('book list import', () => {
     );
   });
 
+  it('skips list import when action is skip', async () => {
+    store.lists = [makeList('list-1', 'SkipMe')];
+    store.books = [makeBook('book-1', { isbn: '111' })];
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'SkipMe',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [makeExportedBook({ isbn: '111' })],
+      },
+    ]);
+
+    const strategy: ImportStrategy = {
+      defaultListAction: 'skip',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'local',
+      defaultFieldMerge: 'non-empty',
+    };
+
+    const snapshot = await createSnapshot(imported, strategy);
+    const result = await executeImport(imported, strategy, snapshot);
+
+    expect(result.success).toBe(true);
+    expect(result.imported.lists).toBe(0);
+    expect(storageMock.createBookList).not.toHaveBeenCalled();
+    expect(storageMock.addBookToList).not.toHaveBeenCalled();
+  });
+
+  it('replaces list and preserves imported comments', async () => {
+    store.lists = [makeList('list-1', 'ReplaceMe')];
+    store.books = [makeBook('book-1', { isbn: '111' })];
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'ReplaceMe',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [makeExportedBook({ isbn: '111', comment: 'imported' })],
+      },
+    ]);
+
+    const strategy: ImportStrategy = {
+      defaultListAction: 'replace',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'local',
+      defaultFieldMerge: 'non-empty',
+    };
+
+    const snapshot = await createSnapshot(imported, strategy);
+    const result = await executeImport(imported, strategy, snapshot);
+
+    expect(result.success).toBe(true);
+    expect(result.imported.lists).toBe(1);
+    expect(storageMock.deleteBookList).toHaveBeenCalledWith('list-1');
+    expect(storageMock.createBookList).toHaveBeenCalledWith('ReplaceMe', 'desc');
+    expect(storageMock.updateBookComment).toHaveBeenCalledWith('list-1', 'book-1', 'imported');
+    expect(snapshot.replacedLists).toHaveLength(1);
+    expect(snapshot.addedListIds).toHaveLength(1);
+  });
+
+  it('duplicates book when action is duplicate', async () => {
+    store.books = [makeBook('book-1', { isbn: '111' })];
+    store.lists = [makeList('list-1', 'List')];
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'List',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [makeExportedBook({ isbn: '111' })],
+      },
+    ]);
+
+    const strategy: ImportStrategy = {
+      defaultListAction: 'merge',
+      defaultBookAction: 'duplicate',
+      defaultCommentMerge: 'import',
+      defaultFieldMerge: 'non-empty',
+    };
+
+    const snapshot = await createSnapshot(imported, strategy);
+    const result = await executeImport(imported, strategy, snapshot);
+
+    expect(result.success).toBe(true);
+    expect(result.imported.booksAdded).toBe(1);
+    expect(storageMock.addBook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'uuid-1',
+        isbn: '111',
+      })
+    );
+    expect(snapshot.addedBookIds).toEqual(['uuid-1']);
+  });
+
+  it('skips book merge when action is skip', async () => {
+    store.books = [makeBook('book-1', { isbn: '111' })];
+    store.lists = [makeList('list-1', 'List')];
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'List',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [makeExportedBook({ isbn: '111' })],
+      },
+    ]);
+
+    const strategy: ImportStrategy = {
+      defaultListAction: 'merge',
+      defaultBookAction: 'skip',
+      defaultCommentMerge: 'local',
+      defaultFieldMerge: 'non-empty',
+    };
+
+    const snapshot = await createSnapshot(imported, strategy);
+    const result = await executeImport(imported, strategy, snapshot);
+
+    expect(result.success).toBe(true);
+    expect(result.imported.booksMerged).toBe(1);
+    expect(storageMock.updateBook).not.toHaveBeenCalled();
+    expect(storageMock.addBook).not.toHaveBeenCalled();
+    expect(storageMock.addBookToList).toHaveBeenCalledWith('list-1', 'book-1');
+  });
+
+  it('applies per-field merge strategies', async () => {
+    store.books = [
+      makeBook('book-1', {
+        isbn: '111',
+        title: 'Imported Title',
+        author: 'Imported Author',
+        publisher: 'Local Pub',
+        publishDate: '2020',
+        cover: 'local',
+      }),
+    ];
+    store.lists = [makeList('list-1', 'List')];
+
+    const importedBook = makeExportedBook({
+      isbn: '222',
+      publisher: 'Imported Pub',
+      publishDate: '2024',
+      coverUrl: 'imported',
+    });
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'List',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [importedBook],
+      },
+    ]);
+
+    const strategy: ImportStrategy = {
+      defaultListAction: 'merge',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'local',
+      defaultFieldMerge: 'local',
+      bookResolutions: new Map([
+        [
+          importedBook.isbn || `${importedBook.title}|${importedBook.author}`,
+          {
+            action: 'merge',
+            fieldStrategies: {
+              isbn: 'import',
+              publisher: 'local',
+              publishDate: 'import',
+              cover: 'non-empty',
+            },
+          },
+        ],
+      ]),
+    };
+
+    const snapshot = await createSnapshot(imported, strategy);
+    const result = await executeImport(imported, strategy, snapshot);
+
+    expect(result.success).toBe(true);
+    expect(storageMock.updateBook).toHaveBeenCalledWith('book-1', {
+      isbn: '222',
+      publisher: 'Local Pub',
+      publishDate: '2024',
+      cover: 'local',
+    });
+  });
+
   it('restores snapshot state for undo', async () => {
     const snapshot: ImportSnapshot = {
       timestamp: Date.now(),
