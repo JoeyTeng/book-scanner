@@ -50,6 +50,17 @@ describe('google books', () => {
     warnSpy.mockRestore();
   });
 
+  it('returns empty on non-ok response', async () => {
+    storageMock.getGoogleBooksApiKey.mockResolvedValue('key');
+    fetchMock.mockResolvedValue({ ok: false, status: 500 } as Response);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await searchGoogleBooks('rust');
+
+    expect(result).toEqual([]);
+    errorSpy.mockRestore();
+  });
+
   it('parses google books items', async () => {
     storageMock.getGoogleBooksApiKey.mockResolvedValue('key');
     mockFetchJson({
@@ -95,6 +106,16 @@ describe('open library', () => {
     expect(result).toEqual([]);
   });
 
+  it('returns empty on fetch error', async () => {
+    fetchMock.mockRejectedValue(new Error('network'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await searchOpenLibrary('rust');
+
+    expect(result).toEqual([]);
+    errorSpy.mockRestore();
+  });
+
   it('parses open library docs', async () => {
     mockFetchJson({
       docs: [
@@ -132,6 +153,16 @@ describe('crossref', () => {
     const result = await getCrossrefBookByISBN('978');
 
     expect(result).toBeNull();
+  });
+
+  it('returns empty on fetch error for title search', async () => {
+    fetchMock.mockRejectedValue(new Error('network'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await searchCrossrefByTitle('Crossref Book');
+
+    expect(result).toEqual([]);
+    errorSpy.mockRestore();
   });
 
   it('parses crossref items and filters missing titles', async () => {
@@ -178,6 +209,15 @@ describe('isbndb', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('returns empty on non-ok response for title search', async () => {
+    storageMock.getISBNdbApiKey.mockResolvedValue('key');
+    fetchMock.mockResolvedValue({ ok: false } as Response);
+
+    const result = await searchISBNdbByTitle('ISBNdb Book');
+
+    expect(result).toEqual([]);
+  });
+
   it('parses isbndb results', async () => {
     storageMock.getISBNdbApiKey.mockResolvedValue('key');
     mockFetchJson({
@@ -216,6 +256,16 @@ describe('internet archive', () => {
     const result = await getInternetArchiveBookByISBN('978');
 
     expect(result).toBeNull();
+  });
+
+  it('returns empty on fetch error for title search', async () => {
+    fetchMock.mockRejectedValue(new Error('network'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await searchInternetArchiveByTitle('Archive Book');
+
+    expect(result).toEqual([]);
+    errorSpy.mockRestore();
   });
 
   it('parses internet archive docs', async () => {
