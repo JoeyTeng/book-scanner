@@ -174,29 +174,57 @@ export class VisionUploadModal {
 
   private showBooksPreview(parsedBooks: ParsedBookInfo[]): Promise<void> {
     const booksList = this.modalElement?.querySelector('#books-list') as HTMLElement;
+    booksList.replaceChildren();
 
-    booksList.innerHTML = parsedBooks
-      .map(
-        (book, index) => `
-      <div class="book-preview-item" data-index="${index}">
-        <div class="book-preview-content">
-          <h4>${book.title || 'Unknown Title'}</h4>
-          <p><strong>Author:</strong> ${book.author || 'Unknown'}</p>
-          ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
-          ${book.publisher ? `<p><strong>Publisher:</strong> ${book.publisher}</p>` : ''}
-          ${book.publishDate ? `<p><strong>Date:</strong> ${book.publishDate}</p>` : ''}
-          ${book.notes ? `<p><strong>Notes:</strong> ${book.notes}</p>` : ''}
-        </div>
-        <div class="book-preview-actions">
-          <label>
-            <input type="checkbox" checked data-index="${index}">
-            Add this book
-          </label>
-        </div>
-      </div>
-    `
-      )
-      .join('');
+    const fragment = document.createDocumentFragment();
+
+    const appendField = (container: HTMLElement, label: string, value: string) => {
+      const line = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = `${label}:`;
+      line.append(strong, document.createTextNode(` ${value}`));
+      container.appendChild(line);
+    };
+
+    const appendOptionalField = (container: HTMLElement, label: string, value?: string) => {
+      if (!value) return;
+      appendField(container, label, value);
+    };
+
+    parsedBooks.forEach((book, index) => {
+      const item = document.createElement('div');
+      item.className = 'book-preview-item';
+      item.dataset.index = String(index);
+
+      const content = document.createElement('div');
+      content.className = 'book-preview-content';
+
+      const title = document.createElement('h4');
+      title.textContent = book.title || 'Unknown Title';
+      content.appendChild(title);
+
+      appendField(content, 'Author', book.author || 'Unknown');
+      appendOptionalField(content, 'ISBN', book.isbn);
+      appendOptionalField(content, 'Publisher', book.publisher);
+      appendOptionalField(content, 'Date', book.publishDate);
+      appendOptionalField(content, 'Notes', book.notes);
+
+      const actions = document.createElement('div');
+      actions.className = 'book-preview-actions';
+
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = true;
+      checkbox.dataset.index = String(index);
+      label.append(checkbox, document.createTextNode(' Add this book'));
+      actions.appendChild(label);
+
+      item.append(content, actions);
+      fragment.appendChild(item);
+    });
+
+    booksList.appendChild(fragment);
 
     // Add All button
     this.modalElement?.querySelector('#btn-add-all')?.addEventListener('click', () => {
