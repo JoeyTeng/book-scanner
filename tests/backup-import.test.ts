@@ -277,6 +277,18 @@ describe('backup import', () => {
     }
   });
 
+  it('rejects invalid backup.json content', async () => {
+    const zipBytes = zipSync({
+      'backup.json': new TextEncoder().encode('not-json'),
+    });
+    const result = await importFullBackupZip(makeZipFile(zipBytes));
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('archive-invalid');
+    }
+  });
+
   it('rejects invalid backup structure', async () => {
     const invalidBackup = {
       format: 'full',
@@ -415,6 +427,10 @@ describe('backup export', () => {
     expect(assets.map((item) => item.path)).toEqual([pathA, pathB]);
     expect(unpacked.assets[pathA]).toEqual(bytesA);
     expect(unpacked.assets[pathB]).toEqual(bytesB);
+    expect(assets[0]?.bytes).toBe(bytesA.byteLength);
+    expect(assets[0]?.timestamp).toBe(entryA.timestamp);
+    expect(assets[1]?.bytes).toBe(bytesB.byteLength);
+    expect(assets[1]?.timestamp).toBe(entryB.timestamp);
     expect(storageMock.waitForInit).toHaveBeenCalledTimes(1);
     expect(storageMock.exportBackupPayload).toHaveBeenCalledTimes(1);
     expect(dbMock.imageCache.toArray).toHaveBeenCalledTimes(1);
