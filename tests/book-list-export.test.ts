@@ -93,6 +93,11 @@ describe('book list export', () => {
         comment: 'note',
         addedAt: Date.parse('2024-01-01T00:00:00Z'),
       },
+      {
+        bookId: 'missing-book',
+        comment: 'skip',
+        addedAt: Date.parse('2024-01-01T00:00:00Z'),
+      },
     ]);
     const book = makeBook('book-1', {
       publisher: 'Pub',
@@ -103,7 +108,9 @@ describe('book list export', () => {
     });
 
     storageMock.getBookList.mockResolvedValue(list);
-    storageMock.getBook.mockResolvedValue(book);
+    storageMock.getBook.mockImplementation(async (id: string) =>
+      id === 'book-1' ? book : undefined
+    );
 
     await exportBookList('list-1');
 
@@ -113,8 +120,10 @@ describe('book list export', () => {
     const payload = JSON.parse(await (lastBlob as Blob).text()) as {
       lists: Array<{ books: Array<Record<string, unknown>> }>;
     };
-    const exportedBook = payload.lists[0]?.books[0] ?? {};
+    const books = payload.lists[0]?.books ?? [];
+    const exportedBook = books[0] ?? {};
 
+    expect(books).toHaveLength(1);
     expect(exportedBook).not.toHaveProperty('notes');
     expect(exportedBook).not.toHaveProperty('recommendation');
     expect(exportedBook.comment).toBe('note');
