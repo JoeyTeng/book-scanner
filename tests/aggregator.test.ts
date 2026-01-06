@@ -64,6 +64,16 @@ describe('aggregateBookData', () => {
     expect(openLibraryMock.searchOpenLibrary).toHaveBeenCalledWith('9780306406157');
     expect(result.map((item) => item.title)).toEqual(['Book', 'Other']);
   });
+
+  it('returns empty on provider errors', async () => {
+    googleMock.searchGoogleBooks.mockRejectedValue(new Error('boom'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await aggregateBookData('978');
+
+    expect(result).toEqual([]);
+    errorSpy.mockRestore();
+  });
 });
 
 describe('searchBookByTitle', () => {
@@ -104,6 +114,20 @@ describe('mergeSources', () => {
       publisher: 'Pub',
       cover: 'cover',
       isbn: 'isbn',
+    });
+  });
+
+  it('preserves source order when no google books present', () => {
+    const merged = mergeSources([
+      { source: 'Open Library', title: 'Open', author: 'Ada' },
+      { source: 'Crossref', title: 'Cross', publisher: 'Pub' },
+    ]);
+
+    expect(merged).toEqual({
+      source: 'Open Library, Crossref',
+      title: 'Open',
+      author: 'Ada',
+      publisher: 'Pub',
     });
   });
 });
