@@ -322,6 +322,50 @@ describe('book list import', () => {
     );
   });
 
+  it('applies comment merge strategies', async () => {
+    store.books = [makeBook('book-1', { isbn: '111', title: 'Imported Title' })];
+    store.lists = [
+      makeList('list-1', 'Reading', [
+        {
+          bookId: 'book-1',
+          comment: 'local',
+          addedAt: 0,
+        },
+      ]),
+    ];
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'Reading',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [makeExportedBook({ isbn: '111', comment: 'imported' })],
+      },
+    ]);
+
+    const strategyLocal: ImportStrategy = {
+      defaultListAction: 'merge',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'local',
+      defaultFieldMerge: 'non-empty',
+    };
+    const snapshotLocal = await createSnapshot(imported, strategyLocal);
+    await executeImport(imported, strategyLocal, snapshotLocal);
+    expect(storageMock.updateBookComment).toHaveBeenCalledWith('list-1', 'book-1', 'local');
+
+    const strategyImport: ImportStrategy = {
+      defaultListAction: 'merge',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'import',
+      defaultFieldMerge: 'non-empty',
+    };
+    const snapshotImport = await createSnapshot(imported, strategyImport);
+    await executeImport(imported, strategyImport, snapshotImport);
+    expect(storageMock.updateBookComment).toHaveBeenCalledWith('list-1', 'book-1', 'imported');
+  });
+
   it('skips list import when action is skip', async () => {
     store.lists = [makeList('list-1', 'SkipMe')];
     store.books = [makeBook('book-1', { isbn: '111' })];
@@ -516,6 +560,56 @@ describe('book list import', () => {
       publisher: 'Local Pub',
       publishDate: '2024',
       cover: 'local',
+    });
+  });
+
+  it('applies non-empty field merge strategy', async () => {
+    store.books = [
+      makeBook('book-1', {
+        isbn: '',
+        title: 'Imported Title',
+        author: 'Imported Author',
+        publisher: '',
+        publishDate: '',
+        cover: '',
+      }),
+    ];
+    store.lists = [makeList('list-1', 'List')];
+
+    const importedBook = makeExportedBook({
+      isbn: '222',
+      publisher: 'Imported Pub',
+      publishDate: '2024',
+      coverUrl: 'imported',
+    });
+
+    const imported = makeExportData([
+      {
+        id: 'i1',
+        name: 'List',
+        description: 'desc',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        books: [importedBook],
+      },
+    ]);
+
+    const strategy: ImportStrategy = {
+      defaultListAction: 'merge',
+      defaultBookAction: 'merge',
+      defaultCommentMerge: 'local',
+      defaultFieldMerge: 'non-empty',
+    };
+
+    const snapshot = await createSnapshot(imported, strategy);
+    const result = await executeImport(imported, strategy, snapshot);
+
+    expect(result.success).toBe(true);
+    expect(storageMock.updateBook).toHaveBeenCalledWith('book-1', {
+      isbn: '222',
+      publisher: 'Imported Pub',
+      publishDate: '2024',
+      cover: 'imported',
     });
   });
 
