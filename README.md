@@ -147,6 +147,17 @@ Your app will be available at: `https://booka.mahane.me/`
 3. Choose your previously exported JSON file
 4. Data will be merged with existing books (duplicates by ID are skipped)
 
+### Google Drive Sync
+
+1. Set `VITE_GOOGLE_DRIVE_CLIENT_ID` in your Vite environment
+2. Click the menu icon (☰) and open "Backup / Restore"
+3. Use "Connect Google Drive", then sync or restore full backups
+
+**Notes:**
+
+- Sync uses Google Drive app data storage (not visible in Drive UI)
+- Only full backups are synced
+
 ### Switching Languages
 
 1. Click the menu icon (☰)
