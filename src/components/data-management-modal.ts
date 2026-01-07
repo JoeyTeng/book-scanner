@@ -1,3 +1,4 @@
+import { GOOGLE_DRIVE_CLIENT_ID } from '../config';
 import {
   exportFullBackupZip,
   exportMetadataBackupJson,
@@ -6,7 +7,14 @@ import {
   type BackupErrorCode,
 } from '../modules/backup';
 import { downloadBytes, downloadFile } from '../modules/export';
+import {
+  DEFAULT_DRIVE_BACKUP_NAME,
+  downloadLatestFullBackupFromDrive,
+  requestAccessToken,
+  syncFullBackupToDrive,
+} from '../modules/google-drive';
 import { i18n } from '../modules/i18n';
+import { storage } from '../modules/storage';
 
 export class DataManagementModal {
   private modalElement: HTMLDivElement | null = null;
@@ -51,6 +59,15 @@ export class DataManagementModal {
               <strong>${i18n.t('dataManagement.restore.warningTitle')}</strong>
               <p style="margin: 0;">${i18n.t('dataManagement.restore.warningBody')}</p>
             </div>
+          </div>
+
+          <div class="menu-section">
+            <h3>${i18n.t('dataManagement.googleDrive.title')}</h3>
+            <p class="help-text">${i18n.t('dataManagement.googleDrive.description')}</p>
+            <button id="btn-google-drive-connect" class="btn-full">${i18n.t('dataManagement.googleDrive.connect')}</button>
+            <button id="btn-google-drive-backup" class="btn-full">${i18n.t('dataManagement.googleDrive.sync')}</button>
+            <button id="btn-google-drive-restore" class="btn-full btn-danger">${i18n.t('dataManagement.googleDrive.restore')}</button>
+            <p id="google-drive-status" class="help-text" style="margin-top: var(--spacing-sm);"></p>
           </div>
 
         </div>
@@ -173,6 +190,153 @@ export class DataManagementModal {
         }
         alert(this.formatError(result.error));
         input.value = '';
+      })();
+    });
+
+    const driveConnectButton = this.modalElement?.querySelector<HTMLButtonElement>(
+      '#btn-google-drive-connect'
+    );
+    const driveBackupButton = this.modalElement?.querySelector<HTMLButtonElement>(
+      '#btn-google-drive-backup'
+    );
+    const driveRestoreButton = this.modalElement?.querySelector<HTMLButtonElement>(
+      '#btn-google-drive-restore'
+    );
+    const driveStatus = this.modalElement?.querySelector<HTMLElement>('#google-drive-status');
+
+    const setDriveStatus = (text: string) => {
+      if (driveStatus) {
+        driveStatus.textContent = text;
+      }
+    };
+
+    const setDriveButtonsDisabled = (disabled: boolean) => {
+      if (driveConnectButton) driveConnectButton.disabled = disabled;
+      if (driveBackupButton) driveBackupButton.disabled = disabled;
+      if (driveRestoreButton) driveRestoreButton.disabled = disabled;
+    };
+
+    const formatTimestamp = (timestamp: number) => new Date(timestamp).toLocaleString();
+    const isMissingClientIdError = (error: unknown) =>
+      error instanceof Error && error.message === 'missing-client-id';
+    const isNoBackupFoundError = (error: unknown) =>
+      error instanceof Error && error.message === 'no-backup-found';
+
+    const refreshDriveStatus = async () => {
+      const state = await storage.getGoogleDriveSyncState();
+      if (state?.lastSyncAt) {
+        setDriveStatus(
+          i18n.t('dataManagement.googleDrive.status.lastSync', {
+            time: formatTimestamp(state.lastSyncAt),
+          })
+        );
+        return;
+      }
+      setDriveStatus(i18n.t('dataManagement.googleDrive.status.disconnected'));
+    };
+
+    if (!GOOGLE_DRIVE_CLIENT_ID) {
+      setDriveStatus(i18n.t('dataManagement.googleDrive.status.missingClientId'));
+      setDriveButtonsDisabled(true);
+      return;
+    }
+
+    void refreshDriveStatus();
+
+    driveConnectButton?.addEventListener('click', () => {
+      void (async () => {
+        setDriveButtonsDisabled(true);
+        try {
+          await requestAccessToken({ prompt: 'consent' });
+          setDriveStatus(i18n.t('dataManagement.googleDrive.status.connected'));
+        } catch (error) {
+          console.error('Google Drive auth failed:', error);
+          alert(i18n.t('dataManagement.googleDrive.error.authFailed'));
+        } finally {
+          setDriveButtonsDisabled(false);
+        }
+      })();
+    });
+
+    driveBackupButton?.addEventListener('click', () => {
+      void (async () => {
+        setDriveButtonsDisabled(true);
+        try {
+          const zipBytes = await exportFullBackupZip();
+          const state = await storage.getGoogleDriveSyncState();
+          const result = await syncFullBackupToDrive(zipBytes, {
+            fileId: state?.fileId,
+            fileName: DEFAULT_DRIVE_BACKUP_NAME,
+          });
+          await storage.setGoogleDriveSyncState({
+            fileId: result.fileId,
+            lastSyncAt: Date.now(),
+          });
+          await refreshDriveStatus();
+          alert(i18n.t('dataManagement.googleDrive.syncSuccess'));
+        } catch (error) {
+          if (isMissingClientIdError(error)) {
+            alert(i18n.t('dataManagement.googleDrive.status.missingClientId'));
+          } else {
+            console.error('Google Drive sync failed:', error);
+            alert(i18n.t('dataManagement.googleDrive.error.syncFailed'));
+          }
+        } finally {
+          setDriveButtonsDisabled(false);
+        }
+      })();
+    });
+
+    driveRestoreButton?.addEventListener('click', () => {
+      void (async () => {
+        if (!confirm(i18n.t('confirm.restoreFull'))) {
+          return;
+        }
+
+        setDriveButtonsDisabled(true);
+        try {
+          const state = await storage.getGoogleDriveSyncState();
+          const result = await downloadLatestFullBackupFromDrive({
+            fileId: state?.fileId,
+            fileName: DEFAULT_DRIVE_BACKUP_NAME,
+          });
+          const file = new File([result.bytes.slice().buffer], DEFAULT_DRIVE_BACKUP_NAME, {
+            type: 'application/zip',
+          });
+          const restoreResult = await importFullBackupZip(file);
+
+          if (restoreResult.success) {
+            await storage.setGoogleDriveSyncState({
+              fileId: result.fileId,
+              lastSyncAt: Date.now(),
+            });
+            alert(
+              i18n.t('dataManagement.restore.success', {
+                books: restoreResult.summary.books,
+                lists: restoreResult.summary.bookLists,
+                assets: restoreResult.summary.assets,
+              })
+            );
+            window.location.reload();
+            return;
+          }
+
+          if (restoreResult.details) {
+            console.error('Google Drive restore error:', restoreResult.details);
+          }
+          alert(this.formatError(restoreResult.error));
+        } catch (error) {
+          if (isNoBackupFoundError(error)) {
+            alert(i18n.t('dataManagement.googleDrive.error.noBackupFound'));
+          } else if (isMissingClientIdError(error)) {
+            alert(i18n.t('dataManagement.googleDrive.status.missingClientId'));
+          } else {
+            console.error('Google Drive restore failed:', error);
+            alert(i18n.t('dataManagement.googleDrive.error.restoreFailed'));
+          }
+        } finally {
+          setDriveButtonsDisabled(false);
+        }
       })();
     });
   }
