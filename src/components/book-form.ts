@@ -646,6 +646,7 @@ export class BookForm {
     if (this.book) {
       // Update existing book
       await storage.updateBook(this.book.id, {
+        isbn,
         title,
         author,
         publisher: publisher || undefined,
