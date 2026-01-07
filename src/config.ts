@@ -1,5 +1,6 @@
 export const APP_VERSION = '1.2.0';
 export const STORAGE_KEY = 'book-scanner-data';
+export const GOOGLE_DRIVE_CLIENT_ID = import.meta.env.VITE_GOOGLE_DRIVE_CLIENT_ID ?? '';
 
 export const DEFAULT_CATEGORIES = [
   'Technology',

@@ -1,6 +1,13 @@
 import { APP_VERSION, STORAGE_KEY, DEFAULT_CATEGORIES } from '../config';
 import { db, migrateFromLocalStorage } from './db';
-import type { BackupPayload, Book, BookList, CategoryMetadata, StorageData } from '../types';
+import type {
+  BackupPayload,
+  Book,
+  BookList,
+  CategoryMetadata,
+  GoogleDriveSyncState,
+  StorageData,
+} from '../types';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -518,6 +525,31 @@ class Storage {
   async setLLMTextModel(model: string): Promise<void> {
     await this.ensureInit();
     await db.settings.put({ key: 'llmTextModel', value: model });
+  }
+
+  /**
+   * Get Google Drive sync state
+   */
+  async getGoogleDriveSyncState(): Promise<GoogleDriveSyncState | undefined> {
+    await this.ensureInit();
+    const setting = await db.settings.get('googleDriveSyncState');
+    return setting?.value as GoogleDriveSyncState | undefined;
+  }
+
+  /**
+   * Set Google Drive sync state
+   */
+  async setGoogleDriveSyncState(state: GoogleDriveSyncState): Promise<void> {
+    await this.ensureInit();
+    await db.settings.put({ key: 'googleDriveSyncState', value: state });
+  }
+
+  /**
+   * Clear Google Drive sync state
+   */
+  async clearGoogleDriveSyncState(): Promise<void> {
+    await this.ensureInit();
+    await db.settings.delete('googleDriveSyncState');
   }
 
   /**
