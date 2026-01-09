@@ -97,6 +97,11 @@ export interface BackupData {
   };
 }
 
+export interface GoogleDriveSyncState {
+  fileId?: string;
+  lastSyncAt?: number;
+}
+
 export interface BookListExport {
   bookList: BookList;
   books: Book[];

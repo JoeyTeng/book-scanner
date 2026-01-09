@@ -108,6 +108,25 @@ assets/<sha256>.bin
 - SchemaVersion 预留升级空间
 - 备份清单可扩展新的 assets 类型
 
+## Google Drive 同步备份
+
+- 认证方式：Google Identity Services（OAuth2 Token）
+- Scope：`https://www.googleapis.com/auth/drive.appdata`
+- 存储位置：Google Drive `appDataFolder`（对用户不可见）
+- 文件命名：`book-scanner-full-backup-latest.zip`
+- 同步流程：
+  - 生成 Full Backup ZIP
+  - 优先使用已记录的 `fileId` 覆盖上传
+  - 若不存在则按文件名查询并覆盖，否则创建新文件后上传
+- 恢复流程：
+  - 按 `fileId` 或最新文件查询下载
+  - 走现有 Full Restore 流程
+- 状态持久化：
+  - settings 中存储 `googleDriveSyncState`（`fileId`、`lastSyncAt`）
+  - 不存储 access token
+- 配置要求：
+  - 通过 `VITE_GOOGLE_DRIVE_CLIENT_ID` 配置 Client ID
+
 ## TODO
 
 - Restore merge support
